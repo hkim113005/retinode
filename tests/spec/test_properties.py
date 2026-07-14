@@ -31,8 +31,8 @@ def test_from_map_roundtrips_any_weight_mapping(weights):
 def test_linspace_spans_endpoints_monotonically(start, stop, num):
     values = spec.Sweep.linspace("p", start, stop, num).values
     assert len(values) == num
-    assert values[0] == start          # first value is exactly start
-    assert values[-1] == stop          # last value is exactly stop (pinned)
+    assert values[0] == start  # first value is exactly start
+    assert values[-1] == stop  # last value is exactly stop (pinned)
     if start <= stop:
         assert all(a <= b for a, b in zip(values, values[1:], strict=False))
     else:

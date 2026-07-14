@@ -21,10 +21,10 @@ class RGC:
     """
 
     id: str
-    cell_type: str                        # e.g. "parasol_on", "midget_off"
+    cell_type: str  # e.g. "parasol_on", "midget_off"
     soma_um: Vec3
     dendrite_diam_um: float | None = None
-    axon_um: tuple[Vec3, ...] = ()        # ordered path, soma -> optic disc
+    axon_um: tuple[Vec3, ...] = ()  # ordered path, soma -> optic disc
 
 
 @dataclass(frozen=True)
@@ -38,7 +38,7 @@ class RetinalPatch:
 
     cells: tuple[RGC, ...]
     target_id: str
-    optic_disc_um: Vec3 | None = None     # where axons head; sets axon direction
+    optic_disc_um: Vec3 | None = None  # where axons head; sets axon direction
     frame: str = "patch"
     schema_version: int = SCHEMA_VERSION
 

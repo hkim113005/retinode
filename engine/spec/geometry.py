@@ -17,10 +17,10 @@ class Electrode:
     current it carries. Current lives in StimConfig, keyed by ``id``."""
 
     id: str
-    pos_um: Vec3                      # center, microns, in the array's frame
+    pos_um: Vec3  # center, microns, in the array's frame
     shape: Shape
-    size_um: float                   # disk diameter / square edge / hex flat-to-flat
-    normal: Vec3 = (0.0, 0.0, 1.0)   # facing direction (toward the retina by default)
+    size_um: float  # disk diameter / square edge / hex flat-to-flat
+    normal: Vec3 = (0.0, 0.0, 1.0)  # facing direction (toward the retina by default)
     boundary_um: tuple[Vec3, ...] | None = None  # explicit outline, only for shape="poly"
 
 
@@ -29,7 +29,7 @@ class ElectrodeArray:
     """An ordered collection of electrodes plus array-level metadata."""
 
     electrodes: tuple[Electrode, ...]
-    frame: str = "patch"             # coordinate convention these positions live in
+    frame: str = "patch"  # coordinate convention these positions live in
     schema_version: int = SCHEMA_VERSION
 
     def ids(self) -> tuple[str, ...]:

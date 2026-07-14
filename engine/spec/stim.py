@@ -14,7 +14,7 @@ class Waveform:
     excitatory leading phase) is negative current — see conventions.py."""
 
     phase_width_us: float
-    amplitude_scale_uA: float = 1.0   # multiplies the per-electrode weights
+    amplitude_scale_uA: float = 1.0  # multiplies the per-electrode weights
     interphase_gap_us: float = 0.0
     cathodic_first: bool = True
     kind: Literal["biphasic"] = "biphasic"
@@ -34,7 +34,7 @@ class StimConfig:
         that is not an array electrode, so on-array weights need not sum to 0.
     """
 
-    weights: tuple[tuple[str, float], ...]   # (electrode_id, signed relative current)
+    weights: tuple[tuple[str, float], ...]  # (electrode_id, signed relative current)
     waveform: Waveform
     distant_return: bool = False
     schema_version: int = SCHEMA_VERSION

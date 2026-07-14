@@ -21,7 +21,7 @@ def test_electrode_all_shapes():
         size_um=0.0,
         boundary_um=((0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (0.0, 10.0, 0.0)),
     )
-    assert disk.normal == (0.0, 0.0, 1.0)      # default facing toward the retina
+    assert disk.normal == (0.0, 0.0, 1.0)  # default facing toward the retina
     assert square.boundary_um is None
     assert hexa.shape == "hex"
     assert poly.boundary_um is not None and len(poly.boundary_um) == 3
@@ -36,7 +36,7 @@ def test_electrode_array_defaults_and_order():
     )
     assert array.frame == "patch"
     assert array.schema_version == spec.SCHEMA_VERSION
-    assert array.ids() == ("z", "a")           # insertion order preserved, not sorted
+    assert array.ids() == ("z", "a")  # insertion order preserved, not sorted
 
 
 # --- configuration: direct build, distant return, empty, waveform variants ---
@@ -102,7 +102,7 @@ def test_patch_full_detail():
     )
     assert patch.target() is target
     assert len(patch.target().axon_um) == 3
-    assert other.axon_um == ()                 # default: no axon path yet
+    assert other.axon_um == ()  # default: no axon path yet
 
 
 # --- study: multiple sweeps, tiers, objectives, reversed linspace ---
@@ -139,11 +139,11 @@ def test_equal_specs_are_equal_and_hash_equal():
     a, b = build(), build()
     assert a == b
     assert hash(a) == hash(b)
-    assert len({a, b}) == 1                     # value-equal specs dedup in a set
+    assert len({a, b}) == 1  # value-equal specs dedup in a set
 
 
 def test_specs_differing_by_one_field_are_unequal():
     base = spec.Electrode(id="c", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=10.0)
     moved = spec.Electrode(id="c", pos_um=(1.0, 0.0, 0.0), shape="disk", size_um=10.0)
     assert base != moved
-    assert len({base, moved}) == 2              # distinct values stay distinct
+    assert len({base, moved}) == 2  # distinct values stay distinct

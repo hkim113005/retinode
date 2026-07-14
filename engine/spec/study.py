@@ -40,5 +40,5 @@ class StudyDefinition:
 
     sweeps: tuple[Sweep, ...]
     tier: Tier = "analytical"
-    objectives: tuple[str, ...] = ("sow",)   # e.g. selective operating window
+    objectives: tuple[str, ...] = ("sow",)  # e.g. selective operating window
     schema_version: int = SCHEMA_VERSION
