@@ -79,19 +79,38 @@ class RGCModel:
         self.soma_sec = next(iter(self.soma))
         self.dendrite_secs = list(self.dend) if hasattr(self, "dend") else []
 
+    def _soma_center_um(self) -> tuple[float, float, float]:
+        s = self.soma_sec
+        n = s.n3d()
+        if n == 0:
+            return (0.0, 0.0, 0.0)
+        return (
+            sum(s.x3d(i) for i in range(n)) / n,
+            sum(s.y3d(i) for i in range(n)) / n,
+            sum(s.z3d(i) for i in range(n)) / n,
+        )
+
     def _append_axon(self) -> None:
+        # Give the appended sections explicit 3D coordinates (pt3dadd), so the
+        # extracellular field can be evaluated at them (S3) — the AIS especially,
+        # since it is where the spike initiates. They run in +x from the soma
+        # (in-plane, nominal); S6 lays them along the spec's axon_um path.
         h, p = self.h, self.params
-        self.hillock = h.Section(name="hillock")
-        self.hillock.L, self.hillock.diam = p.hillock_len_um, p.hillock_diam_um
-        self.hillock.connect(self.soma_sec(1.0))
+        cx, cy, cz = self._soma_center_um()
+        x = cx
 
-        self.ais = h.Section(name="ais")  # sodium-channel band
-        self.ais.L, self.ais.diam = p.ais_len_um, p.ais_diam_um
-        self.ais.connect(self.hillock(1.0))
+        def add(name: str, length: float, diam: float, parent: Any) -> Any:
+            nonlocal x
+            sec = h.Section(name=name)
+            sec.connect(parent(1.0))
+            h.pt3dadd(x, cy, cz, diam, sec=sec)
+            h.pt3dadd(x + length, cy, cz, diam, sec=sec)
+            x = x + length
+            return sec
 
-        self.axon = h.Section(name="axon")
-        self.axon.L, self.axon.diam = p.axon_len_um, p.axon_diam_um
-        self.axon.connect(self.ais(1.0))
+        self.hillock = add("hillock", p.hillock_len_um, p.hillock_diam_um, self.soma_sec)
+        self.ais = add("ais", p.ais_len_um, p.ais_diam_um, self.hillock)  # sodium band
+        self.axon = add("axon", p.axon_len_um, p.axon_diam_um, self.ais)
 
     def regions(self) -> dict[str, list[Any]]:
         return {

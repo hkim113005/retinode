@@ -49,9 +49,11 @@ engine/eval/
 - **S2 — Single-cell model + intracellular sanity.** Vendor/compile FM `.mod`;
   parametric morphology with Na-band; `celsius`/q10. *Done:* injected current
   spikes correctly; silent below rheobase (Wk-3 gate).
-- **S3 — Extracellular drive + sign.** Ve(t) = (A·I)·waveform(t) into
-  `e_extracellular`. *Done:* cathodic-over-soma depolarizes and fires; anodic
-  does not — the sign chain pinned end-to-end.
+- **S3 — Extracellular drive + sign (done).** Ve(t) = (A·I)·waveform(t) into
+  `e_extracellular`; the field engine now drives the cell. Sign chain verified:
+  cathodic-over-soma depolarizes (and fires); anodic hyperpolarizes. (Note: a
+  biphasic pulse's reversed 2nd phase can itself excite, so the sign check uses
+  the subthreshold membrane deflection, and a `monophasic` option isolates it.)
 - **S4 — Threshold search.** Geometric ladder → bracket → bisect → verify above
   (detect upper-threshold/block). Returns the **lowest** activating amplitude +
   bracket + tolerance + monotonicity flag. (Not naive bisection.)

@@ -17,7 +17,8 @@ from .morphology import RGCModel
 class SpikeResult:
     n_spikes: int
     times_ms: tuple[float, ...]
-    v_peak_mV: float
+    v_peak_mV: float  # most depolarized soma Vm over the run
+    v_min_mV: float = -65.0  # most hyperpolarized soma Vm over the run
 
 
 def run_current_step(
@@ -53,4 +54,5 @@ def run_current_step(
         n_spikes=int(spikes.size()),
         times_ms=tuple(spikes),
         v_peak_mV=float(v_soma.max()),
+        v_min_mV=float(v_soma.min()),
     )
