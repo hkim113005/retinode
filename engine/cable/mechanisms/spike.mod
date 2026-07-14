@@ -4,6 +4,10 @@ TITLE HH style channels for spiking retinal ganglion cells
 : by TJ Velte March 17, 1995
 : must be used with calcium pump mechanism, i.e. capump.mod
 :
+: Retinode modification (2026-07-14): added q10 temperature scaling of the
+: gating kinetics (PARAMETER q10, temp0) so these salamander rate equations run
+: at mammalian temperature (Fohlmeister 2010). In evaluate_fct each tau is
+: divided by tadj = q10^((celsius - temp0)/10). No other changes.
 :
 
 INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}
@@ -43,6 +47,8 @@ PARAMETER {
 	cai     = 0.0001 (mM)
 	dt              (ms)
 	v               (mV)
+	q10     = 2.5     : gating-kinetics temperature scaling (FM-2010)
+	temp0   = 22      : reference temp of the salamander kinetics (degC)
 
 }
 
@@ -108,7 +114,7 @@ PROCEDURE states() {	: exact when v held constant
 
 UNITSOFF
 
-PROCEDURE evaluate_fct(v(mV)) { LOCAL a,b
+PROCEDURE evaluate_fct(v(mV)) { LOCAL a,b,tadj
 	
 :NA m
 	a = (-0.6 * (v+30)) / ((exp(-0.1*(v+30))) - 1)
@@ -144,6 +150,15 @@ PROCEDURE evaluate_fct(v(mV)) { LOCAL a,b
 	b = 10 * (exp((-1*(v + 38))/18))
 	tau_c = 1 / (a + b)
 	c_inf = a * tau_c
+
+: temperature scaling of gating kinetics (FM-2010 mammalian): faster when warm
+	tadj = exp(log(q10) * (celsius - temp0) / 10)
+	tau_m = tau_m / tadj
+	tau_h = tau_h / tadj
+	tau_n = tau_n / tadj
+	tau_p = tau_p / tadj
+	tau_q = tau_q / tadj
+	tau_c = tau_c / tadj
 
 : State vars to inifinity
 	m_exp = 1 - exp(-dt/tau_m)

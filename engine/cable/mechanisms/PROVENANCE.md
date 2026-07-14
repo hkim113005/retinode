@@ -15,10 +15,17 @@ for research reuse; these files are vendored **unmodified**, with attribution.
 Cite Fohlmeister & Miller (1997) and ModelDB #3673.
 
 ## Modifications
-- **None to the `.mod` source.** The files compile as-is on **NEURON 9.0.1** (the
-  C++ toolchain), with only benign warnings: VERBATIM not thread-safe; "cannot be
-  used with CVODE" (we use fixed `dt` by design); and PARAMETER reversal-potential
-  defaults overridden by NEURON.
+- **`capump.mod`: none.**
+- **`spike.mod`: added q10 temperature scaling (2026-07-14).** The salamander
+  FM/Velte rate equations carry no temperature dependence, so mammalian (37 °C)
+  behavior requires it (Fohlmeister 2010). Added `PARAMETER q10 (=2.5), temp0
+  (=22)`; in `evaluate_fct` each gating tau is divided by
+  `tadj = q10^((celsius − temp0)/10)`. No kinetics or topology otherwise changed,
+  and at `celsius = temp0` the model reduces exactly to the original. Verified:
+  `tau_m` speeds up 3.95× from 22 °C to 37 °C (= 2.5^1.5).
+- Both files compile as-is on **NEURON 9.0.1** (C++ toolchain), with only benign
+  warnings: VERBATIM not thread-safe; "cannot be used with CVODE" (we use fixed
+  `dt` by design); PARAMETER reversal-potential defaults overridden by NEURON.
 
 ## Species / temperature note — the FM-2010 adaptation is applied at insertion
 These are the salamander-derived FM/Velte rate equations with **no temperature

@@ -13,12 +13,26 @@
   doi:10.1016/j.neulet.2018.04.012 (PMID 29627341).
 - **Citation:** please cite NeuroMorpho.org and the source publication above.
 
-## Species note
-Mouse is used because well-reconstructed **mammalian** RGC arbors are abundant on
-NeuroMorpho while primate/cat/rat retinal reconstructions are scarce; mouse is
-consistent with the mammalian FM-2010 (rat/cat) channels at the mammalian level.
-Primate-specificity is captured at the array/patch scale, not the single-cell
-morphology. See `docs/phase-1-plan.md`.
+## Species decision — mouse chosen over cat/rat (recorded 2026-07-14)
+Cat/rat were the originally preferred species (they match the FM-2010 rat/cat
+channels). NeuroMorpho was searched again and **mouse was chosen deliberately**:
+
+- **Cat:** no retinal ganglion reconstructions available.
+- **Rat:** ~372 available, but every usable option is worse for this tool's
+  purpose — the only "Dendrites Complete" rat cell (Bohlen archive) has **no soma
+  node** and ~9151 dendrite points (unusable); the clean rat cells (Rodger LY8
+  series) are only **"Dendrites Moderate"** (truncated arbor).
+- **Mouse (this file):** "Dendrites Complete" + proper soma + planar arbor.
+
+**Deciding factor: threshold accuracy.** The 2023 review shows truncated
+dendrites bias extracellular-stimulation thresholds, so complete dendrites beat
+an exact species match — especially since the channels are rat/cat regardless of
+morphology, mouse/rat RGC dendrites are morphologically similar, and the real
+target (primate) is a mammalian proxy either way. Primate-specificity is
+captured at the array/patch scale, not the single cell.
+
+**Reversible** via the `cell_type -> template` registry in
+`engine/cable/morphology.py`; revisit only if arbor sim cost bottlenecks S4/S6.
 
 ## Modifications
 - **None to the file.** Comment/header lines are stripped in memory before
