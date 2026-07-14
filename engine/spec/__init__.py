@@ -15,6 +15,7 @@ from .conductivity import (
 from .conventions import SCHEMA_VERSION
 from .geometry import Electrode, ElectrodeArray, Shape
 from .patch import RGC, RetinalPatch
+from .serialization import from_json, to_json
 from .stim import StimConfig, Waveform
 from .study import StudyDefinition, Sweep, Tier
 from .validation import Problem, Severity, has_errors, validate, validate_scene
@@ -46,4 +47,7 @@ __all__ = [
     "validate",
     "validate_scene",
     "has_errors",
+    # serialization
+    "to_json",
+    "from_json",
 ]
