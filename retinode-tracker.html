@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retinode Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161A21;
+    --ink-soft:#5C6573;
+    --ink-faint:#8A93A1;
+    --paper:#EDEFF3;
+    --surface:#FFFFFF;
+    --line:#DCE1E9;
+    --line-soft:#E7EBF1;
+    --field:#1F6FEB;        /* interaction, navigation */
+    --field-ink:#134fac;
+    --signal:#F2A626;       /* completion, a fired electrode */
+    --signal-deep:#C97E12;
+    --signal-wash:#FBEED4;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(20,26,38,.04), 0 6px 20px rgba(20,26,38,.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-weight:450;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .mono{font-family:"IBM Plex Mono", ui-monospace, monospace;}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px 80px;}
+
+  /* ---------- header ---------- */
+  header{margin-bottom:18px;}
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--field-ink);font-weight:500;
+  }
+  h1{
+    font-family:"Space Grotesk", sans-serif;
+    font-weight:700;font-size:31px;line-height:1.05;
+    margin:8px 0 18px;letter-spacing:-.01em;
+  }
+  .sub{color:var(--ink-soft);font-size:14.5px;margin:0 0 18px;}
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 16px 18px;
+  }
+  .panel-top{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:12px;margin-bottom:12px;flex-wrap:wrap;
+  }
+  .readout{display:flex;align-items:baseline;gap:8px;}
+  .readout .pct{
+    font-family:"Space Grotesk", sans-serif;font-weight:700;
+    font-size:26px;line-height:1;color:var(--ink);
+  }
+  .readout .count{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);}
+  .array-hint{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-faint);letter-spacing:.04em;}
+
+  .array{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+  .node{
+    width:15px;height:15px;border-radius:50%;
+    border:1.5px solid var(--line);background:transparent;
+    padding:0;cursor:pointer;position:relative;
+    transition:none;
+  }
+  .node:hover{border-color:var(--field);}
+  .node.on{
+    background:var(--signal);border-color:var(--signal-deep);
+    box-shadow:0 0 0 3px rgba(242,166,38,.18);
+  }
+  .node:focus-visible{outline:2px solid var(--field);outline-offset:2px;}
+
+  .track{height:7px;border-radius:99px;background:var(--line-soft);overflow:hidden;}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--signal),var(--signal-deep));border-radius:99px;}
+  .status{margin-top:10px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint);min-height:14px;}
+  .status b{color:var(--signal-deep);font-weight:500;}
+
+  /* ---------- summer gates ---------- */
+  .gates-head{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin:16px 2px 8px;
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint);
+  }
+  .gates-head #gates-count{letter-spacing:.04em;}
+  .gates{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .gate{
+    appearance:none;text-align:left;cursor:pointer;font:inherit;
+    border:1px solid var(--line);border-radius:10px;background:var(--surface);
+    padding:10px 9px 8px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;gap:2px;min-width:0;
+  }
+  .gate::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--line);
+  }
+  .gate.passed{border-color:#f0dcae;background:var(--signal-wash);}
+  .gate.passed::before{background:linear-gradient(90deg,var(--signal),var(--signal-deep));}
+  .gate:hover{border-color:var(--field);}
+  .gate:focus-visible{outline:2px solid var(--field);outline-offset:2px;}
+  .gate .g-id{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);}
+  .gate.passed .g-id{color:var(--signal-deep);}
+  .gate .g-name{font-size:11.5px;line-height:1.2;font-weight:500;color:var(--ink);}
+  .gate.passed .g-name{color:var(--signal-deep);}
+  .gate .g-when{font-size:9.5px;color:var(--ink-faint);letter-spacing:.02em;}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:2px;margin:22px 0 14px;border-bottom:1px solid var(--line);}
+  .tab{
+    appearance:none;background:none;border:none;cursor:pointer;
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;letter-spacing:.03em;
+    color:var(--ink-soft);padding:10px 14px;position:relative;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .tab .n{color:var(--ink-faint);margin-left:7px;}
+  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--field);}
+  .tab:focus-visible{outline:2px solid var(--field);outline-offset:-2px;border-radius:6px;}
+
+  .section-label{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint);
+    margin:6px 2px 12px;display:flex;justify-content:space-between;align-items:center;
+  }
+
+  /* ---------- electrode checkbox ---------- */
+  .electrode{
+    flex:none;width:26px;height:26px;border-radius:50%;
+    border:2px solid var(--ink-faint);background:var(--surface);
+    cursor:pointer;padding:0;position:relative;margin-top:1px;
+  }
+  .electrode::after{
+    content:"";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:600;color:#fff;
+    opacity:0;
+  }
+  .electrode:hover{border-color:var(--field);}
+  .electrode.on{background:var(--signal);border-color:var(--signal-deep);box-shadow:0 0 0 4px rgba(242,166,38,.16);}
+  .electrode.on::after{content:"✓";opacity:1;}
+  .electrode:focus-visible{outline:2px solid var(--field);outline-offset:2px;}
+
+  /* ---------- project cards ---------- */
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden;
+  }
+  .card[open]{border-color:#cdd5e0;}
+  .card.headline{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal), var(--shadow);}
+  summary{list-style:none;cursor:pointer;padding:14px;display:flex;gap:13px;align-items:flex-start;}
+  summary::-webkit-details-marker{display:none;}
+  summary:focus-visible{outline:2px solid var(--field);outline-offset:-3px;border-radius:12px;}
+  .head-main{flex:1;min-width:0;}
+  .tagrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
+  .id{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:500;color:var(--field-ink);}
+  .pill{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-soft);
+  }
+  .pill.core{background:#eef4ff;border-color:#d5e3fb;color:var(--field-ink);}
+  .pill.ambition{background:#f4f1fb;border-color:#e2dbf3;color:#6b4fb0;}
+  .pill.headline{background:var(--signal-wash);border-color:#f0dcae;color:var(--signal-deep);}
+  .effort{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint);margin-left:auto;}
+  .card h3{font-family:"Space Grotesk",sans-serif;font-size:16.5px;font-weight:600;margin:1px 0 3px;letter-spacing:-.005em;}
+  .obj{margin:0;font-size:13.5px;color:var(--ink-soft);}
+  .chev{flex:none;color:var(--ink-faint);font-size:18px;line-height:1;margin-top:5px;}
+
+  .card-body{padding:0 14px 16px 53px;}
+  .block{margin-top:14px;}
+  .block-label{
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-faint);display:block;margin-bottom:5px;
+  }
+  .block p{margin:0;font-size:13.5px;color:var(--ink);}
+  .block ol{margin:0;padding-left:18px;}
+  .block li{font-size:13.5px;margin-bottom:5px;color:var(--ink);}
+  .note{
+    margin-top:14px;padding:10px 12px;background:var(--signal-wash);border-radius:10px;
+    font-size:13px;color:var(--signal-deep);border:1px solid #f0dcae;
+  }
+
+  .done .head-main h3{text-decoration:line-through;text-decoration-color:var(--ink-faint);text-decoration-thickness:1.5px;}
+  .done .head-main h3, .done .obj{color:var(--ink-faint);}
+
+  /* ---------- reading ---------- */
+  .week{margin-bottom:22px;}
+  .week-head{margin:0 2px 9px;}
+  .week-n{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--field-ink);}
+  .week-title{font-family:"Space Grotesk",sans-serif;font-size:16px;font-weight:600;margin:3px 0 2px;letter-spacing:-.005em;}
+  .supports{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-faint);}
+  .paper{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow);padding:13px 14px;display:flex;gap:13px;align-items:flex-start;margin-bottom:8px;
+  }
+  .paper .p-main{flex:1;min-width:0;}
+  .paper h4{font-family:"IBM Plex Sans",sans-serif;font-size:14.5px;font-weight:600;margin:0 0 3px;}
+  .paper h4 a{color:inherit;text-decoration:none;border-bottom:1px solid #bcd3f7;transition:color .15s ease,border-color .15s ease;}
+  .paper h4 a:hover{color:var(--field);border-bottom-color:var(--field);}
+  .paper h4 a:focus-visible{outline:2px solid var(--field);outline-offset:2px;border-radius:3px;}
+  .paper.done h4 a{color:inherit;border-bottom-color:transparent;}
+  .paper .role{margin:0;font-size:13px;color:var(--ink-soft);}
+  .paper.done h4{text-decoration:line-through;text-decoration-color:var(--ink-faint);text-decoration-thickness:1.5px;color:var(--ink-faint);}
+  .paper.done .role{color:var(--ink-faint);}
+  .hub{font-size:12.5px;color:var(--ink-soft);margin:0 2px 16px;}
+  .hub a{color:var(--field);text-decoration:none;border-bottom:1px solid #bcd3f7;}
+  .hub a:hover{border-bottom-color:var(--field);}
+
+  .foot{margin-top:26px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+  .foot-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .reset{
+    appearance:none;background:none;border:1px solid var(--line);border-radius:99px;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);
+    padding:7px 13px;cursor:pointer;
+  }
+  .reset:hover{border-color:#c9a; color:var(--signal-deep);border-color:#e6c98f;}
+  .reset:focus-visible{outline:2px solid var(--field);outline-offset:2px;}
+  .foot-note{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-faint);}
+
+  [hidden]{display:none !important;}
+
+  @media (prefers-reduced-motion: no-preference){
+    .node,.electrode,.fill,.gate,.gate::before{transition:background .18s ease, border-color .18s ease, box-shadow .18s ease, width .35s cubic-bezier(.4,0,.2,1);}
+    .chev{transition:transform .18s ease;}
+    .card[open] .chev{transform:rotate(90deg);}
+  }
+  @media (min-width:560px){
+    h1{font-size:36px;}
+    .wrap{padding-top:30px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Stanford Artificial Retina · summer plan</div>
+    <h1>Retinode</h1>
+
+    <div class="panel">
+      <div class="panel-top">
+        <div class="readout">
+          <span class="pct" id="pct">0%</span>
+          <span class="count" id="count">0 of 29 complete</span>
+        </div>
+        <span class="array-hint">tap a node to jump</span>
+      </div>
+      <div class="array" id="array" aria-label="Progress across all tasks"></div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="status" id="status"></div>
+      <div class="gates-head"><span>Summer gates</span><span id="gates-count" class="mono">0 / 4 passed</span></div>
+      <div class="gates" id="gates" aria-label="Summer decision gates"></div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Plans">
+    <button class="tab" id="tab-project" role="tab" aria-selected="true" aria-controls="view-project">Project<span class="n mono" id="pn">0/9</span></button>
+    <button class="tab" id="tab-reading" role="tab" aria-selected="false" aria-controls="view-reading">Reading<span class="n mono" id="rn">0/20</span></button>
+  </div>
+
+  <section id="view-project" role="tabpanel" aria-labelledby="tab-project">
+    <div class="section-label"><span>Build · phase ladder</span><span id="proj-sub">reproduce, then extend</span></div>
+    <div id="milestones"></div>
+  </section>
+
+  <section id="view-reading" role="tabpanel" aria-labelledby="tab-reading" hidden>
+    <div class="section-label"><span>Reading · ten weeks</span><span>paced to the build</span></div>
+    <p class="hub">Links and PDFs: <a href="https://med.stanford.edu/artificial-retina/publications.html" target="_blank" rel="noopener">med.stanford.edu/artificial-retina/publications</a></p>
+    <div id="weeks"></div>
+  </section>
+
+  <div class="foot">
+    <div class="foot-actions">
+      <button class="reset" id="export">Export backup</button>
+      <button class="reset" id="import">Import backup</button>
+      <button class="reset" id="reset">Reset</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+    <span class="foot-note" id="persist-note"></span>
+  </div>
+</div>
+
+<script>
+const KEY = "arp_tracker_v1";
+
+const milestones = [
+  {id:"P0", tag:"core", effort:"Wk 1–2 · Jul 13–26", title:"Foundations: spec, field, harness",
+   obj:"Stand up the repo and freeze the spec objects, then prove the analytical field against the transfer-matrix contract.",
+   steps:["Repo, environment, and CI; enforce the rule that the engine never imports the app.","Design and freeze the five spec objects (geometry, configuration, conductivity, patch, study) with validation, canonical JSON, and content hashing.","Implement the analytical field backend (point / disk source) behind the transfer-matrix contract, Ve = A·I.","Stand up the test harness with the linearity property test."],
+   deliverable:"Specs that round-trip to JSON and hash stably, and an analytical field that passes its property tests.",
+   done:"Gate 0 — the spec is frozen and the analytical field passes its property tests. Everything downstream forks from here, so do not proceed until it holds."},
+  {id:"P1", tag:"core", effort:"Wk 3–5 · Jul 27–Aug 16", title:"Cable engine and evaluator",
+   obj:"Drive NEURON RGC models with the field, find thresholds by bisection, and score selectivity — validated on single cells.",
+   steps:["Build NEURON RGC models with Fohlmeister–Miller channels and distinct compartment classes, driven through the extracellular mechanism.","Implement a bisection threshold search per cell, with multi-site activation: a spike initiating at any compartment counts.","Place a small population with axon trajectories toward the optic disc, modeling axons of passage.","Freeze the evaluator: selective operating window, thresholds, charge density against the Shannon limit, activated area."],
+   deliverable:"A pipeline that returns defensible thresholds and one fixed selectivity score for any spec.",
+   done:"Gate 1 — single-cell thresholds match Tsai 2012 and Greenberg 1999 in trend and magnitude. If they do not, adopt a reference channel implementation before moving on.",
+   note:"NEURON is the summer's long pole, so this phase gets the most room and a mid-phase validation checkpoint in Week 4."},
+  {id:"P2", tag:"core", effort:"Wk 5–6 · Aug 10–23", title:"The minimal usable app",
+   obj:"A Python dashboard over the engine so someone who is not you can design and score on the analytical tier.",
+   steps:["Scaffold a Dash / Plotly dashboard that calls the engine directly.","Build the Patch, Array, Tissue, Stimulus, and Results screens on the analytical tier.","Wire the two-speed live preview loop: edit → cached A × new current → score, in under a second.","Show field, activation, and scorecard views with tier and safety badges."],
+   deliverable:"A dashboard where a non-coder designs an array, sets a configuration, and reads a selectivity result without touching code.",
+   done:"Gate 2 — a non-coder completes the design-to-score loop unaided. Fix only what blocks them; do not gold-plate."},
+  {id:"P3", tag:"core", headline:true, effort:"Wk 7–9 · Aug 24–Sep 13", title:"Reproduce the published results",
+   obj:"Recover the lab's own results and wire them into CI and a Validation screen. This is the credibility hinge.",
+   steps:["Reproduce the local-return selectivity gain (Fan 2019).","Reproduce bi-electrode axon avoidance (Vilkhu 2021) via the activating function.","Reproduce multi-electrode nonlinearity (Vilkhu 2025) through multi-site activation.","Wire all three into regression tests and a first Validation screen."],
+   deliverable:"Three reproductions green in CI and visible in the app.",
+   done:"Gate 3 — all three reproductions pass in CI and show in the app. If one misses, ship the two that pass and document the third as an open finding; the tool is still a validated testbed.",
+   note:"The strong summer stopping point: a usable, validated testbed. This is the milestone that makes the whole project believable."},
+  {id:"P4", tag:"ambition", effort:"Fall · lab compute", title:"FEM accuracy layer",
+   obj:"Add accurate finite-element fields behind the existing contract, cross-checked by a second solver.",
+   steps:["Add a FEniCSx backend behind the transfer-matrix contract, meshing with gmsh.","Add NGSolve as an independent cross-check on the same mesh; add Sim4Life as a field-only check and stub a COMSOL adapter.","Store a mesh-independence (convergence) check with every FEM result.","Add cross-backend agreement tests and map where the analytical tier can be trusted."],
+   deliverable:"A validated, drop-in FEM backend, confirmed by a second backend, with the analytical-versus-FEM regime mapped.",
+   done:"An open-source FEM field is validated and swappable, and two solvers agree within tolerance on shared problems."},
+  {id:"P5", tag:"ambition", effort:"Fall · lab compute", title:"Study engine and compute scaling",
+   obj:"Run parameter sweeps to a Pareto frontier, reusing fields and recomputing only what geometry changes.",
+   steps:["Build the sweep engine with a cost estimate surfaced before any launch.","Add parametric FEM, coarse-to-fine, with an optional surrogate model.","Add async, resumable jobs and adapters for a local pool, Slurm (FarmShare / Sherlock), and cloud.","Run the result cache at scale, reusing transfer matrices across configurations."],
+   deliverable:"A geometry sweep that runs to a selectivity-versus-cost Pareto frontier without manual bookkeeping.",
+   done:"A sweep completes to a Pareto frontier, reusing fields and recomputing per geometry, unattended."},
+  {id:"P6", tag:"ambition", effort:"Fall · if warranted", title:"The polished application",
+   obj:"Re-skin the working tool as a clean FastAPI + React app in the instrument-panel visual language.",
+   steps:["Stand up a FastAPI backend over the engine and a React client to the fixed view data contracts.","Build the full screen set: Compare, Study and Pareto, Validation, and Candidates.","Add a secondary react-three-fiber 3D scene and a real 2D charting layer.","Add figure-quality export (SVG / PDF vector, high-DPI PNG)."],
+   deliverable:"A clean, keyboard- and mobile-respectful app, pleasant enough to hand to a labmate.",
+   done:"The tool is polished and legible to a newcomer, with the full screen set and figure-quality export."},
+  {id:"P7", tag:"ambition", effort:"Fall · in-lab", title:"Geometry study and validation dashboard",
+   obj:"Use the accurate engine to compare geometries systematically and produce a defensible design finding.",
+   steps:["Sweep geometry — return-ring radius, pitch, electrode size, layout — together with steering weights.","Produce the selectivity-versus-current Pareto frontier, reported with tier and trajectory sensitivity.","Identify which geometries dominate the frontier and explain why.","Complete the Validation dashboard: reproductions plus backend agreement."],
+   deliverable:"A one-sentence, robust design finding backed by the frontier, and a complete trust panel.",
+   done:"You can state a design finding in one sentence and back it with the frontier. This is the original contribution."},
+  {id:"P8", tag:"ambition", effort:"Fall · release", title:"Packaging, docs, and release",
+   obj:"Make the engine and app installable, reproducible, and legible to a stranger.",
+   steps:["Make the engine and app pip-installable; clean the repo, README, environment, and license.","Make one headline result reproducible from its provenance with a single command.","Write the documentation and the reproducibility guarantees.","Publish a public repo with examples and have someone clone it cold."],
+   deliverable:"A public repo plus docs where a stranger installs, reproduces a headline result with one command, and learns to use it.",
+   done:"A stranger can install it, reproduce a headline result with one command, and read how to use it."}
+];
+
+const weeks = [
+  {n:"Week 1 · Jul 13–19", title:"The problem and the whole system", supports:"supports P0", papers:[
+    {id:"p1", t:"Shah & Chichilnisky (2020)", role:"The map of the whole system. Read first so every later paper has a place to sit and you can see where selectivity fits."},
+    {id:"p2", t:"Grosberg et al. (2017)", role:"States the core obstacle: electrodes activate passing axon bundles, not just the target. The problem the whole tool exists to solve."}
+  ]},
+  {n:"Week 2 · Jul 20–26", title:"The tools you build on", supports:"supports P0–P1", papers:[
+    {id:"p19", t:"Hines & Carnevale (1997)", role:"The NEURON simulation environment itself — the engine under your cable model. Skim for how compartments and extracellular drive work in practice."},
+    {id:"p5", t:"Modeling extracellular stimulation of RGCs (2023 guide)", role:"A step-by-step guide to building the cable model and applying extracellular stimuli. Your build manual for P1; read it just before you need it."}
+  ]},
+  {n:"Week 3 · Jul 27–Aug 2", title:"How electrical fields activate neurons", supports:"supports P1", papers:[
+    {id:"p3", t:"Rattay (1986 / 1989)", role:"The activating function: the field's second spatial derivative predicts where a neuron fires. Your fast first-pass predictor and the basis of axon avoidance."},
+    {id:"p4", t:"Greenberg et al. (1999)", role:"The founding RGC stimulation model, asking your exact cell-versus-passing-fiber question. Read for the modeling approach."}
+  ]},
+  {n:"Week 4 · Aug 3–9", title:"The cell you are simulating", supports:"supports P1", papers:[
+    {id:"p14", t:"Fohlmeister & Miller (1997)", role:"The five-channel RGC membrane model — Na, Ca, K, K-A, K-Ca — your simulated cells are built from. The source of the excitability that makes P1 spike correctly."},
+    {id:"p6", t:"Tsai et al. (2012)", role:"The model checked against experimental thresholds across electrode sizes. Your validation reference for P1 and the Gate 1 check."}
+  ]},
+  {n:"Week 5 · Aug 10–16", title:"Selectivity and safety, as numbers", supports:"supports P1", papers:[
+    {id:"p18", t:"Linear electrical receptive fields of RGCs (2018)", role:"How each cell's electrical sensitivity is quantified as a receptive field. Grounds your selectivity metric and the reciprocity shortcut."},
+    {id:"p15", t:"Shannon (1992)", role:"The charge-density safety limit, log D = k − log Q with k ≤ 1.5. Turns 'is this safe for tissue?' into the number your evaluator enforces."},
+    {id:"p16", t:"McCreery et al. (1990)", role:"The injury data behind the limit: charge density and charge per phase as the cofactors that matter. Read alongside Shannon."}
+  ]},
+  {n:"Week 6 · Aug 17–23", title:"Keeping the app honest", supports:"supports P2", papers:[
+    {id:"p20", t:"Inference of stimulation sensitivity in primate RGCs (2023)", role:"How the lab infers each cell's stimulation sensitivity from recordings. Keeps your app's simulated thresholds tied to what is actually measured. A lighter read while you build the dashboard."}
+  ]},
+  {n:"Week 7 · Aug 24–30", title:"The first solution: electrode geometry", supports:"supports P3", papers:[
+    {id:"p7", t:"Fan et al. (2019)", role:"The result your headline phase recreates: local returns confine the field and improve selectivity. Know exactly what to reproduce."},
+    {id:"p8", t:"Jepson et al. (2014)", role:"Earlier precedent that spatial patterning sharpens resolution. Where you place current, not just how much, controls selectivity."}
+  ]},
+  {n:"Week 8 · Aug 31–Sep 6", title:"Multi-electrode patterns and axon avoidance", supports:"supports P3", papers:[
+    {id:"p9", t:"Vilkhu et al. (2021)", role:"The bi-electrode configuration you implement in P3, aimed squarely at dodging axon bundles."},
+    {id:"p10", t:"Vilkhu et al. (2025)", role:"The lab's biophysical-model account of multi-electrode nonlinearity via multi-site activation. Borrow its framing for your selectivity metric."}
+  ]},
+  {n:"Week 9 · Sep 7–13", title:"The frontier: current steering", supports:"supports P3 · P5", papers:[
+    {id:"p11", t:"Vasireddy et al. (2026)", role:"The newest word: current steering guided by spike-generation biophysics. The basis for later optimization; read once single-electrode activation makes sense."}
+  ]},
+  {n:"Week 10 · Sep 14–20", title:"What fidelity is for", supports:"supports P3 · P8", papers:[
+    {id:"p12", t:"Gogliettino et al. (2023)", role:"What success looks like: faithfully reproducing the visual signal. Keeps your metric tied to the real goal."},
+    {id:"p13", t:"Golden et al. (2019)", role:"Connects fidelity to perception and learning — what a patient experiences. Frames why selectivity matters."},
+    {id:"p17", t:"Beyeler et al. (2017)", role:"pulse2percept: the open-source model that turns stimulation into a predicted percept. Out of scope now, but the tool you would bridge to later."}
+  ]}
+];
+
+const paperLinks = {
+  p1:"https://iopscience.iop.org/article/10.1088/1741-2552/aba8b1",
+  p2:"https://journals.physiology.org/doi/full/10.1152/jn.00750.2016",
+  p3:"https://ieeexplore.ieee.org/document/4122186/",
+  p4:"https://pubmed.ncbi.nlm.nih.gov/10230129/",
+  p5:"https://pubmed.ncbi.nlm.nih.gov/36848677/",
+  p6:"https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0053357",
+  p7:"https://iopscience.iop.org/article/10.1088/1741-2552/aaeef1",
+  p8:"https://www.jneurosci.org/content/34/14/4871",
+  p9:"https://iopscience.iop.org/article/10.1088/1741-2552/ac3450",
+  p10:"https://iopscience.iop.org/article/10.1088/1741-2552/ada1fe",
+  p11:"https://www.biorxiv.org/content/10.1101/2025.03.14.643392",
+  p12:"https://www.jneurosci.org/content/43/25/4625",
+  p13:"https://iopscience.iop.org/article/10.1088/1741-2552/aaf270",
+  p14:"https://journals.physiology.org/doi/full/10.1152/jn.1997.78.4.1935",
+  p15:"https://doi.org/10.1109/10.126616",
+  p16:"https://ieeexplore.ieee.org/document/102812/",
+  p17:"https://proceedings.scipy.org/articles/shinma-7f4c6e7-00c",
+  p18:"https://pubmed.ncbi.nlm.nih.gov/29889051/",
+  p19:"https://dl.acm.org/doi/10.1162/neco.1997.9.6.1179",
+  p20:"https://www.jneurosci.org/content/43/26/4808"
+};
+
+const gates = [
+  {id:"G0", phase:"P0", label:"Gate 0", name:"Spec frozen", when:"end Wk 2 · Jul 26"},
+  {id:"G1", phase:"P1", label:"Gate 1", name:"Thresholds validated", when:"end Wk 5 · Aug 16"},
+  {id:"G2", phase:"P2", label:"Gate 2", name:"Non-coder can use it", when:"end Wk 6 · Aug 23"},
+  {id:"G3", phase:"P3", label:"Gate 3", name:"Reproductions green", when:"end Wk 9 · Sep 13"}
+];
+
+const allIds = [...milestones.map(m=>m.id), ...weeks.flatMap(w=>w.papers.map(p=>p.id))];
+const paperIds = weeks.flatMap(w=>w.papers.map(p=>p.id));
+
+let state = {};
+let canPersist = false;
+(function probe(){
+  try{
+    const k="__arp_probe__";
+    window.localStorage.setItem(k,"1");
+    window.localStorage.removeItem(k);
+    canPersist = true;
+  }catch(e){ canPersist = false; }   // e.g. inside a sandboxed preview
+})();
+
+function loadState(){
+  if(!canPersist) return;
+  try{
+    const raw = window.localStorage.getItem(KEY);
+    if(raw) state = JSON.parse(raw) || {};
+  }catch(e){ state = {}; }
+}
+let saveTimer=null;
+function saveState(){
+  if(!canPersist) return;
+  try{ window.localStorage.setItem(KEY, JSON.stringify(state)); flashSaved(); }
+  catch(e){}
+}
+function flashSaved(){
+  const s=document.getElementById("status");
+  s.innerHTML='<b>Saved ✓</b>';
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(updateStatus,1400);
+}
+
+function isDone(id){ return !!state[id]; }
+function toggle(id){
+  state[id] = !state[id];
+  render();
+  saveState();
+}
+
+/* ---------- build DOM ---------- */
+function buildArray(){
+  const c=document.getElementById("array");
+  c.innerHTML="";
+  allIds.forEach(id=>{
+    const b=document.createElement("button");
+    b.className="node"; b.dataset.id=id;
+    b.setAttribute("aria-label", id+(isDone(id)?" complete":" not complete"));
+    b.title=id;
+    b.addEventListener("click",()=>{
+      const el=document.getElementById("item-"+id);
+      const tabBtn = milestones.some(m=>m.id===id)?"project":"reading";
+      selectTab(tabBtn);
+      if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.open=true; }
+    });
+    c.appendChild(b);
+  });
+}
+
+function buildGates(){
+  const c=document.getElementById("gates");
+  c.innerHTML="";
+  gates.forEach(g=>{
+    const b=document.createElement("button");
+    b.className="gate"; b.id="gate-"+g.id; b.dataset.phase=g.phase;
+    b.setAttribute("aria-label", g.label+": "+g.name+" — "+g.when+" (jump to "+g.phase+")");
+    b.innerHTML=`<span class="g-id">${g.label} · ${g.phase}</span><span class="g-name">${g.name}</span><span class="g-when mono">${g.when}</span>`;
+    b.addEventListener("click",()=>{
+      selectTab("project");
+      const el=document.getElementById("item-"+g.phase);
+      if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.open=true; }
+    });
+    c.appendChild(b);
+  });
+}
+
+function buildMilestones(){
+  const c=document.getElementById("milestones");
+  c.innerHTML="";
+  milestones.forEach(m=>{
+    const d=document.createElement("details");
+    d.className="card"+(m.headline?" headline":"");
+    d.id="item-"+m.id;
+    const pill = m.headline
+      ? '<span class="pill headline">headline</span>'
+      : '<span class="pill '+m.tag+'">'+m.tag+'</span>';
+    d.innerHTML=`
+      <summary>
+        <button class="electrode" data-id="${m.id}" aria-pressed="false" aria-label="Mark ${m.id} complete"></button>
+        <div class="head-main">
+          <div class="tagrow">
+            <span class="id">${m.id}</span>
+            ${pill}
+            <span class="effort">${m.effort}</span>
+          </div>
+          <h3>${m.title}</h3>
+          <p class="obj">${m.obj}</p>
+        </div>
+        <span class="chev" aria-hidden="true">›</span>
+      </summary>
+      <div class="card-body">
+        <div class="block"><span class="block-label">Steps</span><ol>${m.steps.map(s=>`<li>${s}</li>`).join("")}</ol></div>
+        <div class="block"><span class="block-label">Deliverable</span><p>${m.deliverable}</p></div>
+        <div class="block"><span class="block-label">Done when</span><p>${m.done}</p></div>
+        ${m.note?`<div class="note">${m.note}</div>`:""}
+      </div>`;
+    c.appendChild(d);
+  });
+}
+
+function buildWeeks(){
+  const c=document.getElementById("weeks");
+  c.innerHTML="";
+  weeks.forEach(w=>{
+    const sec=document.createElement("div");
+    sec.className="week";
+    sec.innerHTML=`<div class="week-head">
+        <div class="week-n">${w.n}</div>
+        <div class="week-title">${w.title}</div>
+        <div class="supports">${w.supports}</div>
+      </div>`;
+    w.papers.forEach(p=>{
+      const row=document.createElement("div");
+      row.className="paper"; row.id="item-"+p.id;
+      const url=paperLinks[p.id];
+      const titleHTML = url ? `<a href="${url}" target="_blank" rel="noopener">${p.t}</a>` : p.t;
+      row.innerHTML=`
+        <button class="electrode" data-id="${p.id}" aria-pressed="false" aria-label="Mark ${p.t} as read"></button>
+        <div class="p-main">
+          <h4>${titleHTML}</h4>
+          <p class="role">${p.role}</p>
+        </div>`;
+      sec.appendChild(row);
+    });
+    c.appendChild(sec);
+  });
+}
+
+/* electrode + summary interaction */
+function wireElectrodes(){
+  document.querySelectorAll(".electrode").forEach(btn=>{
+    btn.addEventListener("click",(e)=>{
+      e.preventDefault(); e.stopPropagation();
+      toggle(btn.dataset.id);
+    });
+  });
+}
+
+/* ---------- render / update ---------- */
+function render(){
+  // electrodes + rows
+  document.querySelectorAll(".electrode").forEach(btn=>{
+    const on=isDone(btn.dataset.id);
+    btn.classList.toggle("on",on);
+    btn.setAttribute("aria-pressed", on?"true":"false");
+    const host = btn.closest("details, .paper");
+    if(host) host.classList.toggle("done",on);
+  });
+  // array
+  document.querySelectorAll(".node").forEach(n=>{
+    const on=isDone(n.dataset.id);
+    n.classList.toggle("on",on);
+    n.setAttribute("aria-label", n.dataset.id+(on?" complete":" not complete"));
+  });
+  // counts
+  const total=allIds.length;
+  const done=allIds.filter(isDone).length;
+  const pct=Math.round(done/total*100);
+  document.getElementById("pct").textContent=pct+"%";
+  document.getElementById("count").textContent=done+" of "+total+" complete";
+  document.getElementById("fill").style.width=pct+"%";
+  const pDone=milestones.filter(m=>isDone(m.id)).length;
+  const rDone=paperIds.filter(isDone).length;
+  document.getElementById("pn").textContent=pDone+"/"+milestones.length;
+  document.getElementById("rn").textContent=rDone+"/"+paperIds.length;
+  // gates
+  let gPassed=0;
+  gates.forEach(g=>{
+    const passed=isDone(g.phase);
+    if(passed) gPassed++;
+    const el=document.getElementById("gate-"+g.id);
+    if(el){ el.classList.toggle("passed",passed); el.setAttribute("aria-pressed",passed?"true":"false"); }
+  });
+  const gc=document.getElementById("gates-count");
+  if(gc) gc.textContent=gPassed+" / 4 passed";
+  updateStatus();
+}
+
+function updateStatus(){
+  const done=allIds.filter(isDone).length;
+  const s=document.getElementById("status");
+  if(done===0){ s.textContent = canPersist? "Nothing checked yet. Progress saves automatically." : "Nothing checked yet."; return; }
+  if(done===allIds.length){ s.innerHTML="<b>All 29 done. Go talk to Michael.</b>"; return; }
+  const p3 = isDone("P3");
+  s.textContent = p3 ? "Core validated. The headline result is in hand." : (done + " down. Phase P3 is the one that counts.");
+}
+
+/* ---------- tabs ---------- */
+function selectTab(which){
+  const proj=which==="project";
+  document.getElementById("tab-project").setAttribute("aria-selected",proj?"true":"false");
+  document.getElementById("tab-reading").setAttribute("aria-selected",proj?"false":"true");
+  document.getElementById("view-project").hidden=!proj;
+  document.getElementById("view-reading").hidden=proj;
+}
+document.getElementById("tab-project").addEventListener("click",()=>selectTab("project"));
+document.getElementById("tab-reading").addEventListener("click",()=>selectTab("reading"));
+
+/* ---------- reset ---------- */
+document.getElementById("reset").addEventListener("click",()=>{
+  if(confirm("Clear all progress? This can't be undone.")){
+    state={}; render(); saveState();
+  }
+});
+
+/* ---------- export / import backup ---------- */
+document.getElementById("export").addEventListener("click",()=>{
+  const payload = JSON.stringify(
+    {app:"retinode-tracker", version:1, saved:new Date().toISOString(), progress:state},
+    null, 2
+  );
+  const blob = new Blob([payload], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "retinode-progress.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+document.getElementById("import").addEventListener("click",()=>document.getElementById("import-file").click());
+document.getElementById("import-file").addEventListener("change",(e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const parsed = JSON.parse(r.result);
+      const prog = parsed && parsed.progress ? parsed.progress : parsed;
+      if(prog && typeof prog === "object"){ state = prog; render(); saveState(); }
+      else throw new Error("bad shape");
+    }catch(err){ alert("That file didn't look like a saved progress backup."); }
+    e.target.value = "";
+  };
+  r.readAsText(f);
+});
+
+/* ---------- init ---------- */
+(function init(){
+  buildArray(); buildMilestones(); buildWeeks(); buildGates(); wireElectrodes();
+  document.getElementById("persist-note").textContent = canPersist
+    ? "Saves to this browser automatically"
+    : "Won't persist in this preview — download and open in your browser";
+  loadState();
+  render();
+})();
+</script>
+</body>
+</html>

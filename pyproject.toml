@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "retinode"
+version = "0.0.1"
+description = "An epiretinal electrode-geometry selectivity testbed"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "hkim113005" }]
+dependencies = [
+    "numpy",
+    "scipy",
+]
+
+[project.optional-dependencies]
+# Field solvers, cable models, and the app carry heavy/optional deps
+# (NEURON, FEniCSx, NGSolve, gmsh, Dash/Plotly). Kept out of the core so the
+# pure engine stays importable from a notebook or the test suite.
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+]
+api = [
+    "fastapi",
+    "uvicorn[standard]",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["engine", "api"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+ignore_missing_imports = true

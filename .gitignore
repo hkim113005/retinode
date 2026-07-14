@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Testing / coverage
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Retinode project data (generated; not source)
+# Project stores hold caches, results, and provenance — regenerable artifacts.
+*.retinode/cache/
+*.retinode/results/
+project.retinode/cache/
+project.retinode/results/
+
+# Simulation / solver artifacts
+*.hdf5
+*.h5
+*.parquet
+*.msh          # gmsh meshes
+*.xdmf
+*.bp/          # ADIOS/DOLFINx output
+x86_64/        # NEURON compiled mechanisms (nrnivmodl output)
+*.o
+*.c            # NEURON-generated C from .mod files
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Secrets / local config
+.env
+.env.local
+*.local
+
+# Claude Code local settings (per-user, not shared)
+.claude/settings.local.json
