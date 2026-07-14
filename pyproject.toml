@@ -44,6 +44,8 @@ api = [
 ]
 dev = [
     "pytest",
+    "hypothesis",     # property-based tests (physics invariants, canonicalization)
+    "pytest-cov",
     "ruff",
     "mypy",
 ]
@@ -60,6 +62,12 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: long-running (NEURON threshold searches, FEM solves); excluded from the fast suite",
+    "neuron: requires the NEURON cable engine (install the 'cable' extra)",
+    "fem: requires a FEM backend (install the 'fem' extra)",
+]
 
 [tool.mypy]
 python_version = "3.12"

@@ -28,7 +28,9 @@ class Sweep:
             values: tuple[float, ...] = (float(start),)
         else:
             step = (stop - start) / (num - 1)
-            values = tuple(start + i * step for i in range(num))
+            # Pin the final value to `stop` exactly so a sweep always includes
+            # its endpoint despite floating-point accumulation in the steps.
+            values = tuple(start + i * step for i in range(num - 1)) + (float(stop),)
         return cls(path=path, values=values)
 
 
