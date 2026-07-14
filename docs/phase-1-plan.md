@@ -99,3 +99,24 @@ stand, so even a partial NEURON layer yields a usable score.
 - **Sign chain (T8):** verify cathodic → `e_extracellular` → depolarization.
 - **NEURON global state:** threshold runs are process-level; parallelism is a
   Phase-5 concern.
+
+---
+
+## S2 — single-cell model: research-current scope (approved)
+
+Verified against the current literature (2023 review + 2025–26 work).
+
+| Aspect | Decision | Basis |
+|---|---|---|
+| Channels | FM structure, **FM-2010 mammalian** (rat/cat) densities + Q10s | 2023 review; still the standard in 2025–26 |
+| Vendoring | ModelDB #3673 `spike.mod`/`capump.mod` with attribution | reuse-with-citation |
+| NEURON 9 | compiles as-is on 9.0.1 (no C++ adaptation needed) — **confirmed in S2a** | MOD→C++ migration risk retired |
+| Morphology | **full dendritic arbor**, **cat/rat reconstructed SWC** via Import3D | review: reduced models underestimate thresholds; primate reconstructions scarce and channels are rat/cat |
+| Species | mammalian single cell; primate-specificity at the array/patch level | matches field + Lotlikar 2026 (macaque 512-array) |
+| Temperature | **37 °C** + FM-2010 Q10s (applied at insertion, S2c) | review best practice |
+| Activating function | **axon-of-passage diagnostic only**, never a whole-cell threshold surrogate | review: whole-cell AF R²=0.04 |
+| Integrator | fixed `dt=0.025 ms`, CVODE off | deterministic; the FM mod is CVODE-incompatible |
+
+**Build sub-steps:** S2a vendor+compile harness (done) · S2b cat/rat SWC morphology · S2c FM-2010 channel insertion + 37 °C/Q10 · S2d spike sanity (Wk-3 gate).
+
+Key sources: [2023 review](https://pmc.ncbi.nlm.nih.gov/articles/PMC10010067/); Fohlmeister–Miller [ModelDB #3673](https://modeldb.science/3673); [FM-2010 mammalian](https://pmc.ncbi.nlm.nih.gov/articles/PMC2887638/); [Lotlikar et al. 2026](https://arxiv.org/abs/2607.04063).

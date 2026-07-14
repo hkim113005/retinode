@@ -17,8 +17,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      # The fast suite needs only the core + dev deps. Slow NEURON/FEM tests
-      # (markers: slow, neuron, fem) get their own job when those layers land.
+      # The fast suite needs only the core + dev deps. NEURON tests run in the
+      # separate test-neuron job below; FEM tests join later.
       - name: Sync (core + dev)
         run: uv sync --extra dev
 
@@ -29,4 +29,24 @@ jobs:
         run: uv run mypy engine
 
       - name: Test (fast suite)
-        run: uv run pytest -m "not slow"
+        run: uv run pytest -m "not slow and not neuron"
+
+  test-neuron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync (cable + dev)
+        run: uv sync --extra cable --extra dev
+
+      - name: Compile NEURON mechanisms
+        run: cd engine/cable/mechanisms && uv run nrnivmodl .
+
+      - name: NEURON tests
+        run: uv run pytest -m neuron

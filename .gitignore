@@ -47,6 +47,8 @@ project.retinode/results/
 *.xdmf
 *.bp/          # ADIOS/DOLFINx output
 x86_64/        # NEURON compiled mechanisms (nrnivmodl output)
+arm64/         # NEURON compiled mechanisms (Apple Silicon)
+aarch64/       # NEURON compiled mechanisms (ARM Linux)
 *.o
 *.c            # NEURON-generated C from .mod files
 
