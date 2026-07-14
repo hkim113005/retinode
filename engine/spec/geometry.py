@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Literal
 
@@ -40,3 +41,16 @@ class ElectrodeArray:
             if e.id == electrode_id:
                 return e
         raise KeyError(electrode_id)
+
+
+def radius_um(electrode: Electrode) -> float:
+    """Effective radius in microns: half the size for disk/square/hex; for a
+    polygon, the max distance from center to a boundary vertex (0 if none).
+
+    Shared by overlap validation and the analytical field's near-field
+    regularization so the two cannot disagree about an electrode's extent."""
+    if electrode.shape == "poly":
+        if not electrode.boundary_um:
+            return 0.0
+        return max(math.dist(electrode.pos_um, b) for b in electrode.boundary_um)
+    return electrode.size_um / 2.0

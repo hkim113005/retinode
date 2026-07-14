@@ -16,7 +16,7 @@ from typing import Literal
 
 from .conductivity import HomogeneousConductivity, LayeredConductivity
 from .conventions import CHARGE_BALANCE_ATOL, GEOMETRY_OVERLAP_ATOL_UM
-from .geometry import Electrode, ElectrodeArray
+from .geometry import Electrode, ElectrodeArray, radius_um
 from .patch import RetinalPatch
 from .stim import StimConfig, Waveform
 from .study import StudyDefinition, Sweep
@@ -42,12 +42,6 @@ def has_errors(problems: list[Problem]) -> bool:
 
 
 # --- helpers ---------------------------------------------------------------
-
-
-def _radius_um(e: Electrode) -> float:
-    if e.shape == "poly" and e.boundary_um:
-        return max(math.dist(e.pos_um, b) for b in e.boundary_um)
-    return e.size_um / 2.0
 
 
 def _electrode_problems(e: Electrode, where: str) -> list[Problem]:
@@ -107,9 +101,7 @@ def _validate_array(array: ElectrodeArray) -> list[Problem]:
     els = array.electrodes
     for i in range(len(els)):
         for j in range(i + 1, len(els)):
-            gap = math.dist(els[i].pos_um, els[j].pos_um) - (
-                _radius_um(els[i]) + _radius_um(els[j])
-            )
+            gap = math.dist(els[i].pos_um, els[j].pos_um) - (radius_um(els[i]) + radius_um(els[j]))
             if gap < -GEOMETRY_OVERLAP_ATOL_UM:
                 problems.append(
                     Problem(
