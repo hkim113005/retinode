@@ -27,7 +27,7 @@ def test_channels_inserted_in_every_region(active_rgc):
 def test_sodium_band_is_elevated(active_rgc):
     # The AIS/sodium-channel band has the highest gNa; dendrites the lowest.
     assert _gna(active_rgc, "ais") > _gna(active_rgc, "soma") > _gna(active_rgc, "dendrite")
-    assert _gna(active_rgc, "ais") == pytest.approx(0.350)
+    assert _gna(active_rgc, "ais") == pytest.approx(1.40)
 
 
 def test_temperature_and_reversals(active_rgc):

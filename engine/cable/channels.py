@@ -18,15 +18,22 @@ from .morphology import RGCModel
 
 @dataclass(frozen=True)
 class ChannelDensities:
-    """Maximal conductances (S/cm^2 == mho/cm^2). gNa is region-specific."""
+    """Maximal conductances (S/cm^2 == mho/cm^2). gNa is region-specific.
 
-    gna_soma: float = 0.070
-    gna_hillock: float = 0.100
-    gna_ais: float = 0.350  # elevated sodium-channel band — spike initiation
-    gna_axon: float = 0.070
-    gna_dendrite: float = 0.010  # low
-    gk: float = 0.012  # delayed rectifier
-    ga: float = 0.036  # A-type K
+    These are mammalian (37 C) densities — ~4x the salamander FM defaults. At body
+    temperature the faster kinetics shorten the Na open-window, so more channels
+    are needed to reach threshold and to repolarize for repetitive firing (the
+    FM-2010 mammalian regime; warm neurons carry more channels). Nominal starting
+    values — calibrated against Greenberg 1999 / Tsai 2012 in S5.
+    """
+
+    gna_soma: float = 0.28
+    gna_hillock: float = 0.40
+    gna_ais: float = 1.40  # elevated sodium-channel band — spike initiation
+    gna_axon: float = 0.28
+    gna_dendrite: float = 0.04  # low
+    gk: float = 0.048  # delayed rectifier
+    ga: float = 0.144  # A-type K
     gca: float = 0.0015  # Ca
     gkc: float = 0.00005  # Ca-activated K
 

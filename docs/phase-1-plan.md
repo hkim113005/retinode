@@ -117,6 +117,6 @@ Verified against the current literature (2023 review + 2025–26 work).
 | Activating function | **axon-of-passage diagnostic only**, never a whole-cell threshold surrogate | review: whole-cell AF R²=0.04 |
 | Integrator | fixed `dt=0.025 ms`, CVODE off | deterministic; the FM mod is CVODE-incompatible |
 
-**Build sub-steps:** S2a vendor+compile harness (done) · S2b SWC morphology — mouse RGC arbor + appended AIS/axon (done) · S2c FM channel insertion, per-region densities, 37 °C + q10 (done) · S2d spike sanity (Wk-3 gate).
+**Build sub-steps:** S2a vendor+compile harness (done) · S2b SWC morphology — mouse RGC arbor + appended AIS/axon (done) · S2c FM channel insertion, per-region densities, 37 °C + q10 (done) · S2d spike sanity — silent below / AP above rheobase, repetitive firing, temperature effect (done). **S2 complete**; extracellular field drive is S3.
 
 Key sources: [2023 review](https://pmc.ncbi.nlm.nih.gov/articles/PMC10010067/); Fohlmeister–Miller [ModelDB #3673](https://modeldb.science/3673); [FM-2010 mammalian](https://pmc.ncbi.nlm.nih.gov/articles/PMC2887638/); [Lotlikar et al. 2026](https://arxiv.org/abs/2607.04063).
