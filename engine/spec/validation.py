@@ -10,6 +10,7 @@ UI, and tests all surface identical errors. An empty list means valid.
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import singledispatch
 from typing import Literal
@@ -44,8 +45,20 @@ def has_errors(problems: list[Problem]) -> bool:
 # --- helpers ---------------------------------------------------------------
 
 
+def _all_finite(values: Iterable[float]) -> bool:
+    return all(math.isfinite(v) for v in values)
+
+
 def _electrode_problems(e: Electrode, where: str) -> list[Problem]:
     problems: list[Problem] = []
+    if not _all_finite((e.size_um, *e.pos_um)):
+        problems.append(
+            Problem(
+                "non-finite-value",
+                f"electrode {e.id!r} has a non-finite position or size",
+                where=where,
+            )
+        )
     if e.size_um < 0:
         problems.append(
             Problem("negative-electrode-size", f"electrode {e.id!r} has negative size", where=where)
@@ -116,6 +129,10 @@ def _validate_array(array: ElectrodeArray) -> list[Problem]:
 @validate.register(Waveform)
 def _validate_waveform(wf: Waveform) -> list[Problem]:
     problems: list[Problem] = []
+    if not _all_finite((wf.phase_width_us, wf.interphase_gap_us, wf.amplitude_scale_uA)):
+        problems.append(
+            Problem("non-finite-value", "waveform has a non-finite value", where="waveform")
+        )
     if wf.phase_width_us <= 0:
         problems.append(
             Problem("waveform-nonpositive-phase", "phase_width_us must be > 0", where="waveform")
@@ -152,7 +169,10 @@ def _validate_stimconfig(cfg: StimConfig) -> list[Problem]:
                 where="weights",
             )
         )
-    if cfg.weights and not cfg.distant_return:
+    weights_finite = _all_finite([w for _, w in cfg.weights])
+    if not weights_finite:
+        problems.append(Problem("non-finite-value", "a weight is not finite", where="weights"))
+    if cfg.weights and not cfg.distant_return and weights_finite:
         total = math.fsum(w for _, w in cfg.weights)
         if abs(total) > CHARGE_BALANCE_ATOL:
             problems.append(
@@ -167,6 +187,8 @@ def _validate_stimconfig(cfg: StimConfig) -> list[Problem]:
 
 @validate.register(HomogeneousConductivity)
 def _validate_homogeneous(c: HomogeneousConductivity) -> list[Problem]:
+    if not math.isfinite(c.sigma_S_per_m):
+        return [Problem("non-finite-value", "sigma_S_per_m is not finite")]
     if c.sigma_S_per_m <= 0:
         return [Problem("nonpositive-conductivity", "sigma_S_per_m must be > 0")]
     return []
@@ -179,6 +201,10 @@ def _validate_layered(c: LayeredConductivity) -> list[Problem]:
     problems: list[Problem] = []
     for i, layer in enumerate(c.layers):
         where = f"layers[{i}]"
+        if not _all_finite([layer.sigma_S_per_m, layer.thickness_um, *(layer.anisotropy or ())]):
+            problems.append(
+                Problem("non-finite-value", "layer has a non-finite value", where=where)
+            )
         if layer.sigma_S_per_m <= 0:
             problems.append(
                 Problem("nonpositive-conductivity", "layer sigma_S_per_m must be > 0", where=where)
