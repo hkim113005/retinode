@@ -54,9 +54,12 @@ engine/eval/
   cathodic-over-soma depolarizes (and fires); anodic hyperpolarizes. (Note: a
   biphasic pulse's reversed 2nd phase can itself excite, so the sign check uses
   the subthreshold membrane deflection, and a `monophasic` option isolates it.)
-- **S4 — Threshold search.** Geometric ladder → bracket → bisect → verify above
-  (detect upper-threshold/block). Returns the **lowest** activating amplitude +
-  bracket + tolerance + monotonicity flag. (Not naive bisection.)
+- **S4 — Threshold search (done).** Geometric ladder → bracket → bisect → scan
+  above (detect upper-threshold/block). Returns the **lowest** activating
+  amplitude + bracket + tolerance + block flag. Generic `find_threshold` (tested
+  on synthetic monotone/non-monotone curves, no NEURON) + `extracellular_threshold`
+  wrapper. Verified: closer electrode → lower threshold (12/26/55 µA at
+  25/40/60 µm). Not naive bisection.
 - **S5 — Single-cell threshold validation (Gate-1 checkpoint, Wk 4).**
   Greenberg-style threshold-vs-distance, soma-vs-axon, Na-band initiation;
   Tsai 2012 sanity. Stored as regression tests (target + tolerance + value).
