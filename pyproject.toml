@@ -7,7 +7,7 @@ name = "retinode"
 version = "0.0.1"
 description = "An epiretinal electrode-geometry selectivity testbed"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "hkim113005" }]
 dependencies = [
@@ -16,17 +16,36 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Field solvers, cable models, and the app carry heavy/optional deps
-# (NEURON, FEniCSx, NGSolve, gmsh, Dash/Plotly). Kept out of the core so the
-# pure engine stays importable from a notebook or the test suite.
-dev = [
-    "pytest",
-    "ruff",
-    "mypy",
+# The engine core is numpy/scipy only, so the pure library stays importable
+# from a notebook or the test suite. Everything heavy is an opt-in extra,
+# grouped by the phase/subsystem that needs it.
+#
+# NOTE: FEniCSx/DOLFINx is intentionally absent — it has no macOS pip wheel and
+# is installed via conda-forge on lab compute (Phase 5). NGSolve ships a
+# universal2 wheel, so the FEM cross-check backend *can* run locally.
+cable = [
+    "neuron",            # NEURON multi-compartment RGC population + threshold search
+]
+fem = [
+    "ngsolve",           # open-source FEM cross-check backend (pip; universal2)
+    "gmsh",              # shared mesh front-end for the FEM backends
+]
+app = [
+    "dash",              # Phase-2 dashboard
+    "plotly",            # field / activation / Pareto views
+]
+store = [
+    "h5py",              # HDF5 transfer-matrix (A) cache
+    "pyarrow",           # parquet result store
 ]
 api = [
     "fastapi",
     "uvicorn[standard]",
+]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -34,7 +53,7 @@ packages = ["engine", "api"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -43,6 +62,6 @@ select = ["E", "F", "I", "UP", "B"]
 testpaths = ["tests"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_unused_ignores = true
 ignore_missing_imports = true

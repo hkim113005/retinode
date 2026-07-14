@@ -16,7 +16,8 @@ dist/
 venv/
 env/
 ENV/
-.python-version
+# NOTE: .python-version is intentionally NOT ignored — uv uses it to pin the
+# project interpreter (3.12), and committing it keeps the env reproducible.
 
 # Testing / coverage
 .pytest_cache/
