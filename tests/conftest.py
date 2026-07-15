@@ -1,4 +1,4 @@
-"""Shared fixtures for cable tests: compile NEURON mechanisms, or skip."""
+"""Shared fixtures for NEURON-marked tests: compile mechanisms, or skip."""
 
 import importlib.util
 

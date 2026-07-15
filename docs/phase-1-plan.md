@@ -60,10 +60,17 @@ engine/eval/
   on synthetic monotone/non-monotone curves, no NEURON) + `extracellular_threshold`
   wrapper. Verified: closer electrode → lower threshold (12/26/55 µA at
   25/40/60 µm). Not naive bisection.
-- **S5 — Single-cell threshold validation (Gate-1 checkpoint, Wk 4).**
-  Greenberg-style threshold-vs-distance, soma-vs-axon, Na-band initiation;
-  Tsai 2012 sanity. Stored as regression tests (target + tolerance + value).
-  *Caveat: model-to-model agreement; real validation is Phase 3.*
+- **S5 — Single-cell threshold validation (Wk-4 checkpoint) — done.** Five
+  density-robust reproductions, each a `Reproduction` record, all passing:
+  R1 threshold↑ with distance (12/26/55 µA at 25/40/60 µm); R2 axon-of-passage
+  excitability (axon 14 µA < soma 26 µA); R3 spike initiates at the AIS near
+  threshold; R4 strength-duration falls with pulse width (82/45/26/16 µA at
+  50/100/200/400 µs); R5 thresholds in physiological range (~26 µA).
+  **Finding:** R2 diverges from Greenberg 1999's *original* soma<axon claim —
+  our model (proper Na band, excitable thin axon) makes the axon the
+  low-threshold off-target, which is the *modern* understanding and the
+  axon-avoidance premise (Vilkhu 2021). Absolute-value matching deferred to the
+  Phase-3 ex-vivo primate reproductions.
 - **S6 — Population, multi-site, trajectories, AF.** Multi-site detection with
   initiation-site attribution (dV/dt + amplitude, first-crosser); threshold
   averaged over a **distribution of axon trajectories** with reported spread.
