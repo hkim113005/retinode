@@ -85,10 +85,18 @@ engine/eval/
   per-cell error bar); `activating_function_along_axon` wires the Rattay AF as
   the geometry-level fire predictor. Small-K here; full trajectory×population
   sweeps are deferred to Phase 5.
-- **S7 — Fixed evaluator → SOW (Gate 1, Wk 5).** Scores any spec; pins
-  `evaluator_version`; refuses mismatched off-target sets. Uses the Phase-0 key:
-  `result_key = combine(field_key, spec_hash(config), spec_hash(patch),
-  evaluator_version, spec_hash(offtarget))`.
+- **S7 — Fixed evaluator → SOW (Gate 1, Wk 5) — done.** `evaluate` is the one
+  fixed scorer: per-cell thresholds (cable) → selective window → intersect with
+  the charge-safety **ceiling** (Shannon/material inverted to a max-safe
+  amplitude) → a **safe-and-selective operating window** `[target, min(off_min,
+  ceiling))` that names its binding factor (off-target vs safety). Pinned by
+  `EVALUATOR_VERSION`; `require_same_offtarget` refuses to compare scores across
+  differing off-target sets. Provenance via the Phase-0 key `result_key =
+  combine(field_key, spec_hash(config), spec_hash(patch), EVALUATOR_VERSION,
+  spec_hash(offtarget))` (`engine/store/keys.py`). Threshold computation is
+  injected (`thresholds_provider`) so the scoring logic is fully fast-tested
+  without NEURON; one neuron end-to-end run confirms the pipeline (target 8.5 µA,
+  off-target 10.7 µA → usable window 8.5–10.7 µA, ratio 1.25).
 
 ## Testing strategy
 
