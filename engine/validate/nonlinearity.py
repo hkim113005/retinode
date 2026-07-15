@@ -25,33 +25,35 @@ _WAVE = spec.Waveform(phase_width_us=200.0)
 _SPACING_UM = 18.0  # two electrodes straddling the soma, close enough to summate
 
 
-def _array() -> spec.ElectrodeArray:
+def _array(spacing_um: float = _SPACING_UM) -> spec.ElectrodeArray:
     return spec.ElectrodeArray(
         electrodes=(
-            spec.Electrode(id="A", pos_um=(-_SPACING_UM, 0.0, 0.0), shape="disk", size_um=10.0),
-            spec.Electrode(id="B", pos_um=(_SPACING_UM, 0.0, 0.0), shape="disk", size_um=10.0),
+            spec.Electrode(id="A", pos_um=(-spacing_um, 0.0, 0.0), shape="disk", size_um=10.0),
+            spec.Electrode(id="B", pos_um=(spacing_um, 0.0, 0.0), shape="disk", size_um=10.0),
         )
     )
 
 
-def _threshold(cell: RGCModel, weights: dict[str, float]) -> float | None:
+def _threshold(cell: RGCModel, weights: dict[str, float], spacing_um: float) -> float | None:
     from engine.cable.multisite import multisite_threshold
 
     config = spec.StimConfig.from_map(weights, waveform=_WAVE, distant_return=True)
     return multisite_threshold(
-        cell, _array(), config, COND, amp_min=2.0, amp_max=400.0
+        cell, _array(spacing_um), config, COND, amp_min=2.0, amp_max=400.0
     ).threshold_uA
 
 
-def subthreshold_electrodes_summate(cell: RGCModel) -> Reproduction:
+def subthreshold_electrodes_summate(
+    cell: RGCModel, spacing_um: float = _SPACING_UM
+) -> Reproduction:
     """Paired-electrode threshold vs each single-electrode threshold (NEURON).
 
     ``cell`` is an active RGC at the origin with its axon perpendicular to the
     electrode axis, so the two electrodes contribute symmetrically to the AIS.
     """
-    t_a = _threshold(cell, {"A": -1.0})
-    t_b = _threshold(cell, {"B": -1.0})
-    t_ab = _threshold(cell, {"A": -1.0, "B": -1.0})
+    t_a = _threshold(cell, {"A": -1.0}, spacing_um)
+    t_b = _threshold(cell, {"B": -1.0}, spacing_um)
+    t_ab = _threshold(cell, {"A": -1.0, "B": -1.0}, spacing_um)
 
     if t_a is None or t_b is None or t_ab is None:
         return Reproduction(

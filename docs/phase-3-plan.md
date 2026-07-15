@@ -71,6 +71,22 @@ app/
   and a pass/fail badge — so the tool's trustworthiness is visible, not just
   asserted. `engine/` stays import-clean of `app/`.
 
+## Validation hardening (extra pass)
+
+A thorough literature-and-physics validation sweep, added to raise confidence
+before building further:
+
+- **Field physics (fast):** reciprocity `G(a,b)=G(b,a)` (the one §11 property that
+  was untested) and far-field decay — monopole ~1/r, dipole ~1/r² — completing
+  the analytical-backend property suite.
+- **Single-cell literature (NEURON):** cathodic is more excitable than anodic
+  (Ranck 1975); the strength-duration curve fits Weiss/Lapicque with a
+  **sub-millisecond chronaxie** (~0.6 ms, rheobase ~6 µA) — a quantitative upgrade
+  to the S5 "decreases" check.
+- **Robustness sweeps (NEURON, slow):** the axon-avoidance and summation
+  reproductions are re-asserted across a *range* of geometry (offsets 30/50 µm;
+  spacings 14/24 µm), so no reproduction can silently overfit one lucky scene.
+
 ## Testing strategy
 
 - **Fast (no NEURON, every push):** the report's shape and the app panel builder

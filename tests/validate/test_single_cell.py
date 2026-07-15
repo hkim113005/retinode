@@ -42,3 +42,14 @@ def test_strength_duration_decreases(cell):
 def test_thresholds_in_physiological_range(cell):
     r = single_cell.thresholds_in_physiological_range(cell)
     assert r.passed, r.measured
+
+
+def test_cathodic_is_more_excitable_than_anodic(cell):
+    r = single_cell.cathodic_is_more_excitable_than_anodic(cell)
+    assert r.passed, r.measured
+
+
+@pytest.mark.slow
+def test_strength_duration_chronaxie(cell):
+    r = single_cell.strength_duration_chronaxie(cell)
+    assert r.passed, r.measured

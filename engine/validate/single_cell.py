@@ -8,6 +8,8 @@ here: we need trends, not high precision, and CI runtime is bounded.
 
 from __future__ import annotations
 
+import numpy as np
+
 from engine import spec
 from engine.cable.initiation import initiation_site
 from engine.cable.morphology import RGCModel
@@ -138,6 +140,61 @@ def thresholds_in_physiological_range(cell: RGCModel) -> Reproduction:
     )
 
 
+def _ms_threshold(cell: RGCModel, weight: float = -1.0, pw: float = 200.0) -> float | None:
+    """Multi-site (any-compartment) threshold for one disk over the soma, monophasic."""
+    from engine.cable.multisite import multisite_threshold
+
+    cx, cy, cz = cell._soma_center_um()
+    array = spec.ElectrodeArray(
+        electrodes=(spec.Electrode(id="e", pos_um=(cx, cy, cz + 40.0), shape="disk", size_um=10.0),)
+    )
+    config = spec.StimConfig.from_map(
+        {"e": weight}, waveform=spec.Waveform(phase_width_us=pw), distant_return=True
+    )
+    return multisite_threshold(cell, array, config, COND, amp_min=2.0, amp_max=500.0).threshold_uA
+
+
+def cathodic_is_more_excitable_than_anodic(cell: RGCModel) -> Reproduction:
+    """Cathodic (surface) stimulation fires the cell at a lower threshold than anodic."""
+    t_cath = _ms_threshold(cell, weight=-1.0)
+    t_anod = _ms_threshold(cell, weight=1.0)
+    passed = t_cath is not None and (t_anod is None or t_cath < t_anod)
+    return Reproduction(
+        name="cathodic is more excitable than anodic",
+        source="Ranck 1975",
+        passed=passed,
+        measured=f"cathodic {_fmt(t_cath)} µA vs anodic {_fmt(t_anod)} µA",
+        criterion="cathodic (surface) threshold below anodic",
+    )
+
+
+def strength_duration_chronaxie(cell: RGCModel) -> Reproduction:
+    """Fit the Weiss/Lapicque strength-duration curve; chronaxie is sub-millisecond."""
+    pws = (50.0, 100.0, 200.0, 400.0, 800.0)
+    ths = [_ms_threshold(cell, pw=pw) for pw in pws]
+    if any(t is None for t in ths):
+        return Reproduction(
+            name="strength-duration chronaxie is sub-millisecond",
+            source="Weiss/Lapicque",
+            passed=False,
+            measured="a threshold was not found in range",
+            criterion="chronaxie in 0.05-1.0 ms",
+        )
+    # Weiss/Lapicque: I_th = I_rh (1 + t_ch/PW), so I_th vs 1/PW is a line whose
+    # slope/intercept is the chronaxie (rheobase = intercept).
+    x = np.array([1.0 / p for p in pws])
+    y = np.array(ths, dtype=float)
+    slope, intercept = np.polyfit(x, y, 1)
+    chronaxie_ms = (slope / intercept) / 1000.0  # µs -> ms
+    return Reproduction(
+        name="strength-duration chronaxie is sub-millisecond",
+        source="Weiss/Lapicque",
+        passed=bool(0.05 <= chronaxie_ms <= 1.0),
+        measured=f"rheobase {intercept:.1f} µA, chronaxie {chronaxie_ms:.2f} ms",
+        criterion="chronaxie in 0.05-1.0 ms (direct RGC activation, sub-millisecond)",
+    )
+
+
 def all_reproductions(cell: RGCModel) -> list[Reproduction]:
     return [
         threshold_rises_with_distance(cell),
@@ -145,4 +202,6 @@ def all_reproductions(cell: RGCModel) -> list[Reproduction]:
         spike_initiates_at_sodium_band(cell),
         strength_duration_decreases(cell),
         thresholds_in_physiological_range(cell),
+        cathodic_is_more_excitable_than_anodic(cell),
+        strength_duration_chronaxie(cell),
     ]

@@ -165,6 +165,47 @@ def test_current_vector_and_potential_end_to_end():
     assert ve[0] < 0.0
 
 
+# --- reciprocity and far-field decay ---------------------------------------
+
+
+def test_field_is_reciprocal():
+    """Green's-function reciprocity: Ve at B from a source at A equals the reverse.
+
+    A silent asymmetry here would corrupt every transfer matrix, so this is a
+    cheap guard on a deep physical invariant of the quasi-static field.
+    """
+    be = AnalyticalBackend()
+    pa, pb = (0.0, 0.0, -30.0), (60.0, 25.0, -30.0)
+    ve_ab = be.transfer_matrix(one_electrode(pa, 8.0), SIGMA, qp(pb)).item()
+    ve_ba = be.transfer_matrix(one_electrode(pb, 8.0), SIGMA, qp(pa)).item()
+    assert ve_ab == pytest.approx(ve_ba, rel=1e-9)
+
+
+def _decay_exponent(array, weights, r1=200.0, r2=400.0):
+    """Far-field decay exponent n where |Ve| ~ r^-n, from two distances along +x."""
+    be = AnalyticalBackend()
+    i = np.array([weights.get(e.id, 0.0) for e in array.electrodes])
+    v1 = abs((be.transfer_matrix(array, SIGMA, qp((r1, 0.0, -30.0))) @ i).item())
+    v2 = abs((be.transfer_matrix(array, SIGMA, qp((r2, 0.0, -30.0))) @ i).item())
+    return math.log(v1 / v2) / math.log(r2 / r1)
+
+
+def test_monopole_and_dipole_far_field_decay():
+    """A monopole's field falls as 1/r; a balanced dipole's falls as 1/r² (faster)."""
+    monopole = one_electrode((0.0, 0.0, 0.0), 6.0)
+    dipole = spec.ElectrodeArray(
+        electrodes=(
+            spec.Electrode(id="c", pos_um=(-8.0, 0.0, 0.0), shape="disk", size_um=6.0),
+            spec.Electrode(id="a", pos_um=(8.0, 0.0, 0.0), shape="disk", size_um=6.0),
+        )
+    )
+    n_monopole = _decay_exponent(monopole, {"e": -1.0})
+    n_dipole = _decay_exponent(dipole, {"c": -1.0, "a": 1.0})
+    assert n_monopole == pytest.approx(1.0, abs=0.1)  # ~ 1/r
+    assert n_dipole == pytest.approx(2.0, abs=0.2)  # ~ 1/r²
+    assert n_dipole > n_monopole + 0.5  # the dipole decays strictly faster
+
+
 # --- property-based: the free-space formula holds for all sigma, r ---------
 
 
