@@ -66,6 +66,28 @@ def test_trajectory_spread_over_perturbed_axons(neuron_h):
 
 
 @pytest.mark.neuron
+def test_spread_is_real_when_the_electrode_sits_over_the_axon(neuron_h):
+    # Over the AXON (not the soma), the ascending path matters: the on-axis
+    # nominal path runs straight under the electrode and is most excitable;
+    # swinging it off-axis raises threshold. So the spread must be non-zero —
+    # this is the guard that catches axon_direction silently ceasing to thread
+    # into the geometry (which would collapse every path to one threshold).
+    rgc = spec.RGC(id="t", cell_type="parasol_on", soma_um=(0.0, 0.0, -20.0))
+    array = spec.ElectrodeArray(
+        electrodes=(spec.Electrode(id="e", pos_um=(150.0, 0.0, 0.0), shape="disk", size_um=10.0),)
+    )
+    config = spec.StimConfig.from_map(
+        {"e": -1.0}, waveform=spec.Waveform(phase_width_us=200.0), distant_return=True
+    )
+    s = trajectory_spread(
+        rgc, array, config, COND, optic_disc=(2000.0, 0.0, -20.0), k=5, jitter_deg=30.0
+    )
+    assert s.n == 5
+    assert s.std_uA is not None and s.std_uA > 0.5  # a real spread, not numerical noise
+    assert min(s.thresholds_uA) < max(s.thresholds_uA)
+
+
+@pytest.mark.neuron
 def test_activating_function_peaks_positive_under_a_cathodic_electrode(neuron_h):
     from engine.cable.channels import build_active_rgc
     from engine.cable.drive import activating_function_along_axon
