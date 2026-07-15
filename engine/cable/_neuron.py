@@ -10,10 +10,36 @@ build step. See ``mechanisms/PROVENANCE.md`` for the model source and license.
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
 MECHANISMS_DIR = Path(__file__).resolve().parent / "mechanisms"
+
+# The macOS NEURON.pkg installer prepends this to PYTHONPATH, which shadows the
+# pip/conda NEURON in the active environment — often a build for a different
+# Python, giving a cryptic "No module named 'neuron.hoc'".
+_SHADOW_PATH_MARKER = "/Applications/NEURON"
+
+
+def _import_neuron() -> Any:
+    """Import NEURON, recovering if a broken installer copy shadows the real one."""
+    try:
+        import neuron
+
+        return neuron
+    except ImportError:
+        shadows = [p for p in sys.path if _SHADOW_PATH_MARKER in p]
+        if not shadows:
+            raise  # a genuine NEURON problem, not the installer-shadow one
+        # Drop the shadowing path + any half-initialized neuron modules, then retry
+        # so the environment's own NEURON wheel is used instead.
+        sys.path[:] = [p for p in sys.path if p not in shadows]
+        for mod in [m for m in sys.modules if m == "neuron" or m.startswith("neuron.")]:
+            del sys.modules[mod]
+        import neuron
+
+        return neuron
 
 # nrnivmodl output library, across platforms / NEURON versions.
 _LIB_NAMES = ("libnrnmech.dylib", "libnrnmech.so", ".libs/libnrnmech.so")
@@ -56,7 +82,7 @@ def load() -> Any:
     """Compile (if needed), load the mechanisms once, and return NEURON's ``h``."""
     global _loaded
     ensure_mechanisms_compiled()
-    import neuron
+    neuron = _import_neuron()
 
     if not _loaded:
         neuron.load_mechanisms(str(MECHANISMS_DIR))
