@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -26,7 +26,11 @@ from engine.spec.hashing import spec_hash
 from engine.spec.serialization import from_json, to_json
 
 from .fields import FieldCache
+from .provenance import ProvenanceLog, RunRecord, make_run_record
 from .results import ResultStore
+
+if TYPE_CHECKING:
+    from engine.eval.result import EvaluationResult
 
 PROJECT_SCHEMA_VERSION = 1
 
@@ -40,6 +44,7 @@ class Project:
         self.specs_dir.mkdir(parents=True, exist_ok=True)
         self.fields = FieldCache(self.root / "cache" / "fields")
         self.results = ResultStore(self.root / "results")
+        self.provenance = ProvenanceLog(self.root / "provenance.log")
         self._init_manifest()
 
     @classmethod
@@ -108,6 +113,42 @@ class Project:
 
     def has_result(self, result_key: str) -> bool:
         return result_key in self.results
+
+    # --- a full run: result + spec values + provenance ---------------------
+
+    def record_run(
+        self,
+        result: EvaluationResult,
+        *,
+        array: Any,
+        config: Any,
+        patch: Any,
+        off_target_set: Any,
+        conductivity: Any,
+        backend_name: str = "analytical",
+        seeds: dict[str, Any] | None = None,
+    ) -> RunRecord:
+        """Persist an evaluation completely: the result, the spec *values* behind
+        its hashes, and an append-only provenance record that replays its keys.
+
+        This is the one call a sweep makes per evaluation, so every stored result
+        has a matching provenance entry. The off-target set is captured inside the
+        record (it is not a registry spec type); the other specs go to ``specs/``.
+        """
+        self.put_result(result)
+        for obj in (array, config, patch, conductivity):
+            self.put_spec(obj)
+        record = make_run_record(
+            result,
+            array=array,
+            conductivity=conductivity,
+            off_target_set=off_target_set,
+            backend_name=backend_name,
+            seeds=seeds,
+        )
+        self.provenance.append(record)
+        self._touch()
+        return record
 
 
 def _now() -> str:

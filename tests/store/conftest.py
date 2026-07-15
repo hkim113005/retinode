@@ -4,7 +4,7 @@ import pytest
 
 from engine import spec
 from engine.cable.population import PopulationThresholds
-from engine.eval import evaluate
+from engine.eval import OffTargetSet, evaluate
 
 COND = spec.HomogeneousConductivity(sigma_S_per_m=1.0)
 ARR = spec.ElectrodeArray(
@@ -35,6 +35,18 @@ def _provider(target_uA, off):
 def result_windowed():
     """Activated, off-target-limited window (finite everywhere)."""
     return evaluate(PATCH, ARR, CFG, COND, thresholds_provider=_provider(8.0, {"n1": 12.0}))
+
+
+@pytest.fixture
+def windowed_context():
+    """The exact inputs behind result_windowed — for Project.record_run."""
+    return {
+        "array": ARR,
+        "config": CFG,
+        "patch": PATCH,
+        "off_target_set": OffTargetSet(),
+        "conductivity": COND,
+    }
 
 
 @pytest.fixture
