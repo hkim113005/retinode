@@ -71,9 +71,20 @@ engine/eval/
   low-threshold off-target, which is the *modern* understanding and the
   axon-avoidance premise (Vilkhu 2021). Absolute-value matching deferred to the
   Phase-3 ex-vivo primate reproductions.
-- **S6 — Population, multi-site, trajectories, AF.** Multi-site detection with
-  initiation-site attribution (dV/dt + amplitude, first-crosser); threshold
-  averaged over a **distribution of axon trajectories** with reported spread.
+- **S6 — Population, multi-site, trajectories, AF — done.** (a) Placement:
+  `place_cell` positions an RGC at its `soma_um` and orients the appended axon
+  toward the optic disc; `drive.py` refactored to `compute_ve` +
+  `apply_field_pulse` shared across single-site/initiation/multi-site. (b)
+  Multi-site: a NetCon on every segment, activated if *any* compartment fires,
+  initiation = earliest-crosser — verified to follow the electrode (soma→AIS,
+  distal→axon). (c) `population_thresholds`: target + off-targets, each an
+  independent multi-site search; half-space convention pinned (electrodes on the
+  z=0 boundary, tissue at z<0 — placing a cell at z>0 mirrors it onto an image
+  source and inflates the field ~10×). (d) `trajectory_spread`: multi-site
+  threshold over K deterministically-perturbed axon paths (mean/std/CV = the
+  per-cell error bar); `activating_function_along_axon` wires the Rattay AF as
+  the geometry-level fire predictor. Small-K here; full trajectory×population
+  sweeps are deferred to Phase 5.
 - **S7 — Fixed evaluator → SOW (Gate 1, Wk 5).** Scores any spec; pins
   `evaluator_version`; refuses mismatched off-target sets. Uses the Phase-0 key:
   `result_key = combine(field_key, spec_hash(config), spec_hash(patch),
