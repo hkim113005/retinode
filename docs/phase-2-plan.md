@@ -83,14 +83,17 @@ app/            Python dashboard (Dash/Plotly) over the engine         [P2b]
   `conductivity` → `specs/`), and the record — so every stored result has a
   matching provenance entry. The log is append-only (a re-run appends, never
   mutates); `provenance.py` stays import-light.
-- **P2 S4 — Configuration-sweep engine.** `sweep(array, patch, conductivity,
-  configs, *, store, off_target_set, backend)` evaluates each config (reusing
-  P2 S1, caching via P2 S2, logging via P2 S3, skipping cached `result_key`s) and
-  returns the collected `EvaluationResult`s plus a ranked shortlist over the
-  usable operating window (margin/ratio) and a Pareto helper (selectivity vs.
-  safety margin). Config generators: an explicit list plus steering-weight and
-  waveform-shape helpers. **Done when** a sweep produces a ranked shortlist
-  reusing `A` and skipping already-cached results.
+- **P2 S4 — Configuration-sweep engine — done.** `sweep(array, patch,
+  conductivity, configs, *, store, ...)` evaluates each config over a fixed array,
+  wiring the phase together: the population is placed and solved **once** (P2 S1)
+  and reused across every config; a store hit on `result_key` is served from disk
+  (P2 S2); a fresh eval records result + provenance (P2 S3). Solves are lazy (first
+  miss), so an all-cached re-run does no NEURON work. `rank_by_window` (usable
+  first, then margin, then selectivity) and `pareto_selectivity_safety`
+  (non-dominated: SOW ratio vs. safety headroom) build the shortlist;
+  `waveform_shape_sweep`/`steering_sweep` are the pure config generators.
+  **Verified (NEURON):** a 2-config sweep solves target+off-target's fields once
+  each (spy calls == 2), and a re-run serves both from the store with zero solves.
 - **P2 S5 — Cost estimate (minimal).** `estimate_sweep_cost(n_configs, n_cells,
   per_eval_s)` from a one-eval benchmark, surfaced before a sweep runs. The
   at-scale estimator (per-mesh FEM benchmark, realized-vs-estimated logging) is
