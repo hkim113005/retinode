@@ -50,17 +50,38 @@ rewrite.
 
 ## Status
 
-Early scaffolding. See the planning documents for the full design and phased
-build order:
+**Phase 1 complete** — the single-configuration evaluator runs end to end. Given
+an electrode array, a stimulus, and a patch of retinal ganglion cells, Retinode
+places biophysical (Fohlmeister–Miller) RGCs, drives them with the array's
+extracellular field through NEURON, finds each cell's activation threshold with
+multi-site detection (a spike at any compartment — so an axon of passage is a
+first-class off-target), and scores the result into a **safe-and-selective
+operating window** carrying the provenance key that identifies it.
 
-- [`docs/retinode-project-plan-revised.md`](docs/retinode-project-plan-revised.md) — current plan
+- [`docs/phase-1-plan.md`](docs/phase-1-plan.md) — the step-by-step build (S1–S7), decisions, and findings
+- [`docs/retinode-project-plan-revised.md`](docs/retinode-project-plan-revised.md) — full design and phased plan
 - [`docs/retinode-project-plan.md`](docs/retinode-project-plan.md) — earlier draft
+
+Next is Phase 2: the content-addressed store (seeded by `engine/store/keys.py`)
+and configuration sweeps over the fixed evaluator.
 
 ## Development
 
+Retinode uses [uv](https://docs.astral.sh/uv/) and Python 3.12.
+
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
-ruff check .
+# fast suite (no NEURON): arithmetic, evaluator logic, field, spec
+uv sync --extra dev
+uv run ruff check .
+uv run mypy engine
+uv run pytest -m "not slow and not neuron and not fem"
+
+# NEURON tests: install the cable engine and compile the FM mechanisms first
+uv sync --extra cable --extra dev
+(cd engine/cable/mechanisms && uv run nrnivmodl .)
+uv run pytest -m neuron
 ```
+
+Test markers: `neuron` (needs the compiled cable engine), `slow` (long
+NEURON/FEM runs), `fem` (needs a FEM backend). The fast suite excludes all three
+and runs on every push; both suites run in CI.
