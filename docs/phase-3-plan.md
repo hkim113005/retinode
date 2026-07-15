@@ -33,11 +33,17 @@ app/
 
 ## Ordered steps
 
-- **P3 S1 — Fan 2019: local-return selectivity gain.** Build a target +
-  off-target patch. Score a **monopolar** config (single electrode over the
-  target, distant return) and a **local-return** config (bipolar / return on the
-  array). **Reproduce:** the local-return SOW ratio exceeds the monopolar one —
-  local return concentrates current and improves selectivity. Store both ratios.
+- **P3 S1 — Fan 2019: local-return selectivity gain — done (with a finding).**
+  `local_return_sharpens_the_field` compares a monopolar config vs a local-return
+  ring on one target/off-target pair. **Reproduced at the field level:** local
+  return improves the soma-Ve selectivity `|Ve_target|/|Ve_off|` (3.2× → 16.9×,
+  robust across geometries) — Fan's mechanism. **Finding:** the full NEURON
+  *somatic threshold-ratio* gain does **not** reproduce in this reduced tier
+  (analytical + mouse RGC): activation is AIS/dendrite-dominated, so a tight
+  return ring penalises the centred target while a loose one fails to suppress the
+  off-target (off-target thresholds even come out non-monotonic with distance).
+  Recorded honestly with a `note`; magnitude/threshold validation deferred to
+  Phase 4 (FEM + primate morphology). Fast test (no NEURON).
 - **P3 S2 — Vilkhu 2021: bi-electrode axon avoidance.** Place a cell whose **axon
   of passage** runs under the array. A monopolar electrode over the axon fires it
   at a low threshold; a **bi-electrode** pattern that flattens the activating
