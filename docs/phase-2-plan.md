@@ -73,10 +73,16 @@ app/            Python dashboard (Dash/Plotly) over the engine         [P2b]
   extra. **Note:** `result_key` identifies inputs, not thresholds — two runs of
   one scene share a key and upsert to a single index row (the store deduping
   correctly).
-- **P2 S3 — Provenance.** Append-only `provenance.log`, one record per run: spec
-  hashes *and* values, software versions (NEURON, numpy, retinode), git commit,
-  seeds, timestamps. **Done when** every stored result has a matching provenance
-  record and the key it was computed under replays deterministically.
+- **P2 S3 — Provenance — done.** Append-only `provenance.log`, one JSON line per
+  run: the content hashes, the off-target set inline (not a registry spec type),
+  software versions (python/numpy/retinode, neuron if present), the retinode git
+  commit, seeds (empty until a stochastic layer), and a UTC timestamp. `RunRecord`
+  is self-checking — it carries the components of `field_key`/`result_key` and
+  replays both. `Project.record_run` is the one call per evaluation: it stores the
+  result, the spec *values* behind its hashes (`array`/`config`/`patch`/
+  `conductivity` → `specs/`), and the record — so every stored result has a
+  matching provenance entry. The log is append-only (a re-run appends, never
+  mutates); `provenance.py` stays import-light.
 - **P2 S4 — Configuration-sweep engine.** `sweep(array, patch, conductivity,
   configs, *, store, off_target_set, backend)` evaluates each config (reusing
   P2 S1, caching via P2 S2, logging via P2 S3, skipping cached `result_key`s) and
