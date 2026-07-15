@@ -61,12 +61,18 @@ app/            Python dashboard (Dash/Plotly) over the engine         [P2b]
   once, Ve bit-identical, threshold unchanged). Wall-clock is unchanged on the
   analytical tier (a solve is ~0.02 ms; NEURON dominates) — the win lands at the
   FEM tier and in sweeps.
-- **P2 S2 — The project store (on-disk, content-addressed).** The §10 layout:
-  `specs/` (hash-named canonical JSON), `cache/fields/` (`A` by `field_key`,
-  HDF5), `results/` (parquet scalars + JSON sidecars by `result_key`),
-  `project.json` manifest. A `Project` object: open/create, put/get result and
-  field, list/index, and cache-hit reuse (a present `result_key` skips the
-  solve). **Done when** results and fields round-trip and a re-put is a cache hit.
+- **P2 S2 — The project store (on-disk, content-addressed) — done.** `Project`
+  is the §10 workspace: `specs/` (hash-named canonical JSON), `cache/fields/`
+  (`A` by `field_key`, HDF5), `results/` (per-result JSON sidecar + `index.parquet`
+  by `result_key`), `project.json` manifest. put/get/has for results, fields, and
+  specs; a present `result_key` is the cache hit the sweep (P2 S4) uses to skip a
+  re-solve. The JSON sidecar is the round-trip source of truth (via a dedicated
+  inf-tolerant, dict/tuple-faithful `serialize` for the result tree); the parquet
+  index carries the flat scalar metrics for ranking. `engine.store` stays
+  import-light so `engine.eval → store.keys` never pulls the `h5py`/`pyarrow`
+  extra. **Note:** `result_key` identifies inputs, not thresholds — two runs of
+  one scene share a key and upsert to a single index row (the store deduping
+  correctly).
 - **P2 S3 — Provenance.** Append-only `provenance.log`, one record per run: spec
   hashes *and* values, software versions (NEURON, numpy, retinode), git commit,
   seeds, timestamps. **Done when** every stored result has a matching provenance
