@@ -53,12 +53,17 @@ app/
   — no AIS/dendrite confound (an axon of passage is far from its own soma), which
   is why this reproduces where the somatic Fan case did not. This is the engine's
   home turf (explicit axons + the activating function).
-- **P3 S3 — Vilkhu 2025: multi-electrode nonlinearity.** Two electrodes, each at
-  an amplitude that is **subthreshold alone**, jointly cross threshold — the
-  any-compartment summation no linear single-site proxy captures. **Reproduce:**
-  at an amplitude where each electrode alone does not fire the cell, both together
-  do (and the combined threshold falls below the linear-superposition
-  prediction). Store the single vs joint thresholds.
+- **P3 S3 — Vilkhu 2025: multi-electrode summation — done.** Two electrodes
+  straddling the soma (±18 µm), each depolarising the AIS. Each **alone needs
+  ~14 µA**, but **paired they fire at ~7 µA each — half** (`t_AB < min(t_A, t_B)`):
+  two individually-subthreshold electrodes jointly cross threshold. A model
+  treating the electrodes as independent (firing at the lower single threshold)
+  would miss it; the multi-compartment model captures it. `subthreshold_electrodes
+  _summate`, NEURON (~19 s). **Note on framing:** closely-spaced electrodes
+  summate near-linearly at a shared site (this case); widely-spaced ones activate
+  *different* sites and combine *sub*-additively — so the joint threshold depends
+  on arrangement, which a single-site proxy cannot capture. We reproduce the
+  headline effect (subthreshold pair → spike).
 - **P3 S4 — Validation screen (precomputed).** `report.py` runs S1–S3 (and the
   S5 single-cell set), producing a JSON report of `Reproduction` records;
   regenerated via a documented command and committed for the app to read. The app
