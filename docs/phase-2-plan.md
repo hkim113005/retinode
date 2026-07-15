@@ -94,10 +94,14 @@ app/            Python dashboard (Dash/Plotly) over the engine         [P2b]
   `waveform_shape_sweep`/`steering_sweep` are the pure config generators.
   **Verified (NEURON):** a 2-config sweep solves target+off-target's fields once
   each (spy calls == 2), and a re-run serves both from the store with zero solves.
-- **P2 S5 — Cost estimate (minimal).** `estimate_sweep_cost(n_configs, n_cells,
-  per_eval_s)` from a one-eval benchmark, surfaced before a sweep runs. The
-  at-scale estimator (per-mesh FEM benchmark, realized-vs-estimated logging) is
-  Phase 5.
+- **P2 S5 — Cost estimate (minimal) — done.** `estimate_sweep_cost(n_configs,
+  n_cells, per_threshold_s, *, per_solve_s, n_cached)` models the sweep the way it
+  spends time (fields solved once per cell, then a threshold search per cell per
+  un-cached config) — pure and fast-tested. `benchmark_cell` times one solve + one
+  threshold search on the target cell for the per-unit times;
+  `estimate_from_benchmark` extrapolates; `format_duration` renders it (`~1h 44m
+  30s to sweep 380 of 500 configs…`). A safety feature for the user's time; the
+  at-scale estimator is Phase 5.
 - **P2b — The minimal usable app.** A Python dashboard (Dash/Plotly, per §17)
   over the engine: Patch, Array, Tissue, Stimulus, and Results screens on the
   analytical tier, with the live-preview loop and the field, activation, and
