@@ -49,14 +49,18 @@ app/            Python dashboard (Dash/Plotly) over the engine         [P2b]
 
 ## Ordered steps
 
-- **P2 S1 — Solved-field reuse (the efficiency core).** Introduce `SolvedField`
-  (the transfer matrix `A` over a placed cell's segment coordinates, plus the
-  segment refs), computed once per (placed cell, array, conductivity, backend).
-  Thread it through `compute_ve` and the multi-site threshold search so a
-  fixed-patch config sweep computes each cell's `A` once and only redoes the
-  cheap `A @ current_vector` per config/amplitude. Extend `field_key` to include
-  the query points (D6). **Done when** a multi-config sweep builds each `A` once
-  (call-count spy) and the reused path is bit-identical to the recompute path.
+- **P2 S1 — Solved-field reuse (the efficiency core) — done.** `SolvedField`
+  holds a placed cell's transfer matrix `A` (over its segments) and turns each
+  config into a cheap `A @ current_vector`; `solve_field` builds it once per
+  (cell, array, conductivity, backend). `multisite_threshold` solves once and
+  reuses `A` across every amplitude, and accepts a pre-solved field so a caller
+  (the P2 S4 sweep) reuses it across configurations too. `compute_ve` delegates
+  to `solve_field`; `field_key` gained an optional query-points term (D6) with a
+  cross-machine-stable `query_points_digest`. Field solves collapse from
+  O(amplitudes × configs) to O(1) per cell (a 19-amplitude search now solves `A`
+  once, Ve bit-identical, threshold unchanged). Wall-clock is unchanged on the
+  analytical tier (a solve is ~0.02 ms; NEURON dominates) — the win lands at the
+  FEM tier and in sweeps.
 - **P2 S2 — The project store (on-disk, content-addressed).** The §10 layout:
   `specs/` (hash-named canonical JSON), `cache/fields/` (`A` by `field_key`,
   HDF5), `results/` (parquet scalars + JSON sidecars by `result_key`),
