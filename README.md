@@ -85,3 +85,14 @@ uv run pytest -m neuron
 Test markers: `neuron` (needs the compiled cable engine), `slow` (long
 NEURON/FEM runs), `fem` (needs a FEM backend). The fast suite excludes all three
 and runs on every push; both suites run in CI.
+
+### Dashboard
+
+A minimal Dash/Plotly dashboard drives the engine — design an array, stimulus,
+and patch, watch the live field preview, and evaluate the selective operating
+window without touching code:
+
+```bash
+uv sync --extra cable --extra app
+uv run python -m app        # http://127.0.0.1:8050
+```

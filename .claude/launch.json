@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "retinode-app",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "-m", "app"],
+      "port": 8050
+    }
+  ]
+}

@@ -102,12 +102,16 @@ app/            Python dashboard (Dash/Plotly) over the engine         [P2b]
   `estimate_from_benchmark` extrapolates; `format_duration` renders it (`~1h 44m
   30s to sweep 380 of 500 configs…`). A safety feature for the user's time; the
   at-scale estimator is Phase 5.
-- **P2b — The minimal usable app.** A Python dashboard (Dash/Plotly, per §17)
-  over the engine: Patch, Array, Tissue, Stimulus, and Results screens on the
-  analytical tier, with the live-preview loop and the field, activation, and
-  scorecard views, driving a sweep and reading its shortlist. `engine/` stays
-  import-clean of `app/` (§4). **Done when** a non-author can design an array,
-  set a configuration, and read a selectivity result without code.
+- **P2b — The minimal usable app — done.** A single-page Dash/Plotly dashboard
+  (`app/`) over the engine: a control rail (Array / Stimulus / Patch / Tissue), a
+  **live analytical field preview** (Ve heatmap with electrodes + cells, updates
+  instantly, no NEURON), and an **Evaluate** action that runs the real pipeline
+  into a scorecard — the safe-and-selective operating window with target
+  threshold, selectivity, and safety, badged usable/blocked. Pure `scene` (UI →
+  spec) and `views` (data contract + figure) are fast-tested; `engine/` stays
+  import-clean of `app/` (§4, verified). **Done:** design array → set config →
+  read a selectivity result, no code. Run with `uv run python -m app` (needs the
+  `app` + `cable` extras).
 
 ## Testing strategy
 

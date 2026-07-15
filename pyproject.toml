@@ -51,7 +51,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["engine", "api"]
+packages = ["engine", "api", "app"]
 
 [tool.ruff]
 line-length = 100
