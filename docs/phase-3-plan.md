@@ -44,12 +44,15 @@ app/
   off-target (off-target thresholds even come out non-monotonic with distance).
   Recorded honestly with a `note`; magnitude/threshold validation deferred to
   Phase 4 (FEM + primate morphology). Fast test (no NEURON).
-- **P3 S2 — Vilkhu 2021: bi-electrode axon avoidance.** Place a cell whose **axon
-  of passage** runs under the array. A monopolar electrode over the axon fires it
-  at a low threshold; a **bi-electrode** pattern that flattens the activating
-  function (∂²Ve/∂s²) along the axon **raises the axon threshold** (avoidance)
-  while still reaching the target soma. Uses `activating_function_along_axon` +
-  multi-site thresholds. Store the axon-threshold ratio and the AF flattening.
+- **P3 S2 — Vilkhu 2021: axon avoidance — done (clean reproduction).** A cell
+  whose **axon of passage** crosses offset under the array. A confined (local-
+  return ring) pattern collapses the activating function along the offset axon and
+  **raises its threshold from 17 µA (monopolar) to 373 µA — a 22× avoidance**. Two
+  checks: `confined_return_flattens_axon_af` (fast, analytical — peak AF ~1.5×
+  lower) and `confined_return_avoids_axon_of_passage` (NEURON threshold). Both pass
+  — no AIS/dendrite confound (an axon of passage is far from its own soma), which
+  is why this reproduces where the somatic Fan case did not. This is the engine's
+  home turf (explicit axons + the activating function).
 - **P3 S3 — Vilkhu 2025: multi-electrode nonlinearity.** Two electrodes, each at
   an amplitude that is **subthreshold alone**, jointly cross threshold — the
   any-compartment summation no linear single-site proxy captures. **Reproduce:**
