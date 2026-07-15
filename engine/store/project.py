@@ -104,11 +104,11 @@ class Project:
 
     # --- results -----------------------------------------------------------
 
-    def put_result(self, result: Any) -> None:
+    def put_result(self, result: EvaluationResult) -> None:
         self.results.put(result)
         self._touch()
 
-    def get_result(self, result_key: str) -> Any | None:
+    def get_result(self, result_key: str) -> EvaluationResult | None:
         return self.results.get(result_key)
 
     def has_result(self, result_key: str) -> bool:
