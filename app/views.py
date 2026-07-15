@@ -22,7 +22,7 @@ from .scene import cell_depth_um
 # A restrained palette shared by the figures (matches the CSS).
 _INK = "#1f2933"
 _MUTED = "#8a94a6"
-_ACCENT = "#2f6f6a"
+_ACCENT = "#0a84ff"
 _GRID_BG = "rgba(0,0,0,0)"
 
 

@@ -1,9 +1,10 @@
 """The Dash layout, callbacks, and app factory.
 
 One page: a control rail on the left, a live analytical field preview and a
-result scorecard on the right. Designing the array/stimulus/patch updates the
-field instantly (no NEURON); "Evaluate selectivity" runs the real pipeline and
-fills the scorecard.
+result scorecard on the right, and a strip of recent runs beneath them for
+comparison. Designing the array/stimulus/patch updates the field instantly (no
+NEURON); "Evaluate selectivity" runs the real pipeline, fills the scorecard, and
+adds the run to the strip. Clicking a past run restores its settings.
 """
 
 from __future__ import annotations
@@ -11,7 +12,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from dash import Dash, Input, Output, State, dcc, html
+from dash import ALL, Dash, Input, Output, State, ctx, dcc, html
+from dash.exceptions import PreventUpdate
 
 from engine.eval import evaluate
 
@@ -22,6 +24,8 @@ _LAYOUTS = [
     {"label": "Single disk", "value": "single"},
     {"label": "Bipolar pair", "value": "bipolar"},
 ]
+_MAX_HISTORY = 6
+_ACCENT = "#0a84ff"
 
 
 def _fmt_uA(x: float) -> str:
@@ -120,10 +124,49 @@ def _scorecard(data: dict[str, Any]) -> Any:
     )
 
 
+def _run_card(record: dict[str, Any], index: int, is_latest: bool) -> Any:
+    p, s = record["params"], record["score"]
+    lay = "Bipolar" if p["layout"] == "bipolar" else "Single"
+    if not s.get("activated"):
+        window, ratio, verdict = "no activation", "—", "blocked"
+    else:
+        window = f"{_fmt_uA(s['window_lo_uA'])}–{_fmt_uA(s['window_hi_uA'])} µA"
+        ratio = "∞× selectivity" if math.isinf(s["ratio"]) else f"{s['ratio']:.2f}× selectivity"
+        verdict = "usable" if s["usable"] else "blocked"
+    return html.Button(
+        id={"type": "run-card", "index": index},
+        n_clicks=0,
+        className=f"run-card {'latest' if is_latest else ''}",
+        children=[
+            html.Div(
+                className="run-card-head",
+                children=[
+                    html.Span(className=f"run-dot {verdict}"),
+                    html.Span("latest" if is_latest else f"#{index + 1}", className="run-tag"),
+                ],
+            ),
+            html.Div(window, className="run-window"),
+            html.Div(ratio, className="run-ratio"),
+            html.Div(f"{lay} · {p['phase_width']:g} µs", className="run-title"),
+            html.Div(
+                f"nbr {p['neighbor_um']:g} µm · Ø{p['electrode_um']:g} µm",
+                className="run-sub",
+            ),
+        ],
+    )
+
+
+def _runs_strip(history: list[dict[str, Any]] | None) -> Any:
+    if not history:
+        return html.Div("Evaluated runs line up here to compare.", className="runs-empty")
+    return [_run_card(rec, i, i == 0) for i, rec in enumerate(history)]
+
+
 def layout() -> html.Div:
     return html.Div(
         className="app",
         children=[
+            dcc.Store(id="history-store", data=[]),
             html.Header(
                 className="topbar",
                 children=[
@@ -139,35 +182,59 @@ def layout() -> html.Div:
                         className="stage",
                         children=[
                             html.Div(
-                                className="card view-card",
+                                className="stage-row",
                                 children=[
-                                    html.Div("Field preview", className="card-title"),
                                     html.Div(
-                                        "Extracellular potential at the cell plane — "
-                                        "the cathodic well (red) is where cells depolarise.",
-                                        className="card-hint",
+                                        className="card view-card",
+                                        children=[
+                                            html.Div("Field preview", className="card-title"),
+                                            html.Div(
+                                                "Extracellular potential at the cell plane — "
+                                                "the cathodic well (red) depolarises cells.",
+                                                className="card-hint",
+                                            ),
+                                            dcc.Graph(
+                                                id="field-graph",
+                                                config={
+                                                    "displayModeBar": False,
+                                                    "responsive": True,
+                                                },
+                                            ),
+                                        ],
                                     ),
-                                    dcc.Graph(
-                                        id="field-graph",
-                                        config={"displayModeBar": False, "responsive": True},
+                                    html.Div(
+                                        className="card result-card",
+                                        children=[
+                                            html.Div(
+                                                "Selective operating window", className="card-title"
+                                            ),
+                                            dcc.Loading(
+                                                html.Div(
+                                                    html.Div(
+                                                        "Set up a scene, then evaluate to find "
+                                                        "the safe-and-selective amplitude window.",
+                                                        className="scorecard-empty",
+                                                    ),
+                                                    id="scorecard-slot",
+                                                ),
+                                                type="dot",
+                                                color=_ACCENT,
+                                            ),
+                                        ],
                                     ),
                                 ],
                             ),
                             html.Div(
-                                className="card result-card",
+                                className="card runs-card",
                                 children=[
-                                    html.Div("Selective operating window", className="card-title"),
-                                    dcc.Loading(
-                                        html.Div(
-                                            html.Div(
-                                                "Set up a scene, then evaluate to find the "
-                                                "safe-and-selective amplitude window.",
-                                                className="scorecard-empty",
-                                            ),
-                                            id="scorecard-slot",
-                                        ),
-                                        type="dot",
-                                        color="#2f6f6a",
+                                    html.Div("Recent runs", className="card-title"),
+                                    html.Div(
+                                        "Evaluate a few scenes and compare — click one to restore "
+                                        "its settings.",
+                                        className="card-hint",
+                                    ),
+                                    html.Div(
+                                        _runs_strip(None), id="runs-strip", className="runs-strip"
                                     ),
                                 ],
                             ),
@@ -227,6 +294,7 @@ def register_callbacks(app: Dash) -> None:
 
     @app.callback(
         Output("scorecard-slot", "children"),
+        Output("history-store", "data"),
         Input("evaluate-btn", "n_clicks"),
         State("layout", "value"),
         State("electrode-um", "value"),
@@ -234,9 +302,20 @@ def register_callbacks(app: Dash) -> None:
         State("phase-width", "value"),
         State("neighbor-um", "value"),
         State("sigma", "value"),
+        State("history-store", "data"),
         prevent_initial_call=True,
     )
-    def _evaluate(_clicks, layout_value, electrode_um, pitch_um, phase_width, neighbor_um, sigma):
+    def _evaluate(
+        _clicks, layout_value, electrode_um, pitch_um, phase_width, neighbor_um, sigma, history
+    ):
+        params = {
+            "layout": layout_value,
+            "electrode_um": electrode_um,
+            "pitch_um": pitch_um,
+            "phase_width": phase_width,
+            "neighbor_um": neighbor_um,
+            "sigma": sigma,
+        }
         scene = build_scene(
             layout=layout_value,
             electrode_um=electrode_um,
@@ -246,7 +325,43 @@ def register_callbacks(app: Dash) -> None:
             sigma_S_per_m=sigma,
         )
         result = evaluate(scene.patch, scene.array, scene.config, scene.conductivity)
-        return _scorecard(scorecard_data(result))
+        score = scorecard_data(result)
+        history = ([{"params": params, "score": score}] + (history or []))[:_MAX_HISTORY]
+        return _scorecard(score), history
+
+    @app.callback(Output("runs-strip", "children"), Input("history-store", "data"))
+    def _render_runs(history):
+        return _runs_strip(history)
+
+    @app.callback(
+        Output("layout", "value"),
+        Output("electrode-um", "value"),
+        Output("pitch-um", "value"),
+        Output("phase-width", "value"),
+        Output("neighbor-um", "value"),
+        Output("sigma", "value"),
+        Input({"type": "run-card", "index": ALL}, "n_clicks"),
+        State("history-store", "data"),
+        prevent_initial_call=True,
+    )
+    def _restore(_clicks, history):
+        trig = ctx.triggered_id
+        if not isinstance(trig, dict) or not history:
+            raise PreventUpdate
+        if not ctx.triggered or not ctx.triggered[0].get("value"):
+            raise PreventUpdate  # a re-render, not an actual click
+        idx = trig.get("index")
+        if idx is None or idx >= len(history):
+            raise PreventUpdate
+        p = history[idx]["params"]
+        return (
+            p["layout"],
+            p["electrode_um"],
+            p["pitch_um"],
+            p["phase_width"],
+            p["neighbor_um"],
+            p["sigma"],
+        )
 
 
 def create_app() -> Dash:
