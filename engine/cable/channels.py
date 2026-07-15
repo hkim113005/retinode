@@ -100,10 +100,13 @@ def build_active_rgc(
     cell_type: str = "default",
     densities: ChannelDensities | None = None,
     config: ChannelConfig | None = None,
+    *,
+    origin_um: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    axon_direction: tuple[float, float, float] = (1.0, 0.0, 0.0),
 ) -> RGCModel:
     """Build the morphology and insert channels — a ready-to-simulate RGC."""
     from .morphology import build_rgc
 
-    model = build_rgc(cell_type)
+    model = build_rgc(cell_type, origin_um=origin_um, axon_direction=axon_direction)
     insert_channels(model, densities=densities, config=config)
     return model

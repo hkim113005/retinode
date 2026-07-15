@@ -13,11 +13,14 @@ cell, an anodic one does not.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from engine.field import AnalyticalBackend, FieldBackend, current_vector
 from engine.spec import ConductivityModel, ElectrodeArray, StimConfig
 
+from .activating import activating_function
 from .morphology import RGCModel
 from .simulate import SpikeResult
 
@@ -28,6 +31,7 @@ def segment_coords(model: RGCModel) -> tuple[np.ndarray, list]:
     Coordinates interpolate each section's 3D points at the segment centers, so
     they line up with where the field must be sampled and applied.
     """
+    ox, oy, oz = getattr(model, "origin_um", (0.0, 0.0, 0.0))  # soma's patch position
     coords: list[tuple[float, float, float]] = []
     segs: list = []
     for sec in model.all_sections():
@@ -43,54 +47,90 @@ def segment_coords(model: RGCModel) -> tuple[np.ndarray, list]:
             a = seg.x * total
             coords.append(
                 (
-                    float(np.interp(a, arcs, xs)),
-                    float(np.interp(a, arcs, ys)),
-                    float(np.interp(a, arcs, zs)),
+                    float(np.interp(a, arcs, xs)) + ox,
+                    float(np.interp(a, arcs, ys)) + oy,
+                    float(np.interp(a, arcs, zs)) + oz,
                 )
             )
             segs.append(seg)
     return np.array(coords, dtype=float), segs
 
 
-def run_extracellular_pulse(
+def segment_regions(model: RGCModel) -> list[str]:
+    """Region label per segment, aligned one-to-one with ``segment_coords`` order.
+
+    Sections with fewer than 2 3D points are skipped identically to
+    ``segment_coords``, so the two lists index the same segments.
+    """
+    labels: list[str] = []
+    for region, secs in model.regions().items():
+        for sec in secs:
+            if sec.n3d() < 2:
+                continue
+            labels.extend(region for _ in sec)
+    return labels
+
+
+def compute_ve(
+    model: RGCModel,
+    array: ElectrodeArray,
+    config: StimConfig,
+    conductivity: ConductivityModel,
+    backend: FieldBackend | None = None,
+) -> tuple[np.ndarray, list]:
+    """Ve (mV) at every segment for the config, plus the matching segment refs."""
+    backend = backend or AnalyticalBackend()
+    coords, segs = segment_coords(model)
+    ve = backend.transfer_matrix(array, conductivity, coords) @ current_vector(array, config)
+    return ve, segs
+
+
+def activating_function_along_axon(
     model: RGCModel,
     array: ElectrodeArray,
     config: StimConfig,
     conductivity: ConductivityModel,
     *,
     backend: FieldBackend | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Ve-based activating function along the axon of passage (hillock→AIS→axon).
+
+    Returns ``(coords, af)`` for the ordered axonal compartments — ``af`` is the
+    Rattay activating function ∂²Ve/∂s² (mV/µm²). Under a cathodic electrode Ve
+    dips under the electrode, so ``af`` peaks positive (depolarizing) there. This
+    is the geometry-level predictor of where the axon fires, without a NEURON run.
+    """
+    backend = backend or AnalyticalBackend()
+    coords, _ = segment_coords(model)
+    ve = backend.transfer_matrix(array, conductivity, coords) @ current_vector(array, config)
+    regions = segment_regions(model)
+    idx = [i for i, r in enumerate(regions) if r in ("hillock", "ais", "axon")]
+    axon_coords = coords[idx]
+    return axon_coords, activating_function(axon_coords, ve[idx])
+
+
+def apply_field_pulse(
+    model: RGCModel,
+    ve: np.ndarray,
+    segs: list,
+    waveform: Any,
+    *,
     monophasic: bool = False,
     delay_ms: float = 5.0,
     t_stop_ms: float = 40.0,
     dt_ms: float = 0.025,
     v_init_mV: float = -65.0,
-    threshold_mV: float = -10.0,
-) -> SpikeResult:
-    """Drive the cell with the array's extracellular field over one pulse.
+) -> None:
+    """Insert ``extracellular`` and drive Ve over the (bi/mono)phasic pulse.
 
-    ``monophasic=True`` applies only the first phase (the field Ve) — useful for
-    isolating the sign chain, since a biphasic pulse's reversed second phase can
-    itself excite. Default is the full biphasic (physical) pulse.
+    Caller installs any spike recorders before calling — they populate during the
+    run. Ve is the field during phase 1; the second phase applies its reverse.
     """
-    backend = backend or AnalyticalBackend()
-    coords, segs = segment_coords(model)
-    a = backend.transfer_matrix(array, conductivity, coords)  # (m, n) mV/µA
-    ve = a @ current_vector(array, config)  # (m,) mV — the imposed field
-
     h = model.h
     for sec in model.all_sections():
         sec.insert("extracellular")
-
-    spikes = h.Vector()
-    detector = h.NetCon(model.soma_sec(0.5)._ref_v, None, sec=model.soma_sec)
-    detector.threshold = threshold_mV
-    detector.record(spikes)
-    v_soma = h.Vector()
-    v_soma.record(model.soma_sec(0.5)._ref_v)
-
-    wf = config.waveform
-    pw = wf.phase_width_us * 1e-3  # ms
-    gap = wf.interphase_gap_us * 1e-3
+    pw = waveform.phase_width_us * 1e-3  # ms
+    gap = waveform.interphase_gap_us * 1e-3
 
     def set_field(scale: float) -> None:
         for seg, value in zip(segs, ve, strict=True):
@@ -113,6 +153,49 @@ def run_extracellular_pulse(
         advance_to(delay_ms + pw + gap + pw)
     set_field(0.0)
     advance_to(t_stop_ms)
+
+
+def run_extracellular_pulse(
+    model: RGCModel,
+    array: ElectrodeArray,
+    config: StimConfig,
+    conductivity: ConductivityModel,
+    *,
+    backend: FieldBackend | None = None,
+    monophasic: bool = False,
+    delay_ms: float = 5.0,
+    t_stop_ms: float = 40.0,
+    dt_ms: float = 0.025,
+    v_init_mV: float = -65.0,
+    threshold_mV: float = -10.0,
+) -> SpikeResult:
+    """Drive the cell with the array's extracellular field over one pulse.
+
+    ``monophasic=True`` applies only the first phase (the field Ve) — useful for
+    isolating the sign chain, since a biphasic pulse's reversed second phase can
+    itself excite. Default is the full biphasic (physical) pulse.
+    """
+    ve, segs = compute_ve(model, array, config, conductivity, backend)
+    h = model.h
+
+    spikes = h.Vector()
+    detector = h.NetCon(model.soma_sec(0.5)._ref_v, None, sec=model.soma_sec)
+    detector.threshold = threshold_mV
+    detector.record(spikes)
+    v_soma = h.Vector()
+    v_soma.record(model.soma_sec(0.5)._ref_v)
+
+    apply_field_pulse(
+        model,
+        ve,
+        segs,
+        config.waveform,
+        monophasic=monophasic,
+        delay_ms=delay_ms,
+        t_stop_ms=t_stop_ms,
+        dt_ms=dt_ms,
+        v_init_mV=v_init_mV,
+    )
 
     return SpikeResult(
         n_spikes=int(spikes.size()),

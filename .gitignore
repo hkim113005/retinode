@@ -43,14 +43,18 @@ project.retinode/results/
 *.hdf5
 *.h5
 *.parquet
-*.msh          # gmsh meshes
+# gmsh meshes
+*.msh
 *.xdmf
-*.bp/          # ADIOS/DOLFINx output
-x86_64/        # NEURON compiled mechanisms (nrnivmodl output)
-arm64/         # NEURON compiled mechanisms (Apple Silicon)
-aarch64/       # NEURON compiled mechanisms (ARM Linux)
+# ADIOS/DOLFINx output
+*.bp/
+# NEURON compiled mechanisms (nrnivmodl output: x86_64, Apple Silicon, ARM Linux)
+x86_64/
+arm64/
+aarch64/
 *.o
-*.c            # NEURON-generated C from .mod files
+# NEURON-generated C from .mod files
+*.c
 
 # OS / editor
 .DS_Store
