@@ -8,7 +8,9 @@ rendering of them.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -18,6 +20,15 @@ from engine.field import AnalyticalBackend, FieldBackend, current_vector
 from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimConfig
 
 from .scene import cell_depth_um
+
+_VALIDATION_REPORT = Path(__file__).parent / "validation_report.json"
+
+
+def load_validation_report() -> dict[str, Any]:
+    """The committed validation report the app renders (empty shell if absent)."""
+    if not _VALIDATION_REPORT.exists():
+        return {"n_pass": 0, "n_total": 0, "reproductions": []}
+    return json.loads(_VALIDATION_REPORT.read_text())
 
 # A restrained palette shared by the figures (matches the CSS).
 _INK = "#1f2933"

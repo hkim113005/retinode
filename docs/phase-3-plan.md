@@ -64,12 +64,15 @@ app/
   *different* sites and combine *sub*-additively — so the joint threshold depends
   on arrangement, which a single-site proxy cannot capture. We reproduce the
   headline effect (subthreshold pair → spike).
-- **P3 S4 — Validation screen (precomputed).** `report.py` runs S1–S3 (and the
-  S5 single-cell set), producing a JSON report of `Reproduction` records;
-  regenerated via a documented command and committed for the app to read. The app
-  gains a **Validation** panel listing each reproduction — claim, measured value,
-  and a pass/fail badge — so the tool's trustworthiness is visible, not just
-  asserted. `engine/` stays import-clean of `app/`.
+- **P3 S4 — Validation screen (precomputed) — done.** `engine.validate.report`
+  runs every reproduction — field physics, the S5 single-cell set, and the
+  selectivity reproductions — into a JSON report (`app/validation_report.json`),
+  regenerated with `uv run python -m engine.validate.report` and committed for the
+  app to read. The app gained a **Validation** panel: a `13 / 13 reproduce` count
+  and one row per reproduction (green/amber dot, name, measured value, source),
+  so trustworthiness is *visible*, not just asserted. `engine/` stays import-clean
+  of `app/`. CI's neuron job independently gates the science; the panel is a
+  snapshot of a gated result. See [validation.md](validation.md).
 
 ## Validation hardening (extra pass)
 

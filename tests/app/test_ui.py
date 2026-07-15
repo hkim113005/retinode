@@ -43,6 +43,17 @@ def test_create_app_builds():
     assert app.layout is not None
 
 
+def test_validation_panel_renders_rows():
+    from app.ui import _val_row, _validation_panel
+
+    row = _val_row({"passed": True, "name": "reciprocity", "measured": "1e-9", "source": "EM"})
+    classes = _collect_classes(row)
+    assert "val-row" in classes and "val-dot ok" in classes
+    fail = _val_row({"passed": False, "name": "x", "measured": "m", "source": "s"})
+    assert "val-dot fail" in _collect_classes(fail)
+    assert _validation_panel() is not None  # builds whether or not the report exists
+
+
 def test_scorecard_renders_usable_and_blocked():
     base = {
         "activated": True,

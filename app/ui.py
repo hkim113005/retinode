@@ -18,7 +18,7 @@ from dash.exceptions import PreventUpdate
 from engine.eval import evaluate
 
 from .scene import build_scene
-from .views import field_figure, scorecard_data
+from .views import field_figure, load_validation_report, scorecard_data
 
 _LAYOUTS = [
     {"label": "Single disk", "value": "single"},
@@ -162,6 +162,55 @@ def _runs_strip(history: list[dict[str, Any]] | None) -> Any:
     return [_run_card(rec, i, i == 0) for i, rec in enumerate(history)]
 
 
+def _val_row(rep: dict[str, Any]) -> html.Div:
+    return html.Div(
+        className="val-row",
+        children=[
+            html.Span(className=f"val-dot {'ok' if rep['passed'] else 'fail'}"),
+            html.Div(
+                className="val-body",
+                children=[
+                    html.Div(rep["name"], className="val-name"),
+                    html.Div(rep["measured"], className="val-measured"),
+                ],
+            ),
+            html.Div(rep["source"], className="val-source"),
+        ],
+    )
+
+
+def _validation_panel() -> html.Div:
+    report = load_validation_report()
+    reps = report.get("reproductions", [])
+    body: Any = (
+        [_val_row(r) for r in reps]
+        if reps
+        else html.Div(
+            "Generate the report with `python -m engine.validate.report`.",
+            className="runs-empty",
+        )
+    )
+    return html.Div(
+        className="card val-card",
+        children=[
+            html.Div(
+                className="val-head",
+                children=[
+                    html.Div("Validation", className="card-title"),
+                    html.Div(
+                        f"{report.get('n_pass', 0)} / {report.get('n_total', 0)} reproduce",
+                        className="val-count",
+                    ),
+                ],
+            ),
+            html.Div(
+                "Published results this model recovers — gated in CI.", className="card-hint"
+            ),
+            html.Div(body, className="val-list"),
+        ],
+    )
+
+
 def layout() -> html.Div:
     return html.Div(
         className="app",
@@ -238,6 +287,7 @@ def layout() -> html.Div:
                                     ),
                                 ],
                             ),
+                            _validation_panel(),
                         ],
                     ),
                 ],

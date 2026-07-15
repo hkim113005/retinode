@@ -1,0 +1,110 @@
+{
+  "n_pass": 13,
+  "n_total": 13,
+  "reproductions": [
+    {
+      "name": "the field is reciprocal (G(a,b) = G(b,a))",
+      "source": "quasi-static EM",
+      "passed": true,
+      "measured": "G(a,b) 2.1239e+00 vs G(b,a) 2.1239e+00",
+      "criterion": "reciprocal to 1e-9",
+      "note": ""
+    },
+    {
+      "name": "far-field decay (monopole 1/r, dipole 1/r²)",
+      "source": "quasi-static EM",
+      "passed": true,
+      "measured": "monopole 1/r^0.99, dipole 1/r^1.97",
+      "criterion": "monopole exponent ~1, dipole exponent ~2",
+      "note": ""
+    },
+    {
+      "name": "threshold rises with electrode distance",
+      "source": "Greenberg 1999",
+      "passed": true,
+      "measured": "12/26/54 uA at 25/40/60 um",
+      "criterion": "monotonic increase with electrode-cell distance",
+      "note": ""
+    },
+    {
+      "name": "axon of passage is highly excitable",
+      "source": "Vilkhu 2021 / sodium-band literature",
+      "passed": true,
+      "measured": "axon=15 vs soma=26 uA (soma/axon 1.70)",
+      "criterion": "axon threshold <= soma threshold, in physiological range",
+      "note": "Diverges from Greenberg 1999's original soma<axon claim; consistent with a proper Na band and the axon-avoidance premise — axons are the low-threshold off-target."
+    },
+    {
+      "name": "spike initiates at the sodium-channel band (AIS)",
+      "source": "Jeng/Fried; modern refinement of Greenberg 1999",
+      "passed": true,
+      "measured": "initiation region = ais",
+      "criterion": "spike initiates in the AIS/proximal-axon region (not soma), near threshold",
+      "note": ""
+    },
+    {
+      "name": "strength-duration: threshold falls with pulse width",
+      "source": "Greenberg 1999",
+      "passed": true,
+      "measured": "82/46/26/16 uA at 50/100/200/400 us",
+      "criterion": "threshold decreases monotonically with pulse width (<0.5 ms, direct activation)",
+      "note": ""
+    },
+    {
+      "name": "thresholds in physiological range",
+      "source": "Tsai 2012 / Greenberg 1999",
+      "passed": true,
+      "measured": "26 uA (soma, 40 um, 200 us)",
+      "criterion": "1-150 uA, plausible for epiretinal stimulation",
+      "note": ""
+    },
+    {
+      "name": "cathodic is more excitable than anodic",
+      "source": "Ranck 1975",
+      "passed": true,
+      "measured": "cathodic 26 µA vs anodic 38 µA",
+      "criterion": "cathodic (surface) threshold below anodic",
+      "note": ""
+    },
+    {
+      "name": "strength-duration chronaxie is sub-millisecond",
+      "source": "Weiss/Lapicque",
+      "passed": true,
+      "measured": "rheobase 6.4 µA, chronaxie 0.59 ms",
+      "criterion": "chronaxie in 0.05-1.0 ms (direct RGC activation, sub-millisecond)",
+      "note": ""
+    },
+    {
+      "name": "local return sharpens the field (selectivity)",
+      "source": "Fan et al. 2019",
+      "passed": true,
+      "measured": "soma-Ve selectivity: monopolar 3.2×, local return 16.9×",
+      "criterion": "local-return field-selectivity |Ve_target|/|Ve_off| exceeds monopolar",
+      "note": "Field-sharpening mechanism reproduces robustly. The full-model somatic threshold-ratio gain is confounded by AIS/dendrite activation in this reduced tier (analytical + mouse RGC) and is deferred to Phase 4 (FEM + primate morphology)."
+    },
+    {
+      "name": "confined return flattens the axon activating function",
+      "source": "Vilkhu et al. 2021",
+      "passed": true,
+      "measured": "peak axon AF: monopolar 1.78e-03, confined 1.20e-03 (1.5× lower)",
+      "criterion": "confined-return peak activating function along the axon is below monopolar",
+      "note": ""
+    },
+    {
+      "name": "confined return avoids the axon of passage",
+      "source": "Vilkhu et al. 2021",
+      "passed": true,
+      "measured": "axon threshold: monopolar 17 µA, confined 373 µA",
+      "criterion": "confined-return axon-of-passage threshold exceeds monopolar",
+      "note": ""
+    },
+    {
+      "name": "two subthreshold electrodes jointly fire (current summation)",
+      "source": "Vilkhu et al. 2025",
+      "passed": true,
+      "measured": "threshold each: A 14, B 14 µA alone; paired 7 µA (51% of single)",
+      "criterion": "paired-electrode threshold falls below either single-electrode threshold",
+      "note": ""
+    }
+  ]
+}
