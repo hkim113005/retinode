@@ -1,7 +1,9 @@
-"""S7: composite cache keys are deterministic and sensitive to every input."""
+"""S7 + P2 S1: composite cache keys are deterministic and sensitive to every input."""
+
+import numpy as np
 
 from engine import spec
-from engine.store.keys import field_key, result_key
+from engine.store.keys import field_key, query_points_digest, result_key
 
 COND = spec.HomogeneousConductivity(sigma_S_per_m=1.0)
 COND2 = spec.HomogeneousConductivity(sigma_S_per_m=2.0)
@@ -34,6 +36,26 @@ def test_field_key_is_deterministic_and_input_sensitive():
     assert base != field_key(ARR2, COND, "analytical")  # array matters
     assert base != field_key(ARR, COND2, "analytical")  # conductivity matters
     assert base != field_key(ARR, COND, "fem")  # backend matters
+
+
+def test_field_key_includes_query_points_for_per_cell_caching():
+    pts1 = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
+    pts2 = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
+    base = field_key(ARR, COND, "analytical")
+    k1 = field_key(ARR, COND, "analytical", pts1)
+    assert k1 != base  # adding query points changes the key
+    assert k1 == field_key(ARR, COND, "analytical", pts1)  # deterministic
+    assert k1 != field_key(ARR, COND, "analytical", pts2)  # placement matters
+    assert base == field_key(ARR, COND, "analytical", None)  # omitting reproduces the regime key
+
+
+def test_query_points_digest_is_stable_and_rounds_float_noise():
+    a = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    b = np.array([[1.0 + 1e-9, 2.0, 3.0], [4.0, 5.0, 6.0]])  # sub-rounding jitter
+    c = np.array([[1.001, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    assert query_points_digest(a) == query_points_digest(a)  # deterministic
+    assert query_points_digest(a) == query_points_digest(b)  # 1e-9 rounds away
+    assert query_points_digest(a) != query_points_digest(c)  # a real move does not
 
 
 def test_result_key_changes_with_every_scored_input():

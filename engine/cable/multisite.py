@@ -15,8 +15,9 @@ from dataclasses import dataclass
 from engine.field import FieldBackend
 from engine.spec import ConductivityModel, ElectrodeArray, StimConfig
 
-from .drive import apply_field_pulse, compute_ve, segment_regions
+from .drive import apply_field_pulse, segment_regions
 from .morphology import RGCModel
+from .solved import SolvedField, solve_field
 from .threshold import ThresholdResult, find_threshold
 
 __all__ = ["MultisiteResult", "multisite_threshold", "run_multisite", "segment_regions"]
@@ -36,6 +37,7 @@ def run_multisite(
     config: StimConfig,
     conductivity: ConductivityModel,
     *,
+    solved: SolvedField | None = None,
     backend: FieldBackend | None = None,
     monophasic: bool = True,
     delay_ms: float = 5.0,
@@ -44,8 +46,16 @@ def run_multisite(
     v_init_mV: float = -65.0,
     threshold_mV: float = -10.0,
 ) -> MultisiteResult:
-    """Drive the field and detect a spike at any compartment."""
-    ve, segs = compute_ve(model, array, config, conductivity, backend)
+    """Drive the field and detect a spike at any compartment.
+
+    Pass ``solved`` (a pre-solved field for this cell + array + medium) to reuse
+    the transfer matrix instead of re-solving it — the caller does this to sweep
+    configs or amplitudes cheaply. Without it, the field is solved for this call.
+    """
+    if solved is None:
+        solved = solve_field(model, array, conductivity, backend)
+    ve = solved.ve(config)
+    segs = solved.segs
     regions = segment_regions(model)
     h = model.h
 
@@ -91,6 +101,7 @@ def multisite_threshold(
     config: StimConfig,
     conductivity: ConductivityModel,
     *,
+    solved: SolvedField | None = None,
     backend: FieldBackend | None = None,
     monophasic: bool = True,
     amp_min: float = 1.0,
@@ -98,14 +109,19 @@ def multisite_threshold(
     ladder: float = 1.5,
     rel_tol: float = 0.03,
 ) -> ThresholdResult:
-    """Threshold (µA) using multi-site activation — a spike anywhere counts."""
+    """Threshold (µA) using multi-site activation — a spike anywhere counts.
+
+    The transfer matrix is solved **once** (or taken from ``solved``) and reused
+    across every amplitude the search probes — the field is fixed; only the
+    current scale changes. Pass ``solved`` to also reuse it across configurations.
+    """
+    if solved is None:
+        solved = solve_field(model, array, conductivity, backend)
 
     def activates(amp: float) -> bool:
         wf = dataclasses.replace(config.waveform, amplitude_scale_uA=amp)
         scaled = dataclasses.replace(config, waveform=wf)
-        return run_multisite(
-            model, array, scaled, conductivity, backend=backend, monophasic=monophasic
-        ).activated
+        return run_multisite(model, array, scaled, conductivity, solved=solved).activated
 
     return find_threshold(
         activates, amp_min=amp_min, amp_max=amp_max, ladder=ladder, rel_tol=rel_tol

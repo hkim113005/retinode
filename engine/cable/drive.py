@@ -78,11 +78,17 @@ def compute_ve(
     conductivity: ConductivityModel,
     backend: FieldBackend | None = None,
 ) -> tuple[np.ndarray, list]:
-    """Ve (mV) at every segment for the config, plus the matching segment refs."""
-    backend = backend or AnalyticalBackend()
-    coords, segs = segment_coords(model)
-    ve = backend.transfer_matrix(array, conductivity, coords) @ current_vector(array, config)
-    return ve, segs
+    """Ve (mV) at every segment for the config, plus the matching segment refs.
+
+    A convenience for one-off single-config drives; it solves the transfer matrix
+    and applies the config in one shot. Callers that reuse the field across many
+    configs (threshold search, sweeps) should ``solve_field`` once and call
+    ``SolvedField.ve`` per config instead.
+    """
+    from .solved import solve_field  # lazy: keeps drive independent of solved
+
+    solved = solve_field(model, array, conductivity, backend)
+    return solved.ve(config), solved.segs
 
 
 def activating_function_along_axon(
