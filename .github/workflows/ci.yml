@@ -17,10 +17,11 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      # The fast suite needs only the core + dev deps. NEURON tests run in the
-      # separate test-neuron job below; FEM tests join later.
-      - name: Sync (core + dev)
-        run: uv sync --extra dev
+      # The fast suite needs core + dev + the store extra (h5py/pyarrow, for the
+      # project store tests). NEURON tests run in the separate test-neuron job
+      # below; FEM tests join later.
+      - name: Sync (core + dev + store)
+        run: uv sync --extra dev --extra store
 
       - name: Lint
         run: uv run ruff check .
@@ -42,8 +43,10 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      - name: Sync (cable + dev)
-        run: uv sync --extra cable --extra dev
+      # store extra too: pytest imports every test module during collection
+      # (incl. tests/store, which import pyarrow/h5py) before the -m filter runs.
+      - name: Sync (cable + dev + store)
+        run: uv sync --extra cable --extra dev --extra store
 
       - name: Compile NEURON mechanisms
         run: cd engine/cable/mechanisms && uv run nrnivmodl .
