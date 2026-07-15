@@ -84,6 +84,40 @@ def charge_per_phase_uC(current_uA: float, phase_width_us: float) -> float:
     return abs(current_uA) * phase_width_us * 1.0e-6
 
 
+def max_safe_amplitude_uA(
+    array: ElectrodeArray,
+    config: StimConfig,
+    limits: SafetyLimits = DEFAULT_SAFETY_LIMITS,
+) -> float:
+    """Largest ``amplitude_scale`` (uA) keeping every active electrode within limits.
+
+    Inverts the same criteria :func:`assess_safety` checks. Shannon: injury needs
+    ``2*log10(Q) - log10(A) <= k``, so ``Q <= sqrt(A * 10**k)``. Material: ``Q <=
+    D_max * A``. Current on electrode e is ``weight_e * amplitude_scale``, so the
+    charge bound maps to ``amplitude_scale <= Q_max / (|weight_e| * PW * 1e-6)``;
+    the ceiling is the tightest such bound over active electrodes (``inf`` if none
+    are driven, ``0`` if any driven electrode has zero area to spread charge over).
+    """
+    pw = config.waveform.phase_width_us
+    weights = config.weight_map()
+
+    ceiling = math.inf
+    for e in array.electrodes:
+        w = weights.get(e.id, 0.0)
+        if w == 0.0:
+            continue  # inactive electrode imposes no bound
+        area_cm2 = electrode_area_um2(e) / _UM2_PER_CM2
+        if area_cm2 <= 0.0:
+            return 0.0  # a driven zero-area electrode can carry no safe charge
+        q_max = math.sqrt(area_cm2 * 10.0**limits.shannon_k)  # Shannon
+        if limits.material_charge_density_uC_per_cm2 is not None:
+            q_max = min(q_max, limits.material_charge_density_uC_per_cm2 * area_cm2)
+        denom = abs(w) * pw * 1.0e-6
+        if denom > 0.0:
+            ceiling = min(ceiling, q_max / denom)
+    return ceiling
+
+
 def assess_safety(
     array: ElectrodeArray,
     config: StimConfig,

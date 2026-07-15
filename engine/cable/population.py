@@ -20,13 +20,16 @@ electrode's method-of-images source and yields a spurious field.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from engine.eval import OffTargetSet, select_off_targets
 from engine.field import FieldBackend
 from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimConfig
 
 from .multisite import multisite_threshold
 from .placement import place_cell
+
+if TYPE_CHECKING:
+    from engine.eval.offtarget import OffTargetSet
 
 
 @dataclass(frozen=True)
@@ -50,6 +53,10 @@ def population_thresholds(
     rel_tol: float = 0.04,
 ) -> PopulationThresholds:
     """Threshold of the target and each off-target cell under the array's field."""
+    # Imported lazily: off-target selection is an eval-layer concern, and a
+    # module-level import here would form a cable<->eval import cycle.
+    from engine.eval.offtarget import OffTargetSet, select_off_targets
+
     off_target_set = off_target_set or OffTargetSet()
 
     def threshold_of(rgc) -> float | None:

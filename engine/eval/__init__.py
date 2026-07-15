@@ -5,8 +5,10 @@ selective operating window. The threshold-driven pieces (evaluator, result) are
 wired in once the cable engine lands.
 """
 
+from .evaluator import EVALUATOR_VERSION, evaluate
 from .metrics import SOW, selective_operating_window
 from .offtarget import OffTargetSet, select_off_targets
+from .result import EvaluationResult, OperatingWindow, require_same_offtarget
 from .safety import (
     ElectrodeSafety,
     SafetyLimits,
@@ -14,6 +16,7 @@ from .safety import (
     assess_safety,
     charge_per_phase_uC,
     electrode_area_um2,
+    max_safe_amplitude_uA,
 )
 
 __all__ = [
@@ -24,10 +27,17 @@ __all__ = [
     "assess_safety",
     "charge_per_phase_uC",
     "electrode_area_um2",
+    "max_safe_amplitude_uA",
     # off-target set
     "OffTargetSet",
     "select_off_targets",
     # metrics
     "SOW",
     "selective_operating_window",
+    # evaluator + result
+    "evaluate",
+    "EVALUATOR_VERSION",
+    "EvaluationResult",
+    "OperatingWindow",
+    "require_same_offtarget",
 ]
