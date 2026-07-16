@@ -322,6 +322,10 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
         gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
 
         gmsh.model.mesh.generate(3)
+        # Write MSH 2.2: DOLFINx reads it (via the gmsh API) *and* so does
+        # netgen's ReadGmsh, which only parses 2.2 -- so both FEM backends read
+        # the one file (the P4 S5 cross-check reads the same mesh, not two builds).
+        gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
         gmsh.write(path)
     finally:
         gmsh.finalize()

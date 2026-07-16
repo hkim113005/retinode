@@ -26,3 +26,8 @@ dependencies:
   - pytest
   - hypothesis   # some tests/field modules import it at collection time
   - pip
+  - pip:
+      # NGSolve is the second FEM solver for the P4 S5 cross-check. No conda-forge
+      # osx-arm64 build, but it ships pip wheels (universal2 + manylinux) that
+      # coexist with the conda DOLFINx, so it goes in the pip section.
+      - ngsolve

@@ -61,7 +61,8 @@ engine/field/
   analytical.py    Tier-1 analytical backend                                    [done]
   mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers)  [done]
   fem_fenicsx.py   DOLFINx backend behind the contract                          [done (homog + isotropic layered)]
-  fem_ngsolve.py   NGSolve backend (second-solver cross-check)                  [P4 S5]
+  fem_ngsolve.py   NGSolve backend (second-solver cross-check)                  [done]
+  regime.py        analytical-vs-FEM error map (trust boundary)                 [done]
   convergence.py   mesh-refinement convergence check                           [done]
 env/
   fem-environment.yml   conda-forge FEM env (dolfinx, gmsh)                     [done]
@@ -141,12 +142,24 @@ env/
   degree, so a coarse-mesh `A` **can never be silently reused for a finer mesh**.
   The analytical backend passes no `solve_params`, so its keys — and every existing
   store/result key — are unchanged.
-- **P4 S5 — Second-solver agreement + regime map.** An NGSolve backend (pip,
-  universal2) solving the **same gmsh mesh**; assert DOLFINx ≈ NGSolve within
-  tolerance (the "confirmed by a second backend" done-when). Then **map the
-  analytical-vs-FEM error** as a function of layer contrast and geometry, so the
-  app/evaluator can flag when the analytical tier is trustworthy and when to
-  escalate to FEM.
+- **P4 S5 — Second-solver agreement + regime map — done.**
+  `engine/field/fem_ngsolve.py`: `NGSolveBackend` solves the **same gmsh mesh** as
+  DOLFINx — `build_mesh` now writes **MSH 2.2**, which both DOLFINx (via the gmsh
+  API) and netgen's `ReadGmsh` parse, so the cross-check reads one file, not two
+  builds. NGSolve solves in microns with an effective σ·1e-6 (the µm→m fold),
+  matching the DOLFINx mV/µA chain. **Agreement (the "confirmed by a second
+  backend" done-when):** on the same mesh, DOLFINx ≈ NGSolve to **max 0.9%
+  (homogeneous) / 0.25% (layered), median ~0%** — two independent FEM libraries
+  confirm each other (`test_fem_agreement.py`, `fem`). NGSolve is a pip
+  universal2/manylinux wheel that coexists with the conda DOLFINx (added to
+  `env/fem-environment.yml`'s pip section). `engine/field/regime.py`: the
+  **analytical-vs-FEM regime map** sweeps layer contrast σ₂/σ₁ and records the
+  error of pretending the medium is homogeneous-σ₁, with a `trustworthy` flag vs a
+  tolerance and a `trustworthy_at(contrast)` query for the evaluator. **Verified
+  behaviour:** at contrast 1 (homogeneous) the error is just the **3.6%**
+  discretization floor → trustworthy; a resistive (0.3×) or conductive (3×) buried
+  layer drives it to **28–35%** → not trustworthy, escalate to FEM. The map's
+  arithmetic is fast-tested with injected solvers; the real sweep is `fem`-marked.
 - **P4 S6 (optional) — Independent check + adapters.** Sim4Life field-only import
   (a solved file → `A`), a documented COMSOL adapter stub. Deferred to the
   cloud/lab; documented, not built.

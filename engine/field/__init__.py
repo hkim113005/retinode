@@ -13,12 +13,14 @@ from .backend import (
     potential_mV,
 )
 from .fem_fenicsx import FenicsxBackend
+from .fem_ngsolve import NGSolveBackend
 
 __all__ = [
     "FieldBackend",
     "UnsupportedByBackend",
     "AnalyticalBackend",
     "FenicsxBackend",
+    "NGSolveBackend",
     "current_vector",
     "potential_mV",
 ]
