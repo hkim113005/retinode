@@ -97,3 +97,43 @@ def test_surface_distance_sign_and_magnitude():
     assert surface_distance_um(c, 8.0, 0.0, 15.0) == pytest.approx(3.0)  # 3 um outside the wall
     h = Hemisphere(10.0)
     assert surface_distance_um(h, 0.0, 0.0, 13.0) == pytest.approx(3.0)  # 3 um past the dome
+
+
+# --- CadBody: imported CAD electrode (P6 S5) ---------------------------------
+
+
+def _cad(content_hash="abc123", r=5.0, h=30.0, area=1021.0):
+    from engine.spec import CadBody
+
+    return CadBody(
+        cad_path="/tmp/x.step",
+        content_hash=content_hash,
+        bounding_radius_um=r,
+        bounding_height_um=h,
+        surface_area_um2=area,
+    )
+
+
+def test_cad_body_defers_to_its_measured_summaries():
+    c = _cad(r=7.0, area=900.0)
+    assert body_base_radius_um(c) == 7.0
+    assert body_conductive_area_um2(c) == 900.0  # measured surface, for charge density
+
+
+def test_cad_overlap_uses_the_bounding_cylinder():
+    c = _cad(r=5.0, h=30.0)
+    assert point_in_body(c, 0.0, 0.0, 15.0)  # inside the bounding cylinder
+    assert not point_in_body(c, 6.0, 0.0, 15.0)  # outside the radius
+    assert not point_in_body(c, 0.0, 0.0, 31.0)  # past the height
+
+
+def test_cad_content_hash_is_the_geometric_identity():
+    a = _with_body(_cad(content_hash="hashA"))
+    b = _with_body(_cad(content_hash="hashB"))
+    assert spec_hash(a) != spec_hash(b)  # different CAD content -> distinct key
+    assert spec_hash(a) == spec_hash(_with_body(_cad(content_hash="hashA")))
+
+
+def test_cad_body_round_trips():
+    e = _with_body(_cad())
+    assert from_json(to_json(e)) == e

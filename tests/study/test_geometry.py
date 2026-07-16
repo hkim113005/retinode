@@ -83,9 +83,39 @@ def test_single_electrode_when_aperture_is_zero():
 
 def test_geometry_grid_is_the_product_minus_overlaps():
     combos = geometry_grid(
-        diameters_um=[10.0, 20.0], pitches_um=[10.0, 15.0, 30.0],
-        arrangement="grid", aperture_um=50.0,
+        diameters_um=[10.0, 20.0],
+        pitches_um=[10.0, 15.0, 30.0],
+        arrangement="grid",
+        aperture_um=50.0,
     )
     pairs = {(c.diameter_um, c.pitch_um) for c in combos}
     assert pairs == {(10.0, 10.0), (10.0, 15.0), (10.0, 30.0), (20.0, 30.0)}
     assert all(c.arrangement == "grid" and c.aperture_um == 50.0 for c in combos)
+
+
+def test_pillar_geometry_grid_attaches_cylinders_and_sweeps_height():
+    from engine.spec import Cylinder
+    from engine.study.geometry import pillar_geometry_grid
+
+    combos = pillar_geometry_grid(
+        diameters_um=[10.0, 20.0],
+        pitches_um=[15.0, 40.0],
+        heights_um=[20.0, 40.0],
+        arrangement="grid",
+        aperture_um=50.0,
+    )
+    # (20,15) drops (overlap); the rest x 2 heights
+    triples = {(c.diameter_um, c.pitch_um, c.body.height_um) for c in combos}
+    assert (20.0, 15.0, 20.0) not in triples  # overlapping pitch dropped
+    assert (10.0, 40.0, 40.0) in triples
+    assert all(isinstance(c.body, Cylinder) for c in combos)
+    assert all(c.body.radius_um == c.diameter_um / 2.0 for c in combos)
+
+
+def test_build_array_attaches_the_geometry_body_to_every_electrode():
+    from engine.spec import Cylinder
+    from engine.study.geometry import ArrayGeometry, build_array
+
+    geom = ArrayGeometry(10.0, 30.0, "grid", 30.0, "disk", Cylinder(5.0, 20.0))
+    array = build_array(geom)
+    assert all(e.body == Cylinder(5.0, 20.0) for e in array.electrodes)

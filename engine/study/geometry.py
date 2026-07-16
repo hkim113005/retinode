@@ -19,7 +19,7 @@ import math
 from dataclasses import dataclass
 from typing import Literal
 
-from engine.spec import Electrode, ElectrodeArray, Shape
+from engine.spec import Cylinder, Electrode, ElectrodeArray, ElectrodeBody, Shape
 
 Arrangement = Literal["grid", "hex"]
 
@@ -40,12 +40,14 @@ class ArrayGeometry:
     arrangement: Arrangement  # "grid" (square lattice) or "hex" (hexagonal)
     aperture_um: float  # electrode centers fill a disk of this radius about the origin
     shape: Shape = "disk"
+    body: ElectrodeBody | None = None  # a 3D body applied to every electrode (P6 S5)
 
     def label(self) -> str:
         """Short human label for logs/plots (not a cache key — the array hash is)."""
+        tag = f"/{type(self.body).__name__}" if self.body is not None else ""
         return (
             f"{self.arrangement}/d{self.diameter_um:g}/p{self.pitch_um:g}/"
-            f"a{self.aperture_um:g}"
+            f"a{self.aperture_um:g}{tag}"
         )
 
 
@@ -53,7 +55,9 @@ def build_array(geometry: ArrayGeometry, *, id_prefix: str = "e") -> ElectrodeAr
     """Build the canonical :class:`ElectrodeArray` for ``geometry``.
 
     Electrode ids are ``{id_prefix}0..{n-1}`` in a deterministic order (sorted by
-    y then x), so the mapping is a pure, repeatable function of the geometry.
+    y then x), so the mapping is a pure, repeatable function of the geometry. When
+    the geometry carries a ``body``, every electrode is that 3D body (a uniform
+    penetrating array), so a geometry sweep can vary the body's parameters too.
     """
     validate_geometry(geometry)
     points = _lattice_points(geometry)
@@ -63,6 +67,7 @@ def build_array(geometry: ArrayGeometry, *, id_prefix: str = "e") -> ElectrodeAr
             pos_um=(x, y, 0.0),
             shape=geometry.shape,
             size_um=geometry.diameter_um,
+            body=geometry.body,
         )
         for i, (x, y) in enumerate(points)
     )
@@ -103,6 +108,30 @@ def geometry_grid(
         for p in pitches_um:
             if p >= d:
                 out.append(ArrayGeometry(d, p, arrangement, aperture_um, shape))
+    return out
+
+
+def pillar_geometry_grid(
+    *,
+    diameters_um: list[float],
+    pitches_um: list[float],
+    heights_um: list[float],
+    arrangement: Arrangement,
+    aperture_um: float,
+) -> list[ArrayGeometry]:
+    """A 3D geometry grid: the diameter × pitch × **height** product, each a uniform
+    array of **penetrating cylinder** electrodes (radius = diameter/2, the given
+    height). Feeds a P5 geometry sweep / surrogate so 3D insertion designs can be
+    explored the same way flat layouts are. Overlapping (pitch < diameter) combos
+    are dropped."""
+    out: list[ArrayGeometry] = []
+    for d in diameters_um:
+        for p in pitches_um:
+            if p < d:
+                continue
+            for h in heights_um:
+                body: ElectrodeBody = Cylinder(radius_um=d / 2.0, height_um=h)
+                out.append(ArrayGeometry(d, p, arrangement, aperture_um, "disk", body))
     return out
 
 

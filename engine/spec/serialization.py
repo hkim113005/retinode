@@ -22,7 +22,7 @@ from dataclasses import fields, is_dataclass
 from functools import cache
 from typing import Any
 
-from .body import Cylinder, Frustum, Hemisphere
+from .body import CadBody, Cylinder, Frustum, Hemisphere
 from .conductivity import HomogeneousConductivity, Layer, LayeredConductivity
 from .geometry import ArrayPlacement, Electrode, ElectrodeArray
 from .patch import RGC, RetinalPatch
@@ -39,6 +39,7 @@ _REGISTRY: dict[str, type] = {
         Hemisphere,
         Cylinder,
         Frustum,
+        CadBody,
         Waveform,
         StimConfig,
         Layer,

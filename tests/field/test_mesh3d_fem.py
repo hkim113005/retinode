@@ -101,8 +101,13 @@ def test_dolfinx_and_ngsolve_agree_on_a_3d_hemisphere_mesh(tmp_path):
 def test_mixed_flat_and_penetrating_array_has_independent_columns():
     # P6 S3: a flat disk + a penetrating cylinder in one array mesh together.
     flat = Electrode(id="F", pos_um=(-40.0, 0.0, 0.0), shape="disk", size_um=12.0)
-    cyl = Electrode(id="C", pos_um=(40.0, 0.0, 0.0), shape="disk", size_um=0.0,
-                    body=Cylinder(radius_um=5.0, height_um=30.0))
+    cyl = Electrode(
+        id="C",
+        pos_um=(40.0, 0.0, 0.0),
+        shape="disk",
+        size_um=0.0,
+        body=Cylinder(radius_um=5.0, height_um=30.0),
+    )
     arr = ElectrodeArray(electrodes=(flat, cyl))
     dom = M.FieldDomain(arr, SIGMA, 400.0, 200.0, 3.0, 60.0)
     q = np.array([[-40.0, 0.0, 20.0], [40.0, 0.0, 45.0]])  # above the flat, below the tip
@@ -118,14 +123,61 @@ def test_placement_offsets_the_field_rigidly():
     from engine.spec import ArrayPlacement
 
     base = _hemisphere(10.0)
-    placed = ElectrodeArray(electrodes=base.electrodes,
-                            placement=ArrayPlacement(offset_um=(100.0, 0.0, 0.0)))
+    placed = ElectrodeArray(
+        electrodes=base.electrodes, placement=ArrayPlacement(offset_um=(100.0, 0.0, 0.0))
+    )
     ve_placed = solve_transfer_matrix(
         M.FieldDomain(placed, SIGMA, 500.0, 500.0, 2.0, 80.0),
-        np.array([[100.0, 0.0, 25.0]]), degree=1,
+        np.array([[100.0, 0.0, 25.0]]),
+        degree=1,
     )[0, 0]
     ve_ref = solve_transfer_matrix(
         M.FieldDomain(base, SIGMA, 500.0, 500.0, 2.0, 80.0),
-        np.array([[0.0, 0.0, 25.0]]), degree=1,
+        np.array([[0.0, 0.0, 25.0]]),
+        degree=1,
     )[0, 0]
     assert ve_placed == pytest.approx(ve_ref, rel=0.02)
+
+
+def _write_step_cylinder(path: str, radius_um: float, height_um: float) -> None:
+    import gmsh
+
+    gmsh.initialize()
+    try:
+        gmsh.model.add("cyl")
+        gmsh.model.occ.addCylinder(0.0, 0.0, 0.0, 0.0, 0.0, height_um, radius_um)
+        gmsh.model.occ.synchronize()
+        gmsh.write(path)
+    finally:
+        gmsh.finalize()
+
+
+def test_imported_cad_cylinder_reproduces_the_primitive_field(tmp_path):
+    # P6 S5: a STEP solid loaded via load_cad_body meshes, solves, and matches the
+    # equivalent parametric Cylinder -- the CAD import path is correct.
+    from engine.field.mesh3d import load_cad_body
+
+    step = str(tmp_path / "cyl.step")
+    _write_step_cylinder(step, 5.0, 30.0)
+    cad = load_cad_body(step)
+    assert cad.bounding_radius_um == pytest.approx(5.0, abs=1e-3)
+    assert cad.bounding_height_um == pytest.approx(30.0, abs=1e-3)
+    # exposed area (side + tip, no z=0 base) matches the primitive cylinder "all"
+    assert cad.surface_area_um2 == pytest.approx(2 * math.pi * 5 * 30 + math.pi * 25, rel=1e-3)
+
+    q = np.array([[0.0, 0.0, 45.0], [10.0, 0.0, 15.0], [0.0, 0.0, 50.0]])  # outside the body
+    cad_e = Electrode(id="C", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=0.0, body=cad)
+    prim_e = Electrode(
+        id="C",
+        pos_um=(0.0, 0.0, 0.0),
+        shape="disk",
+        size_um=0.0,
+        body=Cylinder(radius_um=5.0, height_um=30.0),
+    )
+    a_cad = solve_transfer_matrix(
+        M.FieldDomain(ElectrodeArray((cad_e,)), SIGMA, 1000.0, 1000.0, 2.0, 150.0), q
+    )[:, 0]
+    a_prim = solve_transfer_matrix(
+        M.FieldDomain(ElectrodeArray((prim_e,)), SIGMA, 1000.0, 1000.0, 2.0, 150.0), q
+    )[:, 0]
+    assert np.max(np.abs(a_cad - a_prim) / np.abs(a_prim)) < 0.03

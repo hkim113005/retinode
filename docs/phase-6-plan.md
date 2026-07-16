@@ -194,16 +194,25 @@ docs/
   evaluator consumes `resolve_overlap`'s decision** (drop the flagged compartments,
   or refuse the scene) — a thin integration point, since the biophysics is untouched.
 
-- **P6 S5 — CAD import + provenance + sweep integration.** `occ.importShapes` a user
-  STEP/BREP solid; place/orient it via `ArrayPlacement`; tag its conductive
-  surface(s) by a selection convention (a named face group carried in the CAD, or a
-  geometric predicate). **Round-trip**: a CAD cylinder reproduces the P6 S2
-  primitive-cylinder field within tolerance. **Provenance**: content-address 3D/CAD
-  geometry — the **CAD file's content hash + the placement pose** — so no design's
-  field is silently reused for another (extends P4 S4). Add **study generators** for
-  3D array and insertion configurations (spacing, height, taper, insertion depth,
-  tilt, pattern), so `geometry_sweep` + the surrogate explore 3D designs; backend
-  selection routes them to FEM.
+- **P6 S5 — CAD import + provenance + sweep integration — done.** A `CadBody` spec
+  references a **STEP/BREP** solid; `load_cad_body` (gmsh) reads it once and stores
+  the geometric summaries — the **file content hash** (the geometric identity),
+  bounding radius/height, and the exposed surface area — so the pure-spec helpers
+  (`radius_um`, `electrode_area_um2`, overlap via a conservative bounding cylinder)
+  need no gmsh, and the whole exposed surface conducts. `mesh3d.add_body_solid`
+  imports the solid via `occ.importShapes` and translates it to the electrode's
+  planted position; the rest of the mixed-array build (P6 S3) is unchanged.
+  **Round-trip validated:** a STEP cylinder reproduces the equivalent parametric
+  `Cylinder` field to **<1%** (bounding radius/height and exposed area match to
+  1e-3). **Provenance:** because `content_hash` is a `CadBody` field, `spec_hash` →
+  `field_key` distinguishes two different CAD files automatically (tested) — no
+  design's field is silently reused for another (extends P4 S4). **3D sweeps:**
+  `ArrayGeometry` gained an optional `body`, so `build_array` attaches it to every
+  electrode, and `pillar_geometry_grid` enumerates diameter × pitch × **height** as
+  penetrating-cylinder arrays — so `geometry_sweep` + the surrogate explore 3D
+  insertion designs exactly like flat layouts, routed to FEM by backend selection
+  (P5 D2). Face-group selection on imported CAD (tip/sides) and array tilt remain
+  the documented extensions.
 
 - **P6 S6 — Cross-check, regime, and docs.** NGSolve agreement on a representative
   **placed 3D array** mesh; `electrode-geometry.md` documenting the domain model
