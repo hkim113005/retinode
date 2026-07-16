@@ -8,7 +8,9 @@ evidence per result and a map of where the analytical tier can be trusted.
 
 **Done when** an open-source FEM field is validated and swappable behind the
 contract, confirmed by a second backend, and the analytical-vs-FEM regime is
-mapped. (Master plan: heavier work, suited to lab compute.)
+mapped. (The master plan called this lab-compute work; in fact DOLFINx runs
+**locally** on Apple Silicon — see the toolchain note — so Phase 4 develops on the
+Mac, and only Phase 5's sweeps need shared compute.)
 
 **Why it matters beyond FEM:** this is where the two items deferred from P1/P3 get
 their validation — **absolute threshold magnitudes** and **Fan 2019's full somatic
@@ -22,23 +24,34 @@ homogeneous half-space.
 | D1 | Primary FEM backend | **FEniCSx / DOLFINx** (per master plan), behind the `FieldBackend.transfer_matrix` contract. |
 | D2 | Validation | **Method of Manufactured Solutions + analytical** (rigorous known-answer) as the primary correctness gate; **NGSolve** as the second-solver agreement check (the "confirmed by a second backend" done-when). |
 | D3 | CI | **A dedicated FEM CI job** (micromamba installs DOLFINx + gmsh) runs `fem`-marked tests on every push. |
-| D4 | Toolchain | FEniCSx has **no macOS/pip wheel** → the FEM env is **conda-forge (micromamba)**, *separate from uv*. The uv toolchain is untouched; a `fem`-marked, conda-only layer sits beside it. |
+| D4 | Toolchain | FEniCSx has **no pip wheel**, but conda-forge ships an **osx-arm64 build** (verified `fenics-dolfinx` 0.11.0) → the FEM env is **conda-forge**, *separate from uv*, and **runs locally on Apple Silicon** — no lab compute needed for development. The uv toolchain is untouched; a `fem`-marked, conda-only layer sits beside it. |
 | D5 | Value-add scope | Layered conductivity is **in scope** (the whole point of FEM); homogeneous is validated first as the known-answer case. |
 | D6 | Mesh | **gmsh** as the shared mesh front-end (neutral geometry → mesh both solvers read). |
 | D7 | Boundary | Phase 4 is the **backend + validation**, not the sweep at scale (parametric FEM, surrogate, cluster/cloud = P5). Sim4Life/COMSOL are field-only/stub, documented/deferred. |
 
 ## Toolchain note (read first)
 
-FEniCSx-first means the FEM layer cannot live in the uv environment. Plan:
+FEniCSx-first means the FEM layer lives in a **conda environment, separate from
+uv** — but it **runs locally**: conda-forge ships `fenics-dolfinx` 0.11.0 for
+osx-arm64 (Apple Silicon), verified. No lab compute is needed for Phase 4 — the
+whole backend plus MMS/analytical validation develops on the Mac. Plan:
 
 - `env/fem-environment.yml` — a conda-forge env (`fenics-dolfinx`, `gmsh`,
-  `python`, `numpy`, `pytest`) for local FEM dev and CI.
-- The FEM CI job uses `mamba-org/setup-micromamba` to build that env, installs
-  the project into it (`pip install -e . --no-deps` so `engine` imports work),
-  and runs `pytest -m fem`. The existing `test`/`test-neuron` jobs are unchanged.
-- **P4 S1 opens with a feasibility gate:** confirm DOLFINx installs (osx-arm64 +
-  linux) and solves a trivial Poisson problem. If it cannot be made to install
+  `python`, `numpy`, `pytest`) for local FEM dev and CI. Create it with
+  `conda create -n fenics -c conda-forge fenics-dolfinx gmsh python=3.12`, then
+  `pip install -e . --no-deps` so `engine` imports. FEM work runs under this env;
+  analytical / NEURON work stays under uv.
+- The FEM CI job uses `mamba-org/setup-micromamba` to build the same env on the
+  linux runner and runs `pytest -m fem`. The `test` / `test-neuron` jobs are
+  unchanged.
+- **P4 S1 opens with a (now low-risk) feasibility gate:** create the env and solve
+  a trivial Poisson problem, locally and in CI. If DOLFINx somehow won't install
   cleanly, fall back to NGSolve-first (D1 flips) before building anything on it.
+
+**Compute for scale (Phase 5, not here):** local suffices for Phase 4's
+single-electrode solves and convergence checks. Big geometry sweeps escalate to
+Stanford **FarmShare** (free Slurm) first, then **Sherlock** through a sponsoring
+lab if true HPC parallelism is needed.
 
 ## Module layout
 
@@ -57,9 +70,9 @@ env/
 
 ## Ordered steps
 
-- **P4 S1 — Toolchain, feasibility gate, and mesh.** Stand up the conda FEM env
-  and the micromamba CI job; **verify DOLFINx solves a trivial Poisson problem**
-  (the gate). Build `mesh.py`: a neutral parametric geometry — disk electrodes on
+- **P4 S1 — Toolchain, feasibility gate, and mesh.** Create the local conda FEM
+  env (osx-arm64, conda-forge — verified available) and the micromamba CI job;
+  **verify DOLFINx solves a trivial Poisson problem** locally and in CI (the gate). Build `mesh.py`: a neutral parametric geometry — disk electrodes on
   the z=0 boundary over a tissue slab with optional conductivity layers — meshed
   by gmsh and refinable. Electrode boundary condition pinned: **current injection
   is a Neumann flux on each electrode surface**, insulating (zero-flux) elsewhere
