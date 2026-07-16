@@ -52,7 +52,7 @@ engine/study/
   geometry.py        parametric array generators (diameter/pitch/arrangement -> spec) [done]
   geometry_sweep.py  outer geometry loop: field per geometry, config sweep reused     [done]
   runner.py          resumable, store-checkpointed runner + progress callbacks        [done]
-  parallel.py        local process-pool execution adapter                            [P5 S4]
+  parallel.py        local process-pool execution adapter                            [done]
   surrogate.py       optional GP emulator over the selectivity-score surface          [P5 S6]
 docs/
   compute-adapters.md   Slurm (FarmShare/Sherlock) + Sim4Life-cloud adapter design    [P5 S5, deferred]
@@ -103,10 +103,21 @@ docs/
   with **only the completed geometry served from cache** (`n_cached == 1`) and
   `study_status` going 0→1→3 complete across the crash and resume. This is the
   "without manual bookkeeping" clause. Fast-tested (no NEURON/FEM).
-- **P5 S4 — Local parallel execution.** `parallel.py`: a process-pool adapter that
-  runs independent per-geometry evaluations concurrently, gated by the S5 cost
-  estimate. Content-addressed store writes keep parallel workers collision-free.
-  Serial stays the default and fallback.
+- **P5 S4 — Local parallel execution — done.** `engine/study/parallel.py`:
+  `parallel_geometry_sweep` runs independent per-geometry evaluations across worker
+  processes, same result as the serial sweep. Two constraints shaped it: **NEURON's
+  per-process global state** forces process-level (not thread) parallelism (a
+  `ProcessPoolExecutor`), and the **store is not concurrent-write-safe** (HDF5 /
+  parquet) — so workers compute with `store=None` and *return* results, and the
+  **main process records them serially**, which makes "content-addressed writes
+  keep workers collision-free" hold trivially. Resumability rides the same store:
+  a geometry already fully cached is served and **never dispatched** (proved with a
+  poisoned executor). `SerialExecutor` is the injectable in-process fallback
+  (`max_workers=1`) that also lets the orchestration be fast-tested without pickling
+  or NEURON. Verified: parallel results == serial results/frontier; progress + full
+  re-run caching; and a **real ProcessPool + NEURON** run over two geometries in two
+  worker processes (**~30 s vs ~50 s serial** — actual speedup), resuming fully
+  cached. Cost gating before launch is the existing `estimate_sweep_cost` (D5).
 - **P5 S5 — Cluster/cloud adapters (documented, deferred).**
   `docs/compute-adapters.md`: the Slurm (FarmShare → Sherlock via a sponsoring lab)
   and Sim4Life-cloud execution-adapter interfaces — job submission shape, how the
