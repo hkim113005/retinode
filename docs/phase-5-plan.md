@@ -50,7 +50,7 @@ engine/study/
   sweep.py           config sweep on a fixed array (backend-agnostic, store-backed)  [done]
   cost.py            cost estimate + cell benchmark                                   [done]
   geometry.py        parametric array generators (diameter/pitch/arrangement -> spec) [done]
-  geometry_sweep.py  outer geometry loop: field per geometry, config sweep reused     [P5 S2]
+  geometry_sweep.py  outer geometry loop: field per geometry, config sweep reused     [done]
   runner.py          resumable, store-checkpointed runner + progress callbacks        [P5 S3]
   parallel.py        local process-pool execution adapter                            [P5 S4]
   surrogate.py       optional GP emulator over the selectivity-score surface          [P5 S6]
@@ -70,13 +70,24 @@ docs/
   `engine.spec.validate` (checked in the tests). `geometry_grid` enumerates the
   diameter × pitch product, dropping overlapping combos — the parameter list P5 S2
   sweeps. Fast-tested (pure spec, no field/NEURON).
-- **P5 S2 — Geometry sweep + Pareto frontier.** `geometry_sweep.py`: for each
-  generated geometry, solve the field **once** (via the injected `FieldBackend`),
-  run the config sub-sweep **reusing that `A`** (delegating to `sweep()`), collect
-  every result, and reduce the union with `pareto_selectivity_safety`.
-  Backend-agnostic; injectable field + threshold providers so the *orchestration*
-  is fast-tested without NEURON/FEM. **This is the done-when's core: geometry
-  sweep → Pareto frontier.** The regime-aware tier choice (D2) is wired in here.
+- **P5 S2 — Geometry sweep + Pareto frontier — done.**
+  `engine/study/geometry_sweep.py`: `geometry_sweep(geometries, patch,
+  conductivity, config_factory, ...)` builds each array, solves its field **once**,
+  runs the config sub-sweep on it by delegating to `sweep()` (so the field is
+  reused across configs and served from the store if cached), and reduces the
+  union of all results with `pareto_selectivity_safety`. Two composition points
+  make heterogeneous geometries work: a **config factory** (`config_factory(array)
+  -> configs`, since electrode ids differ per geometry — `monopolar_center`
+  provided) and **regime-aware backend choice** (`resolve_field_tier`: analytical
+  for homogeneous / mild-contrast layers approximated homogeneous, FEM for strong
+  contrast — D2). `GeometrySweepResult` maps every frontier point back to its
+  geometry (`geometry_of`, `pareto_geometries`). Backend-agnostic and store-backed,
+  so the orchestration is fast-tested with an injected `thresholds_provider` (loop
+  coverage, non-dominated frontier, geometry trace-back, tier selection, full-cache
+  re-run, progress callback); one **`neuron`-marked end-to-end** test runs a real
+  analytical-tier sweep over two geometries (~50 s) confirming real fields +
+  threshold searches drive the frontier and a resumed run recomputes nothing.
+  **This is the done-when's core.**
 - **P5 S3 — Resumability + provenance at scale.** Thread a `Project` store through
   the geometry sweep so each geometry's `A` and results are cached by the P4 S4
   provenance keys; a re-run **skips completed geometries with no recompute**.
