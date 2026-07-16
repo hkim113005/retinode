@@ -1,0 +1,27 @@
+# Conda-forge environment for the Phase-4 FEM field backend.
+#
+# This is DELIBERATELY separate from the uv toolchain (see docs/phase-4-plan.md,
+# D4): FEniCSx/DOLFINx ships no pip wheel, but conda-forge has an osx-arm64 build
+# — so the FEM layer is conda-only and runs locally on Apple Silicon. Everything
+# else (analytical field, NEURON cable, the app) stays under uv.
+#
+# Create locally:
+#   conda env create -f env/fem-environment.yml
+#   conda activate retinode-fem
+#   pip install -e . --no-deps        # so `import engine` works; deps come from conda
+#
+# Then the feasibility gate:
+#   pytest -m fem
+#
+# CI builds the same spec on the linux runner via mamba-org/setup-micromamba.
+name: retinode-fem
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - fenics-dolfinx=0.11.*   # DOLFINx: the primary FEM backend (D1)
+  - gmsh                    # neutral mesh front-end (D6)
+  - python-gmsh             # gmsh Python API (the `import gmsh` module)
+  - numpy
+  - pytest
+  - pip

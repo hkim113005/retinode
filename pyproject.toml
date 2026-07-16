@@ -20,9 +20,11 @@ dependencies = [
 # from a notebook or the test suite. Everything heavy is an opt-in extra,
 # grouped by the phase/subsystem that needs it.
 #
-# NOTE: FEniCSx/DOLFINx is intentionally absent — it has no macOS pip wheel and
-# is installed via conda-forge on lab compute (Phase 5). NGSolve ships a
-# universal2 wheel, so the FEM cross-check backend *can* run locally.
+# NOTE: FEniCSx/DOLFINx is intentionally absent — it has no pip wheel, so the
+# DOLFINx backend lives in a separate conda-forge env (env/fem-environment.yml),
+# which runs *locally* on Apple Silicon (osx-arm64 build verified, 0.11.0) — see
+# docs/phase-4-plan.md. NGSolve + gmsh below ship pip wheels, so the FEM
+# cross-check backend and the mesh front-end can also run under uv.
 cable = [
     "neuron",            # NEURON multi-compartment RGC population + threshold search
 ]

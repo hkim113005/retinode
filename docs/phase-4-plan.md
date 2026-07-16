@@ -59,24 +59,36 @@ lab if true HPC parallelism is needed.
 engine/field/
   backend.py       transfer-matrix contract + UnsupportedByBackend             [done]
   analytical.py    Tier-1 analytical backend                                    [done]
-  mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers)  [P4 S1]
+  mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers)  [done]
   fem_fenicsx.py   DOLFINx backend behind the contract                          [P4 S2-S3]
   fem_ngsolve.py   NGSolve backend (second-solver cross-check)                  [P4 S5]
   convergence.py   mesh-refinement convergence check                           [P4 S4]
 env/
-  fem-environment.yml   conda-forge FEM env (dolfinx, gmsh)                     [P4 S1]
-.github/workflows/ci.yml   + a `fem` job (micromamba)                          [P4 S1]
+  fem-environment.yml   conda-forge FEM env (dolfinx, gmsh)                     [done]
+.github/workflows/ci.yml   + a `test-fem` job (micromamba)                      [done]
 ```
 
 ## Ordered steps
 
-- **P4 S1 — Toolchain, feasibility gate, and mesh.** Create the local conda FEM
-  env (osx-arm64, conda-forge — verified available) and the micromamba CI job;
-  **verify DOLFINx solves a trivial Poisson problem** locally and in CI (the gate). Build `mesh.py`: a neutral parametric geometry — disk electrodes on
-  the z=0 boundary over a tissue slab with optional conductivity layers — meshed
-  by gmsh and refinable. Electrode boundary condition pinned: **current injection
-  is a Neumann flux on each electrode surface**, insulating (zero-flux) elsewhere
-  on the top boundary, with a truncated far-field / grounded outer boundary.
+- **P4 S1 — Toolchain, feasibility gate, and mesh — done. Gate PASSED.** The
+  local conda env (`env/fem-environment.yml`: `fenics-dolfinx` 0.11.0, `gmsh`
+  4.15, Python 3.12) builds on Apple Silicon and a `test-fem` CI job builds the
+  same spec via micromamba. **Feasibility gate passed:** a manufactured-solution
+  Poisson solve (`u = 1 + x² + 2y²`, P2 elements) recovers the exact field to L2
+  error `< 1e-9` — DOLFINx-first is confirmed, no NGSolve fallback needed
+  (`tests/field/test_fem_gate.py`, deliberately gmsh-independent). `mesh.py` is a
+  neutral parametric geometry — disk electrodes imprinted on the z=0 top face over
+  a tissue slab, split into one tagged volume per conductivity layer, meshed by
+  gmsh with graded refinement (fine at electrodes, coarse to the shell) and a
+  `refined(factor)` knob for P4 S4. Boundary tags pinned: **each electrode surface
+  its own physical group** (Neumann flux, applied per electrode by the backend),
+  the rest of the top face **insulating** (natural zero-flux), sides + bottom
+  **grounded** (Dirichlet V=0, the far-field truncation). Verified end-to-end:
+  gmsh writes the mesh, DOLFINx reads it back with all tags intact, and the
+  tagged measures are correct (electrode ≈ πr², shell + layer volumes exact).
+  Pure geometry (partition/sizing/validation) is fast-tested without gmsh;
+  gmsh+DOLFINx build is `fem`-marked (`tests/field/test_mesh.py`,
+  `test_mesh_fem.py`).
 - **P4 S2 — DOLFINx backend (homogeneous) + MMS/analytical.** `transfer_matrix`
   via DOLFINx: one unit-current solve per electrode, Ve sampled at the query
   points → `A` (mV/µA, sign chain preserved). Validate with (a) **MMS** — impose a

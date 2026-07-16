@@ -1,0 +1,324 @@
+"""Neutral parametric geometry -> gmsh mesh for the FEM field backends.
+
+The FEM backends (DOLFINx now, NGSolve as the cross-check) both read *one* mesh
+built here, so the geometry is defined once and the two solvers cannot disagree
+about it (Phase-4 D6). The geometry is a finite truncation of the epiretinal
+half-space:
+
+    - the array/substrate plane is z = 0 (matching the analytical backend, whose
+      insulating image plane is also z = 0);
+    - tissue fills the slab 0 <= z <= depth, laterally |x|,|y| <= half_width;
+    - disk electrodes are imprinted on the top face z = 0 and tagged one surface
+      each -- that is where the current is injected (a Neumann flux in the weak
+      form, applied per electrode by the backend);
+    - the rest of the top face is the insulating substrate (natural zero-flux);
+    - the outer boundary (sides + bottom) is a grounded far-field truncation
+      (Dirichlet V = 0);
+    - the slab is split into one volume per conductivity layer, tagged so the
+      backend can assign a sigma (or diagonal anisotropy) per layer.
+
+This module is split so the *pure geometry* -- domain sizing, the layer
+partition, tag conventions, validation -- imports and tests without gmsh (the
+fast suite), while :func:`build_mesh` (which needs gmsh) is exercised only in the
+``fem`` job. Import gmsh lazily for exactly that reason.
+"""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+
+from engine.spec import (
+    ConductivityModel,
+    ElectrodeArray,
+    HomogeneousConductivity,
+    LayeredConductivity,
+)
+from engine.spec.geometry import radius_um
+
+Vec3 = tuple[float, float, float]
+
+# Physical-group tag conventions. Surfaces (dim 2) and volumes (dim 3) live in
+# separate gmsh namespaces, so the small integers do not collide across dims.
+GROUND_TAG = 1  # grounded far-field boundary (sides + bottom): Dirichlet V = 0
+INSULATING_TAG = 2  # the substrate: rest of the top face, natural zero-flux
+ELECTRODE_TAG_BASE = 10  # electrode i -> ELECTRODE_TAG_BASE + i (surface)
+LAYER_TAG_BASE = 1  # layer i -> LAYER_TAG_BASE + i (volume)
+
+
+@dataclass(frozen=True)
+class LayerSlab:
+    """One conductivity slab of the meshed domain, z0 <= z <= z1 (microns)."""
+
+    index: int
+    z0_um: float
+    z1_um: float
+    sigma_S_per_m: float
+    anisotropy: Vec3 | None  # diagonal (sx, sy, sz); None = isotropic
+
+
+@dataclass(frozen=True)
+class FieldDomain:
+    """The finite geometry a FEM backend meshes and solves on.
+
+    ``half_width_um`` / ``depth_um`` truncate the half-space; the truncation is
+    grounded, so both should comfortably exceed the electrode span (the far
+    field decays like 1/r, so a few electrode-pitches of margin is plenty).
+    ``h_electrode_um`` / ``h_far_um`` are the target mesh sizes at the electrode
+    surfaces (fine, where the field is sharp) and at the outer boundary (coarse).
+    """
+
+    array: ElectrodeArray
+    conductivity: ConductivityModel
+    half_width_um: float
+    depth_um: float
+    h_electrode_um: float
+    h_far_um: float
+
+    def refined(self, factor: float) -> FieldDomain:
+        """Same geometry, mesh sizes divided by ``factor`` -- the knob P4 S4's
+        convergence study turns. ``factor > 1`` refines."""
+        if factor <= 0:
+            raise ValueError("refine factor must be positive")
+        return FieldDomain(
+            array=self.array,
+            conductivity=self.conductivity,
+            half_width_um=self.half_width_um,
+            depth_um=self.depth_um,
+            h_electrode_um=self.h_electrode_um / factor,
+            h_far_um=self.h_far_um / factor,
+        )
+
+
+@dataclass(frozen=True)
+class MeshResult:
+    """A written gmsh mesh plus the tag maps a FEM backend needs to apply BCs.
+
+    ``electrode_tags`` is keyed by electrode id (order preserved), so the backend
+    injects unit current on one electrode at a time by its physical tag.
+    ``layer_tags`` is aligned with :func:`layer_partition`.
+    """
+
+    path: str
+    electrode_tags: dict[str, int]
+    layer_tags: tuple[int, ...]
+    ground_tag: int
+    insulating_tag: int
+
+
+def layer_partition(domain: FieldDomain) -> tuple[LayerSlab, ...]:
+    """Split the domain into conductivity slabs, ordered from the surface (z=0)
+    downward. Homogeneous -> a single slab spanning the whole depth. Layered ->
+    one slab per layer; the layer thicknesses must sum to the domain depth."""
+    cond = domain.conductivity
+    if isinstance(cond, HomogeneousConductivity):
+        return (LayerSlab(0, 0.0, domain.depth_um, cond.sigma_S_per_m, None),)
+    if isinstance(cond, LayeredConductivity):
+        slabs: list[LayerSlab] = []
+        z = 0.0
+        for i, layer in enumerate(cond.layers):
+            z1 = z + layer.thickness_um
+            slabs.append(LayerSlab(i, z, z1, layer.sigma_S_per_m, layer.anisotropy))
+            z = z1
+        if abs(z - domain.depth_um) > 1e-6 * max(1.0, domain.depth_um):
+            raise ValueError(
+                f"layer thicknesses sum to {z} um but domain depth is "
+                f"{domain.depth_um} um; they must match for a layered domain"
+            )
+        return tuple(slabs)
+    raise TypeError(f"unsupported conductivity model: {type(cond).__name__}")
+
+
+def validate_domain(domain: FieldDomain) -> None:
+    """Cheap geometry sanity checks -- caught here, in the fast suite, rather
+    than as a cryptic gmsh failure. Electrodes must sit on z=0, be disks, and
+    fit inside the top face with a margin; the mesh sizes must be sane."""
+    if domain.half_width_um <= 0 or domain.depth_um <= 0:
+        raise ValueError("domain half_width and depth must be positive")
+    if not (0 < domain.h_electrode_um <= domain.h_far_um):
+        raise ValueError("need 0 < h_electrode_um <= h_far_um")
+    if not domain.array.electrodes:
+        raise ValueError("domain has no electrodes")
+    for e in domain.array.electrodes:
+        if e.shape != "disk":
+            raise ValueError(f"electrode {e.id!r} is {e.shape!r}; mesh supports disks")
+        x, y, z = e.pos_um
+        if abs(z) > 1e-9:
+            raise ValueError(f"electrode {e.id!r} is at z={z}; must sit on the plane z=0")
+        r = radius_um(e)
+        if max(abs(x), abs(y)) + r >= domain.half_width_um:
+            raise ValueError(
+                f"electrode {e.id!r} (center {x, y}, r={r}) reaches the outer "
+                f"boundary at half_width={domain.half_width_um}; enlarge the domain"
+            )
+    # a layered domain must have thicknesses matching the depth
+    layer_partition(domain)
+
+
+def default_domain(
+    array: ElectrodeArray,
+    conductivity: ConductivityModel,
+    *,
+    margin_factor: float = 6.0,
+    depth_um: float | None = None,
+    cells_per_radius: float = 2.5,
+) -> FieldDomain:
+    """A reasonable domain auto-sized around an array: lateral margin scaled to
+    the electrode span, depth from the layer stack (or ``margin_factor`` * span
+    if homogeneous), and mesh sizes from the smallest electrode radius. Handy for
+    tests and P4 S2; production runs can size the domain explicitly."""
+    xs = [e.pos_um[0] for e in array.electrodes]
+    ys = [e.pos_um[1] for e in array.electrodes]
+    radii = [radius_um(e) for e in array.electrodes]
+    if not radii:
+        raise ValueError("array has no electrodes")
+    span = max(
+        max(xs) - min(xs),
+        max(ys) - min(ys),
+        2.0 * max(radii),
+    )
+    reach = max(abs(v) for v in (*xs, *ys)) + max(radii)
+    half_width = reach + margin_factor * max(span, max(radii))
+
+    if isinstance(conductivity, LayeredConductivity):
+        depth = sum(layer.thickness_um for layer in conductivity.layers)
+    else:
+        depth = depth_um if depth_um is not None else margin_factor * span
+
+    h_electrode = min(radii) / cells_per_radius
+    h_far = half_width / 4.0
+    domain = FieldDomain(
+        array=array,
+        conductivity=conductivity,
+        half_width_um=half_width,
+        depth_um=depth,
+        h_electrode_um=h_electrode,
+        h_far_um=max(h_far, h_electrode),
+    )
+    validate_domain(domain)
+    return domain
+
+
+def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
+    """Mesh ``domain`` with gmsh and write it to ``path`` (a ``.msh`` file both
+    DOLFINx and NGSolve read). Returns the physical-group tags a backend applies
+    BCs against. Requires gmsh (the ``fem`` env); imported lazily so the pure
+    geometry above stays importable without it.
+    """
+    import gmsh  # lazy: only the fem env has it
+
+    validate_domain(domain)
+    slabs = layer_partition(domain)
+    w = domain.half_width_um
+    electrodes = domain.array.electrodes
+    radii = [radius_um(e) for e in electrodes]
+
+    gmsh.initialize()
+    try:
+        gmsh.model.add("retinode")
+        occ = gmsh.model.occ
+
+        # One box per layer, stacked in z, then fragmented into a conformal solid
+        # so the layer interfaces are shared (matched) surfaces.
+        boxes = [occ.addBox(-w, -w, s.z0_um, 2 * w, 2 * w, s.z1_um - s.z0_um) for s in slabs]
+        # Disks imprinted on the top face z=0 -> one tagged surface per electrode.
+        disks = [
+            occ.addDisk(e.pos_um[0], e.pos_um[1], 0.0, radius_um(e), radius_um(e))
+            for e in electrodes
+        ]
+        vol_dimtags = [(3, b) for b in boxes]
+        tool_dimtags = [(2, d) for d in disks]
+        occ.fragment(vol_dimtags, tool_dimtags)
+        occ.synchronize()
+
+        # Classify the outer boundary of the whole solid. Internal layer
+        # interfaces cancel in getBoundary(combined=True), leaving only real
+        # boundary faces: top plane (z~0) and the grounded shell (z>0).
+        volumes = [tag for (dim, tag) in gmsh.model.getEntities(3)]
+        boundary = gmsh.model.getBoundary([(3, v) for v in volumes], combined=True, oriented=False)
+        top_faces: list[int] = []
+        ground_faces: list[int] = []
+        eps = 1e-6 * domain.depth_um
+        for _dim, surf in boundary:
+            _cx, _cy, cz = occ.getCenterOfMass(2, surf)
+            (top_faces if abs(cz) <= eps else ground_faces).append(surf)
+
+        # Match each top face to an electrode (centroid + area ~ pi r^2) or fall
+        # through to the insulating remainder.
+        electrode_surf: dict[str, int] = {}
+        insulating_faces: list[int] = []
+        for surf in top_faces:
+            cx, cy, _cz = occ.getCenterOfMass(2, surf)
+            area = gmsh.model.occ.getMass(2, surf)
+            matched: str | None = None
+            for e in electrodes:
+                r = radius_um(e)
+                near = math.dist((cx, cy), (e.pos_um[0], e.pos_um[1])) <= 0.25 * r
+                disk_area = abs(area - math.pi * r * r) <= 0.1 * math.pi * r * r
+                if near and disk_area and e.id not in electrode_surf:
+                    matched = e.id
+                    break
+            if matched is not None:
+                electrode_surf[matched] = surf
+            else:
+                insulating_faces.append(surf)
+
+        missing = [e.id for e in electrodes if e.id not in electrode_surf]
+        if missing:
+            raise RuntimeError(f"gmsh did not imprint electrode surface(s): {missing}")
+
+        # Assign each volume to the layer whose z-range holds its centroid.
+        layer_vols: dict[int, list[int]] = {s.index: [] for s in slabs}
+        for v in volumes:
+            _cx, _cy, cz = occ.getCenterOfMass(3, v)
+            for s in slabs:
+                if s.z0_um - eps <= cz <= s.z1_um + eps:
+                    layer_vols[s.index].append(v)
+                    break
+
+        # Physical groups (the tags a backend applies BCs against).
+        gmsh.model.addPhysicalGroup(2, ground_faces, GROUND_TAG)
+        gmsh.model.setPhysicalName(2, GROUND_TAG, "ground")
+        gmsh.model.addPhysicalGroup(2, insulating_faces, INSULATING_TAG)
+        gmsh.model.setPhysicalName(2, INSULATING_TAG, "insulating")
+        electrode_tags: dict[str, int] = {}
+        for i, e in enumerate(electrodes):
+            tag = ELECTRODE_TAG_BASE + i
+            gmsh.model.addPhysicalGroup(2, [electrode_surf[e.id]], tag)
+            gmsh.model.setPhysicalName(2, tag, f"electrode_{e.id}")
+            electrode_tags[e.id] = tag
+        layer_tags: list[int] = []
+        for s in slabs:
+            tag = LAYER_TAG_BASE + s.index
+            gmsh.model.addPhysicalGroup(3, layer_vols[s.index], tag)
+            gmsh.model.setPhysicalName(3, tag, f"layer_{s.index}")
+            layer_tags.append(tag)
+
+        # Graded sizing: fine at the electrode surfaces, coarse toward the shell.
+        dist = gmsh.model.mesh.field.add("Distance")
+        gmsh.model.mesh.field.setNumbers(
+            dist, "FacesList", [electrode_surf[e.id] for e in electrodes]
+        )
+        thr = gmsh.model.mesh.field.add("Threshold")
+        gmsh.model.mesh.field.setNumber(thr, "InField", dist)
+        gmsh.model.mesh.field.setNumber(thr, "SizeMin", domain.h_electrode_um)
+        gmsh.model.mesh.field.setNumber(thr, "SizeMax", domain.h_far_um)
+        gmsh.model.mesh.field.setNumber(thr, "DistMin", max(radii))
+        gmsh.model.mesh.field.setNumber(thr, "DistMax", domain.half_width_um)
+        gmsh.model.mesh.field.setAsBackgroundMesh(thr)
+        gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
+        gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
+        gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
+
+        gmsh.model.mesh.generate(3)
+        gmsh.write(path)
+    finally:
+        gmsh.finalize()
+
+    return MeshResult(
+        path=path,
+        electrode_tags=electrode_tags,
+        layer_tags=tuple(layer_tags),
+        ground_tag=GROUND_TAG,
+        insulating_tag=INSULATING_TAG,
+    )

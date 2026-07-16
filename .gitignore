@@ -11,11 +11,12 @@ dist/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual environments. `env/` also holds committed conda env specs (the FEM
+# toolchain, env/*.yml), so ignore any venv placed there but keep the specs.
 .venv/
 venv/
-env/
-ENV/
+env/*
+!env/*.yml
 # NOTE: .python-version is intentionally NOT ignored — uv uses it to pin the
 # project interpreter (3.12), and committing it keeps the env reproducible.
 

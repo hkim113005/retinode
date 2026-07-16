@@ -53,3 +53,27 @@ jobs:
 
       - name: NEURON tests
         run: uv run pytest -m neuron
+
+  test-fem:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # login shell so the conda env is active
+    steps:
+      - uses: actions/checkout@v4
+
+      # DOLFINx/gmsh ship no pip wheel; build the conda-forge env (the same
+      # env/fem-environment.yml used locally on Apple Silicon) with micromamba.
+      - name: Set up the FEM conda env (DOLFINx + gmsh)
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: env/fem-environment.yml
+          cache-environment: true
+
+      - name: Install the project into the env
+        run: pip install -e . --no-deps
+
+      # Scope to tests/field: every fem-marked test lives there, and this avoids
+      # collecting the neuron/store/app suites, whose deps are not in this env.
+      - name: FEM tests (DOLFINx Poisson gate + gmsh mesh)
+        run: pytest tests/field -m fem
