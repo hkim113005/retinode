@@ -114,3 +114,36 @@ def test_layered_mesh_splits_volume_by_layer(tmp_path):
     expected = [footprint * t for t in (20.0, 30.0, 50.0)]
     for tag, exp in zip(res.layer_tags, expected, strict=True):
         assert _volume(msh, cell_tags, tag) == pytest.approx(exp, rel=1e-6)
+
+
+def test_square_hex_polygon_electrodes_mesh_with_exact_area(tmp_path):
+    """P6 S1: non-disk electrode faces imprint on the plane and carry their exact
+    analytic area (polygons have straight edges, so no faceting error like a disk)."""
+    from engine.spec.geometry import electrode_area_um2
+
+    els = (
+        Electrode(id="D", pos_um=(-60.0, 0.0, 0.0), shape="disk", size_um=12.0),
+        Electrode(id="S", pos_um=(-20.0, 0.0, 0.0), shape="square", size_um=12.0),
+        Electrode(id="H", pos_um=(20.0, 0.0, 0.0), shape="hex", size_um=12.0),
+        Electrode(
+            id="P",
+            pos_um=(60.0, 0.0, 0.0),
+            shape="poly",
+            size_um=0.0,
+            boundary_um=((54.0, -6.0, 0.0), (66.0, -6.0, 0.0), (66.0, 6.0, 0.0), (54.0, 6.0, 0.0)),
+        ),
+    )
+    dom = M.FieldDomain(
+        ElectrodeArray(electrodes=els), HomogeneousConductivity(1.0), 200.0, 120.0, 3.0, 40.0
+    )
+    res = M.build_mesh(dom, str(tmp_path / "shapes.msh"))
+    assert set(res.electrode_tags) == {"D", "S", "H", "P"}
+
+    data = read_from_msh(res.path, MPI.COMM_WORLD, gdim=3)
+    msh, facet_tags = data.mesh, data.facet_tags
+    for e in els:
+        area = _surface_area(msh, facet_tags, res.electrode_tags[e.id])
+        expected = electrode_area_um2(e)
+        # polygons are exact; the faceted disk is a few % under
+        tol = 0.08 if e.shape == "disk" else 1e-4
+        assert area == pytest.approx(expected, rel=tol), f"{e.shape}: {area} vs {expected}"

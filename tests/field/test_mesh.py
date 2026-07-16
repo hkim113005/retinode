@@ -57,14 +57,34 @@ def test_layer_partition_rejects_thickness_depth_mismatch():
         M.layer_partition(dom)
 
 
+def test_validate_domain_accepts_every_supported_2d_shape():
+    sq = Electrode(id="S", pos_um=(-20.0, 0.0, 0.0), shape="square", size_um=10.0)
+    hx = Electrode(id="H", pos_um=(20.0, 0.0, 0.0), shape="hex", size_um=10.0)
+    poly = Electrode(
+        id="P",
+        pos_um=(0.0, 30.0, 0.0),
+        shape="poly",
+        size_um=0.0,
+        boundary_um=((-5.0, 25.0, 0.0), (5.0, 25.0, 0.0), (0.0, 35.0, 0.0)),
+    )
+    M.validate_domain(
+        M.FieldDomain(_array(sq, hx, poly), HOMOG, 100.0, 60.0, 2.0, 25.0)
+    )  # no raise
+
+
 def test_validate_domain_rejects_geometry_mistakes():
     good = M.FieldDomain(_array(_disk("A", 0, 0)), HOMOG, 100.0, 60.0, 2.0, 25.0)
     M.validate_domain(good)  # no raise
 
-    # non-disk electrode
-    sq = Electrode(id="S", pos_um=(0.0, 0.0, 0.0), shape="square", size_um=10.0)
-    with pytest.raises(ValueError, match="disks"):
-        M.validate_domain(M.FieldDomain(_array(sq), HOMOG, 100.0, 60.0, 2.0, 25.0))
+    # an unknown shape (poly is fine; "blob" is not)
+    blob = Electrode(id="B", pos_um=(0.0, 0.0, 0.0), shape="blob", size_um=10.0)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="supports"):
+        M.validate_domain(M.FieldDomain(_array(blob), HOMOG, 100.0, 60.0, 2.0, 25.0))
+
+    # a polygon electrode without an outline
+    bad_poly = Electrode(id="P", pos_um=(0.0, 0.0, 0.0), shape="poly", size_um=0.0)
+    with pytest.raises(ValueError, match="boundary_um"):
+        M.validate_domain(M.FieldDomain(_array(bad_poly), HOMOG, 100.0, 60.0, 2.0, 25.0))
 
     # electrode off the z=0 plane
     off = Electrode(id="O", pos_um=(0.0, 0.0, 5.0), shape="disk", size_um=10.0)
@@ -78,6 +98,23 @@ def test_validate_domain_rejects_geometry_mistakes():
     # bad mesh sizing (electrode coarser than far)
     with pytest.raises(ValueError, match="h_electrode"):
         M.validate_domain(M.FieldDomain(_array(_disk("A", 0, 0)), HOMOG, 100.0, 60.0, 30.0, 25.0))
+
+
+def test_expected_footprint_centroid_and_area_per_shape():
+    # disk/square/hex centred on pos; poly uses the area-weighted centroid
+    sq = Electrode(id="S", pos_um=(7.0, 0.0, 0.0), shape="square", size_um=10.0)
+    cx, cy, area = M._expected_footprint(sq)
+    assert (cx, cy) == (7.0, 0.0) and area == pytest.approx(100.0)
+    poly = Electrode(
+        id="P",
+        pos_um=(0.0, 0.0, 0.0),
+        shape="poly",
+        size_um=0.0,
+        boundary_um=((0.0, 0.0, 0.0), (12.0, 0.0, 0.0), (0.0, 12.0, 0.0)),
+    )
+    pcx, pcy, parea = M._expected_footprint(poly)
+    assert (pcx, pcy) == pytest.approx((4.0, 4.0))  # triangle centroid
+    assert parea == pytest.approx(72.0)
 
 
 def test_default_domain_encloses_the_array_and_sizes_the_mesh():

@@ -8,9 +8,9 @@ half-space:
     - the array/substrate plane is z = 0 (matching the analytical backend, whose
       insulating image plane is also z = 0);
     - tissue fills the slab 0 <= z <= depth, laterally |x|,|y| <= half_width;
-    - disk electrodes are imprinted on the top face z = 0 and tagged one surface
-      each -- that is where the current is injected (a Neumann flux in the weak
-      form, applied per electrode by the backend);
+    - electrode faces (disk / square / hex / polygon) are imprinted on the top face
+      z = 0 and tagged one surface each -- that is where the current is injected (a
+      Neumann flux in the weak form, applied per electrode by the backend);
     - the rest of the top face is the insulating substrate (natural zero-flux);
     - the outer boundary (sides + bottom) is a grounded far-field truncation
       (Dirichlet V = 0);
@@ -34,9 +34,12 @@ from engine.spec import (
     HomogeneousConductivity,
     LayeredConductivity,
 )
-from engine.spec.geometry import radius_um
+from engine.spec.geometry import electrode_area_um2, electrode_outline, radius_um
 
 Vec3 = tuple[float, float, float]
+
+# 2D electrode faces the mesh can imprint on the array plane.
+SUPPORTED_SHAPES = ("disk", "square", "hex", "poly")
 
 # Physical-group tag conventions. Surfaces (dim 2) and volumes (dim 3) live in
 # separate gmsh namespaces, so the small integers do not collide across dims.
@@ -142,8 +145,9 @@ def layer_partition(domain: FieldDomain) -> tuple[LayerSlab, ...]:
 
 def validate_domain(domain: FieldDomain) -> None:
     """Cheap geometry sanity checks -- caught here, in the fast suite, rather
-    than as a cryptic gmsh failure. Electrodes must sit on z=0, be disks, and
-    fit inside the top face with a margin; the mesh sizes must be sane."""
+    than as a cryptic gmsh failure. Electrodes must sit on z=0, be a supported 2D
+    shape (disk/square/hex/poly), and fit inside the top face with a margin; the
+    mesh sizes must be sane."""
     if domain.half_width_um <= 0 or domain.depth_um <= 0:
         raise ValueError("domain half_width and depth must be positive")
     if not (0 < domain.h_electrode_um <= domain.h_far_um):
@@ -151,8 +155,12 @@ def validate_domain(domain: FieldDomain) -> None:
     if not domain.array.electrodes:
         raise ValueError("domain has no electrodes")
     for e in domain.array.electrodes:
-        if e.shape != "disk":
-            raise ValueError(f"electrode {e.id!r} is {e.shape!r}; mesh supports disks")
+        if e.shape not in SUPPORTED_SHAPES:
+            raise ValueError(
+                f"electrode {e.id!r} has shape {e.shape!r}; mesh supports {SUPPORTED_SHAPES}"
+            )
+        if e.shape == "poly" and not e.boundary_um:
+            raise ValueError(f"polygon electrode {e.id!r} has no boundary_um outline")
         x, y, z = e.pos_um
         if abs(z) > 1e-9:
             raise ValueError(f"electrode {e.id!r} is at z={z}; must sit on the plane z=0")
@@ -210,6 +218,42 @@ def default_domain(
     return domain
 
 
+def _add_electrode_face(occ, electrode):
+    """Create the electrode's 2D face on z=0 in the OCC kernel (to be imprinted).
+    A disk is a native OCC disk; square/hex/poly are plane surfaces from the shared
+    :func:`engine.spec.geometry.electrode_outline` vertices."""
+    outline = electrode_outline(electrode)
+    if outline is None:  # disk
+        r = radius_um(electrode)
+        return occ.addDisk(electrode.pos_um[0], electrode.pos_um[1], 0.0, r, r)
+    pts = [occ.addPoint(vx, vy, 0.0) for (vx, vy) in outline]
+    n = len(pts)
+    lines = [occ.addLine(pts[k], pts[(k + 1) % n]) for k in range(n)]
+    return occ.addPlaneSurface([occ.addCurveLoop(lines)])
+
+
+def _expected_footprint(electrode) -> tuple[float, float, float]:
+    """(centroid_x, centroid_y, area) of the electrode face, used to re-identify
+    each electrode's surface after gmsh fragments the top plane. Disk/square/hex
+    are centred on ``pos_um``; a polygon uses its area-weighted centroid."""
+    area = electrode_area_um2(electrode)
+    outline = electrode_outline(electrode)
+    if outline is None or electrode.shape != "poly":  # disk/square/hex centred on pos
+        return electrode.pos_um[0], electrode.pos_um[1], area
+    a2 = cx = cy = 0.0
+    n = len(outline)
+    for k in range(n):
+        x0, y0 = outline[k]
+        x1, y1 = outline[(k + 1) % n]
+        cross = x0 * y1 - x1 * y0
+        a2 += cross
+        cx += (x0 + x1) * cross
+        cy += (y0 + y1) * cross
+    if abs(a2) < 1e-12:  # degenerate outline -> fall back to the vertex mean
+        return sum(v[0] for v in outline) / n, sum(v[1] for v in outline) / n, area
+    return cx / (3.0 * a2), cy / (3.0 * a2), area
+
+
 def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
     """Mesh ``domain`` with gmsh and write it to ``path`` (a ``.msh`` file both
     DOLFINx and NGSolve read). Returns the physical-group tags a backend applies
@@ -232,13 +276,11 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
         # One box per layer, stacked in z, then fragmented into a conformal solid
         # so the layer interfaces are shared (matched) surfaces.
         boxes = [occ.addBox(-w, -w, s.z0_um, 2 * w, 2 * w, s.z1_um - s.z0_um) for s in slabs]
-        # Disks imprinted on the top face z=0 -> one tagged surface per electrode.
-        disks = [
-            occ.addDisk(e.pos_um[0], e.pos_um[1], 0.0, radius_um(e), radius_um(e))
-            for e in electrodes
-        ]
+        # Electrode faces (disk / square / hex / polygon) imprinted on the top
+        # face z=0 -> one tagged surface per electrode.
+        faces = [_add_electrode_face(occ, e) for e in electrodes]
         vol_dimtags = [(3, b) for b in boxes]
-        tool_dimtags = [(2, d) for d in disks]
+        tool_dimtags = [(2, f) for f in faces]
         occ.fragment(vol_dimtags, tool_dimtags)
         occ.synchronize()
 
@@ -254,8 +296,9 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
             _cx, _cy, cz = occ.getCenterOfMass(2, surf)
             (top_faces if abs(cz) <= eps else ground_faces).append(surf)
 
-        # Match each top face to an electrode (centroid + area ~ pi r^2) or fall
-        # through to the insulating remainder.
+        # Match each top face to an electrode by its expected centroid + area
+        # (shape-aware), or fall through to the insulating remainder.
+        footprints = {e.id: _expected_footprint(e) for e in electrodes}
         electrode_surf: dict[str, int] = {}
         insulating_faces: list[int] = []
         for surf in top_faces:
@@ -263,10 +306,13 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
             area = gmsh.model.occ.getMass(2, surf)
             matched: str | None = None
             for e in electrodes:
-                r = radius_um(e)
-                near = math.dist((cx, cy), (e.pos_um[0], e.pos_um[1])) <= 0.25 * r
-                disk_area = abs(area - math.pi * r * r) <= 0.1 * math.pi * r * r
-                if near and disk_area and e.id not in electrode_surf:
+                if e.id in electrode_surf:
+                    continue
+                ex, ey, e_area = footprints[e.id]
+                char = math.sqrt(e_area)  # characteristic length for the tolerance
+                near = math.dist((cx, cy), (ex, ey)) <= 0.25 * char
+                area_ok = abs(area - e_area) <= 0.1 * e_area
+                if near and area_ok:
                     matched = e.id
                     break
             if matched is not None:

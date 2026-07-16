@@ -107,6 +107,29 @@ def test_fem_matches_analytical_half_space():
     assert a_fem[0, 0] / a_fem[2, 0] == pytest.approx(a_an[0, 0] / a_an[2, 0], rel=0.05)
 
 
+def test_square_electrode_solves_and_agrees_with_analytical_far_field():
+    """P6 S1: a non-disk (square) electrode meshes, solves, and its *far* field
+    matches analytical -- the far field is shape-agnostic (total current spread as
+    a point source), so this validates the whole non-disk pipeline: mesh -> solve
+    -> sample -> A in mV/uA. (The near field differs by shape; that is expected.)"""
+    arr = ElectrodeArray(
+        electrodes=(Electrode(id="C", pos_um=(0.0, 0.0, 0.0), shape="square", size_um=12.0),)
+    )
+    sigma = HomogeneousConductivity(sigma_S_per_m=1.0)
+    dom = M.FieldDomain(
+        arr, sigma, half_width_um=3000.0, depth_um=3000.0, h_electrode_um=3.0, h_far_um=400.0
+    )
+    # sample well beyond the electrode (r >> 6 um) where shape washes out
+    zs = np.array([40.0, 60.0, 100.0])
+    q = np.column_stack([np.zeros_like(zs), np.zeros_like(zs), zs])
+
+    a_fem = FenicsxBackend(domain=dom).transfer_matrix(arr, sigma, q)
+    a_an = AnalyticalBackend().transfer_matrix(arr, sigma, q)
+    assert np.all(a_fem[:, 0] > 0)
+    rel = np.abs(a_fem[:, 0] - a_an[:, 0]) / np.abs(a_an[:, 0])
+    assert np.max(rel) < 0.10, f"square far-field disagreement {np.max(rel):.3f}"
+
+
 def test_two_electrodes_give_independent_columns():
     """Two electrodes -> two columns; column j is the field of a unit current on
     electrode j alone, so the near-diagonal dominates (each query point sits

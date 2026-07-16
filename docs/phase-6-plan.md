@@ -121,14 +121,19 @@ docs/
 
 ## Ordered steps
 
-- **P6 S1 — Arbitrary 2D shapes in the FEM mesh.** Generalize `mesh.py`'s disk
-  imprint to **square and polygon** (occ rectangle / plane-surface-from-wire), and
-  generalize the electrode-surface matching (currently `area ≈ πr²`) to a per-shape
-  centroid/area test. Lift the disk-only guard in `validate_domain`. Safety area is
-  already shape-aware (`electrode_area_um2` handles disk/square/hex/poly). Validate:
-  a polygon electrode's field **converges** and, in the small-electrode limit,
-  **agrees with the analytical** point source; a square vs its inscribed disk shows
-  the expected near-field difference. Reuses P4 convergence + agreement.
+- **P6 S1 — Arbitrary 2D shapes in the FEM mesh — done.** `mesh.py` imprints
+  **square / hex / polygon** faces (OCC plane surfaces from
+  `engine.spec.geometry.electrode_outline`), and the electrode-surface matching is
+  now a per-shape centroid + area test (`_expected_footprint`); the disk-only guard
+  in `validate_domain` is lifted (it accepts disk/square/hex/poly and rejects a
+  polygon with no outline). `electrode_area_um2` + `electrode_outline` moved to
+  `spec/geometry.py` as the **single source of truth** shared by the mesh and the
+  safety charge-density check (`safety.py` re-imports it). Verified: each shape
+  meshes with its **exact** area through DOLFINx (square/hex/poly to <1e-4;
+  the faceted disk ~4% under), and a **square electrode solves** with its far field
+  agreeing with the analytical point source (<10%). Fast tests cover the outlines,
+  areas, footprints, and validation; `fem` tests cover the meshed areas and the
+  square solve.
 
 - **P6 S2 — 3D electrode body (single electrode).** Add the **`ElectrodeBody`** spec
   — a parametric 3D primitive (base shape + height + taper + which surface is

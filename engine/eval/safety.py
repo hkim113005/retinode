@@ -18,7 +18,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from engine.spec import Electrode, ElectrodeArray, StimConfig
+from engine.spec import ElectrodeArray, StimConfig
+from engine.spec.geometry import electrode_area_um2  # re-exported; single source of truth
 
 _UM2_PER_CM2 = 1.0e8  # 1 cm^2 = 1e8 um^2
 
@@ -54,29 +55,6 @@ class SafetyReport:
     @property
     def safe(self) -> bool:
         return all(e.safe for e in self.per_electrode)
-
-
-def _polygon_area_um2(boundary_um: tuple[tuple[float, float, float], ...]) -> float:
-    pts = [(p[0], p[1]) for p in boundary_um]
-    n = len(pts)
-    s = 0.0
-    for i in range(n):
-        x1, y1 = pts[i]
-        x2, y2 = pts[(i + 1) % n]
-        s += x1 * y2 - x2 * y1
-    return abs(s) / 2.0
-
-
-def electrode_area_um2(e: Electrode) -> float:
-    """Geometric area of the electrode face, in square microns."""
-    if e.shape == "disk":
-        return math.pi * (e.size_um / 2.0) ** 2
-    if e.shape == "square":
-        return e.size_um**2
-    if e.shape == "hex":  # size is flat-to-flat width
-        return (math.sqrt(3.0) / 2.0) * e.size_um**2
-    # poly
-    return _polygon_area_um2(e.boundary_um) if e.boundary_um else 0.0
 
 
 def charge_per_phase_uC(current_uA: float, phase_width_us: float) -> float:
