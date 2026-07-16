@@ -53,7 +53,7 @@ engine/study/
   geometry_sweep.py  outer geometry loop: field per geometry, config sweep reused     [done]
   runner.py          resumable, store-checkpointed runner + progress callbacks        [done]
   parallel.py        local process-pool execution adapter                            [done]
-  surrogate.py       optional GP emulator over the selectivity-score surface          [P5 S6]
+  surrogate.py       optional GP emulator over the selectivity-score surface          [done]
 docs/
   compute-adapters.md   Slurm (FarmShare/Sherlock) + Sim4Life-cloud adapter design    [done, deferred]
 ```
@@ -128,11 +128,20 @@ docs/
   or a Sim4Life field backend) is a drop-in `Executor`/backend and changes nothing
   in the sweep, store, or Pareto path. The gate: wire Slurm when a sweep's cost
   estimate (D5) exceeds the local wall-clock budget.
-- **P5 S6 (optional) — Surrogate model.** `surrogate.py`: a Gaussian-process (or
-  simpler) emulator over the selectivity score as a function of geometry
-  parameters, proposing the next geometry to sample (active learning /
-  coarse-to-fine), so a sweep converges on the Pareto-relevant region without a
-  full grid. Optional; first to cut.
+- **P5 S6 (optional) — Surrogate model — done.** `engine/study/surrogate.py`: a
+  Gaussian-process emulator over geometry `(diameter, pitch) -> score`, in
+  numpy/scipy only (RBF kernel, Cholesky, standardised inputs; `fit_gp`/`predict`
+  → posterior mean + std). `active_search` seeds an even spread of the candidate
+  set, then repeatedly fits the GP and evaluates the highest **UCB**
+  (`mean + kappa·std`) unsampled candidate, converging on the high-score region
+  **without a full grid** — deterministic (spread seeds + argmax), so runs are
+  reproducible. `search_geometries` is the geometry adapter (score is
+  `score_of(geometry)`, injected — a real geometry sweep's selectivity in use, a
+  synthetic surface in tests). Verified: GP interpolates its training points and is
+  uncertain between them; on a smooth score surface the search lands within 10% of
+  the true optimum evaluating **~25% of the grid** and beats seed-only sampling.
+  Fast-tested (synthetic score, no NEURON/FEM). Optional and first-to-cut, as
+  scoped.
 
 ## Testing strategy
 
