@@ -8,6 +8,13 @@ wired in once the cable engine lands.
 from .evaluator import EVALUATOR_VERSION, evaluate
 from .metrics import SOW, selective_operating_window
 from .offtarget import OffTargetSet, select_off_targets
+from .overlap import (
+    CompartmentFlag,
+    OverlapConflict,
+    OverlapReport,
+    check_overlap,
+    resolve_overlap,
+)
 from .result import EvaluationResult, OperatingWindow, require_same_offtarget
 from .safety import (
     ElectrodeSafety,
@@ -31,6 +38,12 @@ __all__ = [
     # off-target set
     "OffTargetSet",
     "select_off_targets",
+    # cell/electrode overlap (P6 S4)
+    "check_overlap",
+    "resolve_overlap",
+    "OverlapReport",
+    "CompartmentFlag",
+    "OverlapConflict",
     # metrics
     "SOW",
     "selective_operating_window",

@@ -109,7 +109,7 @@ engine/field/
   mesh.py            generalize the 2D imprint (disk -> square/polygon)              [P6 S1]
   mesh3d.py          3D electrode bodies + array pose: build, subtract, tag surfaces  [P6 S2-S3]
 engine/eval/
-  overlap.py         cell/electrode overlap detection + reject/displace + near-contact [P6 S4]
+  overlap.py         cell/electrode overlap detection + reject/displace + near-contact [done]
   safety.py          + conductive-surface area for 3D electrodes (2D already handled)  [P6 S2]
 engine/study/
   geometry.py        + generators for 3D arrays and insertion configurations          [P6 S5]
@@ -173,16 +173,26 @@ docs/
   epiretinal case (array parallel to the surface, electrodes penetrating
   perpendicular) is covered by translation + per-electrode bodies.
 
-- **P6 S4 — Cell↔electrode interaction & overlap policy.** In `overlap.py`, detect
-  compartments **inside any electrode body** (a geometry predicate against the
-  primitive / CAD solid). Apply **D9**: default **`reject`** with a clear conflict
-  report (which cell, which electrode, which compartments); opt-in **`displace`**
-  (mark those compartments inactive — the cable model simply runs on the surviving
-  compartments, still no NEURON change). **Flag near-contact** (a compartment within
-  `ε` of a conductive surface) as outside the passive-probe regime. Validate: a cell
-  placed into a penetrating electrode is rejected; under `displace`, the interior
-  compartments are dropped and the rest still evaluate; a cell just outside the body
-  evaluates normally with a near-contact flag if within `ε`.
+- **P6 S4 — Cell↔electrode interaction & overlap policy — done.** The physical
+  fact — a neuron cannot occupy the metal — made concrete as **pure geometry**.
+  `spec/body.py` gained `point_in_body` (the exact analytic counterpart of the OCC
+  solid the mesh cuts, so the check and the mesh can't disagree about where the
+  metal is) and `surface_distance_um` (signed SDF, exact for hemisphere/cylinder,
+  approximate frustum). `eval/overlap.py`: `check_overlap(array, cell_compartments,
+  eps)` flags every compartment **inside** a body (a conflict) or within `eps` of a
+  surface (**near-contact** — where the passive-probe field approximation frays),
+  applying the array placement first so bodies are tested at their planted
+  positions. `resolve_overlap(report, policy)` applies **D9**: **`reject`** raises
+  `OverlapConflict` naming the cell/electrode/compartment; **`displace`** returns
+  `{cell: {compartments to deactivate}}` — the interior compartments the caller
+  drops, the survivors still simulated (no NEURON-model change, only *which*
+  compartments run). Validated (fast, `test_overlap.py` + `test_body.py`): a cell
+  whose compartments fall inside a penetrating pillar is detected and rejected;
+  `displace` reports exactly the interior compartments; a compartment 1 µm off the
+  wall flags near-contact but not conflict; a comfortable gap flags nothing; a
+  flat-only array never conflicts; placement moves the body before the check. **The
+  evaluator consumes `resolve_overlap`'s decision** (drop the flagged compartments,
+  or refuse the scene) — a thin integration point, since the biophysics is untouched.
 
 - **P6 S5 — CAD import + provenance + sweep integration.** `occ.importShapes` a user
   STEP/BREP solid; place/orient it via `ArrayPlacement`; tag its conductive

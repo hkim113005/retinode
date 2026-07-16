@@ -5,7 +5,12 @@ import math
 import pytest
 
 from engine.spec import Cylinder, Electrode, Frustum, Hemisphere, from_json, spec_hash, to_json
-from engine.spec.body import body_base_radius_um, body_conductive_area_um2
+from engine.spec.body import (
+    body_base_radius_um,
+    body_conductive_area_um2,
+    point_in_body,
+    surface_distance_um,
+)
 from engine.spec.geometry import electrode_area_um2, radius_um
 
 
@@ -58,3 +63,37 @@ def test_body_electrode_round_trips_and_hashes_stably():
 def test_a_body_makes_the_electrode_hash_differ_from_the_flat_one():
     flat = Electrode(id="E", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=20.0)
     assert spec_hash(flat) != spec_hash(_with_body(Cylinder(10.0, 20.0)))
+
+
+# --- point-in-body + surface distance (P6 S4 overlap predicates) -------------
+
+
+def test_point_in_hemisphere_is_the_upper_half_ball():
+    h = Hemisphere(10.0)
+    assert point_in_body(h, 0.0, 0.0, 5.0)  # on the axis, inside
+    assert point_in_body(h, 6.0, 0.0, 6.0)  # rho^2+z^2 = 72 < 100
+    assert not point_in_body(h, 0.0, 0.0, 12.0)  # too deep
+    assert not point_in_body(h, 0.0, 0.0, -1.0)  # below the plane (not in the z>=0 half)
+
+
+def test_point_in_cylinder_is_the_capped_pillar():
+    c = Cylinder(5.0, 30.0)
+    assert point_in_body(c, 0.0, 0.0, 15.0)
+    assert point_in_body(c, 4.9, 0.0, 0.1)
+    assert not point_in_body(c, 5.1, 0.0, 15.0)  # radially outside
+    assert not point_in_body(c, 0.0, 0.0, 31.0)  # past the tip
+
+
+def test_point_in_frustum_follows_the_taper():
+    f = Frustum(base_radius_um=8.0, top_radius_um=2.0, height_um=20.0)
+    assert point_in_body(f, 7.0, 0.0, 0.5)  # near the wide base
+    assert not point_in_body(f, 7.0, 0.0, 18.0)  # the wall has narrowed by depth 18
+    assert point_in_body(f, 1.5, 0.0, 18.0)  # inside the narrow tip
+
+
+def test_surface_distance_sign_and_magnitude():
+    c = Cylinder(5.0, 30.0)
+    assert surface_distance_um(c, 0.0, 0.0, 15.0) < 0  # inside -> negative
+    assert surface_distance_um(c, 8.0, 0.0, 15.0) == pytest.approx(3.0)  # 3 um outside the wall
+    h = Hemisphere(10.0)
+    assert surface_distance_um(h, 0.0, 0.0, 13.0) == pytest.approx(3.0)  # 3 um past the dome

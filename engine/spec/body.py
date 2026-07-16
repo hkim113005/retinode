@@ -76,3 +76,43 @@ def body_conductive_area_um2(body: ElectrodeBody) -> float:
     r0, r1, h = body.base_radius_um, body.top_radius_um, body.height_um
     slant = math.hypot(h, r0 - r1)
     return _select_faces_area(math.pi * r1 * r1, math.pi * (r0 + r1) * slant, body.conductive_faces)
+
+
+def _frustum_radius_at(body: Frustum, z: float) -> float:
+    """The frustum's radius at depth ``z`` (linear taper), clamped to its height."""
+    zc = max(0.0, min(z, body.height_um))
+    t = zc / body.height_um
+    return body.base_radius_um + (body.top_radius_um - body.base_radius_um) * t
+
+
+def point_in_body(body: ElectrodeBody, dx: float, dy: float, dz: float) -> bool:
+    """Whether a point is **inside** the body solid, given its offset ``(dx, dy, dz)``
+    from the electrode's base centre on the array plane (``dz`` is depth into the
+    tissue). This is the exact analytic counterpart of the OCC solid the mesh cuts,
+    so the overlap check and the mesh cannot disagree about where the metal is."""
+    rho = math.hypot(dx, dy)
+    if isinstance(body, Hemisphere):
+        return dz >= 0.0 and rho * rho + dz * dz <= body.radius_um**2
+    if isinstance(body, Cylinder):
+        return 0.0 <= dz <= body.height_um and rho <= body.radius_um
+    return 0.0 <= dz <= body.height_um and rho <= _frustum_radius_at(body, dz)  # Frustum
+
+
+def surface_distance_um(body: ElectrodeBody, dx: float, dy: float, dz: float) -> float:
+    """Signed distance to the body surface (negative inside), in microns. Exact for
+    the hemisphere and cylinder; a close approximation for the frustum. Used to flag
+    **near-contact** (a compartment just outside the metal), where the passive-probe
+    field approximation frays."""
+    rho = math.hypot(dx, dy)
+    if isinstance(body, Hemisphere):
+        # the z>=0 half-ball is (ball) ∩ (half-space z>=0); SDF = max of the two.
+        return max(math.hypot(rho, dz) - body.radius_um, -dz)
+    if isinstance(body, Cylinder):
+        r, h = body.radius_um, body.height_um
+        d_r, d_z = rho - r, abs(dz - h / 2.0) - h / 2.0
+        return math.hypot(max(d_r, 0.0), max(d_z, 0.0)) + min(max(d_r, d_z), 0.0)
+    # Frustum: the capped form with the radius taken at this depth (approximate).
+    h = body.height_um
+    d_r = rho - _frustum_radius_at(body, dz)
+    d_z = abs(dz - h / 2.0) - h / 2.0
+    return math.hypot(max(d_r, 0.0), max(d_z, 0.0)) + min(max(d_r, d_z), 0.0)
