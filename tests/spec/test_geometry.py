@@ -1,11 +1,11 @@
-"""radius_um / electrode_outline / electrode_area_um2: shared electrode geometry."""
+"""radius_um / electrode_outline / electrode_area_um2 / placement: shared geometry."""
 
 import math
 
 import pytest
 
-from engine.spec import Electrode
-from engine.spec.geometry import electrode_area_um2, electrode_outline, radius_um
+from engine.spec import ArrayPlacement, Electrode, ElectrodeArray, spec_hash
+from engine.spec.geometry import apply_placement, electrode_area_um2, electrode_outline, radius_um
 
 
 def _sq(size=10.0, x=0.0, y=0.0):
@@ -83,3 +83,35 @@ def test_poly_area_is_the_shoelace_of_the_outline():
     tri = _poly(((0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (0.0, 6.0, 0.0)))
     assert electrode_area_um2(tri) == pytest.approx(30.0)  # 1/2 * 10 * 6
     assert electrode_area_um2(_poly(())) == 0.0  # no outline -> zero area
+
+
+# --- ArrayPlacement: planting the array into tissue (P6 S3) ------------------
+
+
+def test_no_placement_returns_electrodes_unchanged():
+    arr = ElectrodeArray(electrodes=(_disk(),))
+    assert apply_placement(arr) == arr.electrodes
+
+
+def test_placement_translates_every_position():
+    arr = ElectrodeArray(
+        electrodes=(_sq(x=10.0, y=0.0), _disk()),
+        placement=ArrayPlacement(offset_um=(5.0, -3.0, 2.0)),
+    )
+    placed = apply_placement(arr)
+    assert placed[0].pos_um == (15.0, -3.0, 2.0)  # square moved by the offset
+    assert placed[1].pos_um == (5.0, -3.0, 2.0)
+
+
+def test_placement_also_translates_a_polygon_outline():
+    poly = _poly(((0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (0.0, 10.0, 0.0)))
+    arr = ElectrodeArray(electrodes=(poly,), placement=ArrayPlacement(offset_um=(1.0, 2.0, 0.0)))
+    (placed,) = apply_placement(arr)
+    assert placed.boundary_um == ((1.0, 2.0, 0.0), (11.0, 2.0, 0.0), (1.0, 12.0, 0.0))
+
+
+def test_placement_is_part_of_the_array_hash():
+    els = (_disk(),)
+    a = ElectrodeArray(electrodes=els)
+    b = ElectrodeArray(electrodes=els, placement=ArrayPlacement(offset_um=(5.0, 0.0, 0.0)))
+    assert spec_hash(a) != spec_hash(b)  # a re-posed array keys distinctly (provenance)

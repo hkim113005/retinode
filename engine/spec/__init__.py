@@ -14,7 +14,7 @@ from .conductivity import (
     LayeredConductivity,
 )
 from .conventions import SCHEMA_VERSION
-from .geometry import Electrode, ElectrodeArray, Shape
+from .geometry import ArrayPlacement, Electrode, ElectrodeArray, Shape
 from .hashing import combine, spec_hash
 from .patch import RGC, RetinalPatch
 from .serialization import from_json, to_json
@@ -27,6 +27,7 @@ __all__ = [
     # geometry
     "Electrode",
     "ElectrodeArray",
+    "ArrayPlacement",
     "ElectrodeBody",
     "Hemisphere",
     "Cylinder",

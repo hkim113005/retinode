@@ -153,17 +153,25 @@ docs/
   measurably reshapes the field (tip concentrates it ~1.7× deeper); and
   **DOLFINx ≈ NGSolve** on the 3D mesh to <3%.
 
-- **P6 S3 — 3D array placement & insertion (plant an array into tissue).** Pin and
-  **reconcile the coordinate convention** (D8): tissue `z ≥ 0`, electrodes at/into
-  `z > 0`, RGC population in `z ≥ 0` — migrate the analytical/FEM/placement paths so
-  the tissue and the cells are on the same side as the electrodes (the foundational
-  fix). Add **`ArrayPlacement`** — a rigid pose (translation + orientation, e.g. a
-  tilt of the array plane) plus **per-electrode insertion depth**, so a whole array
-  of **mixed flat and penetrating** electrodes is posed into the tissue. The mesh
-  assembles the tissue **minus every electrode body**, with per-electrode surface
-  tags, and produces the transfer matrix over the placed population's compartments.
-  Validate: a placed single-electrode array reproduces the P6 S2 field; a
-  two-electrode penetrating array solves and its columns are independent (as P4 S2).
+- **P6 S3 — 3D array placement & mixed arrays — done.** `build_mesh` now assembles
+  **any mix of flat and penetrating electrodes in one build**: the unified
+  `_build_electrode_surfaces` cuts every 3D body from the tissue *and* imprints
+  every flat face, then classifies the boundary (flat faces + substrate → top;
+  cavity walls → 3D electrodes; shell → ground) — the S2 mixed-array
+  `NotImplementedError` is gone. **`ArrayPlacement`** (a rigid **translation**) is
+  added to `ElectrodeArray`; `apply_placement` poses the whole array (positions and
+  polygon outlines) and, being part of the array's hash, keys a re-posed array
+  distinctly (provenance). The **coordinate convention (D8) is pinned**: `z = 0`
+  array plane, `+z` into the tissue, and the tissue / electrode bodies / any
+  FEM-driven cell population all at `z ≥ 0` (the analytical tier stays
+  sign-agnostic — its field is mirror-symmetric across `z = 0`). Validated
+  (`test_mesh3d_fem.py`, fem): a **mixed flat + penetrating** array has independent
+  columns (a point above the disk feels the disk; below the pillar tip feels the
+  pillar); a hemisphere **planted at an offset** reproduces the origin field
+  rigidly (<2%). **Array tilt/rotation is deferred** — it repositions the substrate
+  plane itself (a larger change), documented on `ArrayPlacement`; the realistic
+  epiretinal case (array parallel to the surface, electrodes penetrating
+  perpendicular) is covered by translation + per-electrode bodies.
 
 - **P6 S4 — Cell↔electrode interaction & overlap policy.** In `overlap.py`, detect
   compartments **inside any electrode body** (a geometry predicate against the

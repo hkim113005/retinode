@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from .body import ElectrodeBody, body_base_radius_um, body_conductive_area_um2
@@ -11,6 +11,20 @@ from .conventions import SCHEMA_VERSION
 
 Shape = Literal["disk", "square", "hex", "poly"]
 Vec3 = tuple[float, float, float]
+
+
+@dataclass(frozen=True)
+class ArrayPlacement:
+    """How a whole array is planted into the tissue: a rigid **translation** of
+    every electrode (position it laterally over the retina; a z offset shifts the
+    whole array plane deeper). Array *tilt/rotation* is deferred — it repositions
+    the substrate plane itself — so this is a translation only for now.
+
+    Convention (Phase-6 D8): z = 0 is the array plane, +z is into the tissue (the
+    electrode normal direction); the tissue, the electrode bodies, and any
+    FEM-driven cell population all live at z >= 0."""
+
+    offset_um: Vec3 = (0.0, 0.0, 0.0)
 
 
 @dataclass(frozen=True)
@@ -33,6 +47,7 @@ class ElectrodeArray:
 
     electrodes: tuple[Electrode, ...]
     frame: str = "patch"  # coordinate convention these positions live in
+    placement: ArrayPlacement | None = None  # how the array is planted; None = as-authored
     schema_version: int = SCHEMA_VERSION
 
     def ids(self) -> tuple[str, ...]:
@@ -113,3 +128,30 @@ def electrode_area_um2(electrode: Electrode) -> float:
         return (math.sqrt(3.0) / 2.0) * electrode.size_um**2
     outline = electrode_outline(electrode)  # poly
     return _polygon_area_um2(outline) if outline else 0.0
+
+
+def apply_placement(array: ElectrodeArray) -> tuple[Electrode, ...]:
+    """The array's electrodes with its :class:`ArrayPlacement` applied — every
+    position (and any polygon outline) translated by the offset. No placement
+    returns the electrodes unchanged. This is the concrete positioned geometry the
+    FEM mesh builds; the placement is part of the array's hash, so a re-posed array
+    keys distinctly (provenance)."""
+    placement = array.placement
+    if placement is None:
+        return array.electrodes
+    ox, oy, oz = placement.offset_um
+    placed: list[Electrode] = []
+    for e in array.electrodes:
+        boundary = (
+            None
+            if e.boundary_um is None
+            else tuple((b[0] + ox, b[1] + oy, b[2] + oz) for b in e.boundary_um)
+        )
+        placed.append(
+            replace(
+                e,
+                pos_um=(e.pos_um[0] + ox, e.pos_um[1] + oy, e.pos_um[2] + oz),
+                boundary_um=boundary,
+            )
+        )
+    return tuple(placed)

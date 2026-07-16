@@ -24,7 +24,7 @@ from typing import Any
 
 from .body import Cylinder, Frustum, Hemisphere
 from .conductivity import HomogeneousConductivity, Layer, LayeredConductivity
-from .geometry import Electrode, ElectrodeArray
+from .geometry import ArrayPlacement, Electrode, ElectrodeArray
 from .patch import RGC, RetinalPatch
 from .stim import StimConfig, Waveform
 from .study import StudyDefinition, Sweep
@@ -35,6 +35,7 @@ _REGISTRY: dict[str, type] = {
     for c in (
         Electrode,
         ElectrodeArray,
+        ArrayPlacement,
         Hemisphere,
         Cylinder,
         Frustum,

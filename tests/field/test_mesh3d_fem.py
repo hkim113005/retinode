@@ -96,3 +96,36 @@ def test_dolfinx_and_ngsolve_agree_on_a_3d_hemisphere_mesh(tmp_path):
     a_ngsolve = _solve_on_mesh_ngsolve(result, dom, q, 1)
     rel = np.abs(a_dolfinx - a_ngsolve) / np.abs(a_dolfinx)
     assert np.max(rel) < 0.03, f"3D solver disagreement {np.max(rel):.4f}"
+
+
+def test_mixed_flat_and_penetrating_array_has_independent_columns():
+    # P6 S3: a flat disk + a penetrating cylinder in one array mesh together.
+    flat = Electrode(id="F", pos_um=(-40.0, 0.0, 0.0), shape="disk", size_um=12.0)
+    cyl = Electrode(id="C", pos_um=(40.0, 0.0, 0.0), shape="disk", size_um=0.0,
+                    body=Cylinder(radius_um=5.0, height_um=30.0))
+    arr = ElectrodeArray(electrodes=(flat, cyl))
+    dom = M.FieldDomain(arr, SIGMA, 400.0, 200.0, 3.0, 60.0)
+    q = np.array([[-40.0, 0.0, 20.0], [40.0, 0.0, 45.0]])  # above the flat, below the tip
+    a = solve_transfer_matrix(dom, q, degree=1)
+    assert a.shape == (2, 2)
+    assert a[0, 0] > a[0, 1]  # the point above the flat feels the flat electrode more
+    assert a[1, 1] > a[1, 0]  # the point below the tip feels the cylinder more
+
+
+def test_placement_offsets_the_field_rigidly():
+    # a hemisphere planted at (100, 0) matches the same hemisphere at the origin,
+    # sampled the same distance above -- placement is a rigid translation.
+    from engine.spec import ArrayPlacement
+
+    base = _hemisphere(10.0)
+    placed = ElectrodeArray(electrodes=base.electrodes,
+                            placement=ArrayPlacement(offset_um=(100.0, 0.0, 0.0)))
+    ve_placed = solve_transfer_matrix(
+        M.FieldDomain(placed, SIGMA, 500.0, 500.0, 2.0, 80.0),
+        np.array([[100.0, 0.0, 25.0]]), degree=1,
+    )[0, 0]
+    ve_ref = solve_transfer_matrix(
+        M.FieldDomain(base, SIGMA, 500.0, 500.0, 2.0, 80.0),
+        np.array([[0.0, 0.0, 25.0]]), degree=1,
+    )[0, 0]
+    assert ve_placed == pytest.approx(ve_ref, rel=0.02)
