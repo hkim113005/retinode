@@ -81,12 +81,26 @@ class FenicsxBackend:
         query_points_um: np.ndarray,
     ) -> np.ndarray:
         _reject_anisotropy(conductivity)
-        domain = self._domain or default_domain(
-            array, conductivity, margin_factor=self.margin_factor
-        )
+        domain = self._resolve_domain(array, conductivity)
         if domain.array is not array and domain.array.ids() != array.ids():
             raise ValueError("the backend's domain was built for a different array")
         return solve_transfer_matrix(domain, query_points_um, degree=self.degree)
+
+    def _resolve_domain(
+        self, array: ElectrodeArray, conductivity: ConductivityModel
+    ) -> FieldDomain:
+        return self._domain or default_domain(
+            array, conductivity, margin_factor=self.margin_factor
+        )
+
+    def solve_params(self, array: ElectrodeArray, conductivity: ConductivityModel) -> str:
+        """Canonical string of the solve settings that change ``A`` beyond the
+        array and conductivity: the element degree and the mesh resolution/extent
+        (the resolved domain's :meth:`~engine.field.mesh.FieldDomain.descriptor`).
+        Pass to ``field_key(..., solve_params=...)`` so a FEM transfer matrix is
+        cache-keyed to its mesh and never reused across refinements."""
+        _reject_anisotropy(conductivity)
+        return f"deg={self.degree}|{self._resolve_domain(array, conductivity).descriptor()}"
 
 
 def solve_transfer_matrix(

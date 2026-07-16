@@ -62,7 +62,7 @@ engine/field/
   mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers)  [done]
   fem_fenicsx.py   DOLFINx backend behind the contract                          [done (homog + isotropic layered)]
   fem_ngsolve.py   NGSolve backend (second-solver cross-check)                  [P4 S5]
-  convergence.py   mesh-refinement convergence check                           [P4 S4]
+  convergence.py   mesh-refinement convergence check                           [done]
 env/
   fem-environment.yml   conda-forge FEM env (dolfinx, gmsh)                     [done]
 .github/workflows/ci.yml   + a `test-fem` job (micromamba)                      [done]
@@ -126,11 +126,21 @@ env/
   while a *conductive* buried layer (σ₂>σ₁) drains it and lowers the field — a
   large, correctly-signed effect the analytical backend cannot represent (it
   rejects layered models by contract).
-- **P4 S4 — Convergence + provenance.** Refine the mesh until Ve (or the target
-  metric) changes < tolerance between refinements; store the convergence curve so
-  the claim is auditable. Thread mesh parameters + backend name into `field_key`
-  (already backend-aware) so FEM results are cache-keyed and never silently reused
-  across meshes.
+- **P4 S4 — Convergence + provenance — done.** `engine/field/convergence.py`:
+  `mesh_convergence(base_domain, query_points, factors, tol)` solves on the domain
+  refined by each factor (extent fixed, so truncation is constant and only the
+  discretization changes) and records the curve — per level: mesh size, `‖A‖`, and
+  the relative change `‖A_k − A_{k-1}‖ / ‖A_k‖` of the transfer matrix at the fixed
+  query points. `converged` when the change between the two finest meshes < `tol`.
+  Verified on a real solve: rel-change **0.034 → 0.018** across factors 1→3
+  (`converged` at tol 0.05). The solver is **injectable**, so the convergence
+  logic is fast-tested without dolfinx (a stub returns matrices with a known
+  refinement trend); the real run is `fem`-marked. **Provenance:** `field_key`
+  gained a `solve_params` argument (hashed when present); `FieldDomain.descriptor()`
+  + `FenicsxBackend.solve_params()` expose the mesh extent/resolution + element
+  degree, so a coarse-mesh `A` **can never be silently reused for a finer mesh**.
+  The analytical backend passes no `solve_params`, so its keys — and every existing
+  store/result key — are unchanged.
 - **P4 S5 — Second-solver agreement + regime map.** An NGSolve backend (pip,
   universal2) solving the **same gmsh mesh**; assert DOLFINx ≈ NGSolve within
   tolerance (the "confirmed by a second backend" done-when). Then **map the

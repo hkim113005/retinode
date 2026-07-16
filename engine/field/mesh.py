@@ -75,6 +75,17 @@ class FieldDomain:
     h_electrode_um: float
     h_far_um: float
 
+    def descriptor(self) -> str:
+        """Canonical string of the numeric mesh/extent parameters — the part of
+        a FEM solve's identity *beyond* the array and conductivity. Threaded into
+        ``field_key`` (as ``solve_params``) so a coarse mesh's transfer matrix is
+        never silently reused for a finer one. ``%.6g`` is finer than any mesh
+        size we choose, so equal domains give equal descriptors."""
+        return (
+            f"hw={self.half_width_um:.6g};d={self.depth_um:.6g};"
+            f"he={self.h_electrode_um:.6g};hf={self.h_far_um:.6g}"
+        )
+
     def refined(self, factor: float) -> FieldDomain:
         """Same geometry, mesh sizes divided by ``factor`` -- the knob P4 S4's
         convergence study turns. ``factor > 1`` refines."""

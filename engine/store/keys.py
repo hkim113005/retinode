@@ -37,6 +37,8 @@ def field_key(
     conductivity: ConductivityModel,
     backend_name: str,
     query_points: np.ndarray | None = None,
+    *,
+    solve_params: str | None = None,
 ) -> str:
     """Identity of a field solve: the transfer matrix depends only on these.
 
@@ -45,8 +47,16 @@ def field_key(
     same cell type under one array have different fields. It is optional so the
     regime-level key (used inside ``result_key``, where the patch hash already
     captures every cell's placement) stays unchanged.
+
+    ``solve_params`` carries backend-specific settings that change ``A`` beyond
+    the array and conductivity — for the FEM backend, the mesh resolution/extent
+    and element degree (``FenicsxBackend.solve_params``). Threading it in means a
+    coarse-mesh ``A`` is never silently reused for a finer mesh. The analytical
+    backend has no such settings and passes ``None``, so its keys are unchanged.
     """
     parts = [backend_name, spec_hash(array), spec_hash(conductivity)]
+    if solve_params is not None:
+        parts.append(solve_params)
     if query_points is not None:
         parts.append(query_points_digest(query_points))
     return combine(*parts)

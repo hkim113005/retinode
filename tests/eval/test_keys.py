@@ -38,6 +38,21 @@ def test_field_key_is_deterministic_and_input_sensitive():
     assert base != field_key(ARR, COND, "fem")  # backend matters
 
 
+def test_field_key_threads_solve_params_so_fem_meshes_do_not_collide():
+    coarse = "deg=1|hw=200;d=200;he=4;hf=50"
+    fine = "deg=1|hw=200;d=200;he=2;hf=50"
+    base = field_key(ARR, COND, "fem_fenicsx")
+    k_coarse = field_key(ARR, COND, "fem_fenicsx", solve_params=coarse)
+    k_fine = field_key(ARR, COND, "fem_fenicsx", solve_params=fine)
+    assert k_coarse != k_fine  # different mesh -> different key (no silent reuse)
+    assert k_coarse == field_key(ARR, COND, "fem_fenicsx", solve_params=coarse)  # deterministic
+    assert base != k_coarse  # adding solve_params changes the key
+    # the analytical backend passes no solve_params, so its keys are unchanged
+    assert field_key(ARR, COND, "analytical") == field_key(
+        ARR, COND, "analytical", solve_params=None
+    )
+
+
 def test_field_key_includes_query_points_for_per_cell_caching():
     pts1 = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
     pts2 = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
