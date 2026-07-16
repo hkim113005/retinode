@@ -12,11 +12,13 @@ from .backend import (
     current_vector,
     potential_mV,
 )
+from .fem_fenicsx import FenicsxBackend
 
 __all__ = [
     "FieldBackend",
     "UnsupportedByBackend",
     "AnalyticalBackend",
+    "FenicsxBackend",
     "current_vector",
     "potential_mV",
 ]

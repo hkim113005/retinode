@@ -60,7 +60,7 @@ engine/field/
   backend.py       transfer-matrix contract + UnsupportedByBackend             [done]
   analytical.py    Tier-1 analytical backend                                    [done]
   mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers)  [done]
-  fem_fenicsx.py   DOLFINx backend behind the contract                          [P4 S2-S3]
+  fem_fenicsx.py   DOLFINx backend behind the contract                          [done (homog); layered=S3]
   fem_ngsolve.py   NGSolve backend (second-solver cross-check)                  [P4 S5]
   convergence.py   mesh-refinement convergence check                           [P4 S4]
 env/
@@ -89,11 +89,26 @@ env/
   Pure geometry (partition/sizing/validation) is fast-tested without gmsh;
   gmsh+DOLFINx build is `fem`-marked (`tests/field/test_mesh.py`,
   `test_mesh_fem.py`).
-- **P4 S2 — DOLFINx backend (homogeneous) + MMS/analytical.** `transfer_matrix`
-  via DOLFINx: one unit-current solve per electrode, Ve sampled at the query
-  points → `A` (mV/µA, sign chain preserved). Validate with (a) **MMS** — impose a
-  known analytic potential, recover it to mesh tolerance — and (b) **analytical
-  agreement** — homogeneous half-space FEM `A` ≈ analytical `A` within tolerance.
+- **P4 S2 — DOLFINx backend (homogeneous) + MMS/analytical — done.**
+  `engine/field/fem_fenicsx.py`: `FenicsxBackend` behind the contract. Per
+  electrode, a unit current is a Neumann flux `σ ∂V/∂n = 1/area` spread over the
+  disk; the top face is insulating (natural zero-flux) and the outer shell is
+  grounded. One LU solve per electrode → one column of `A`; the mesh is scaled
+  microns→metres so assembly is pure SI, then `A = 1e-3 · V` recovers mV/µA. The
+  half-space image the analytical tier adds by hand is **geometric** here (the
+  slab *is* the half-space). Validated three ways (`test_fem_backend.py`, `fem`):
+  **(a) MMS** — `u* = 1 + x² + 2y² + 3z²` recovered on the real tissue mesh to
+  relative L2 `< 1e-8` (P2); **(b) analytical agreement** — on a homogeneous
+  half-space with a ~3 mm grounded shell (truncation ≪ disk/mesh error), FEM `A`
+  matches analytical `A` to **median 3.8%, max 4.5%** across z = 20–100 µm, same
+  1/r decay, correct sign; **(c) current conservation** — a unit-current solve
+  drives **−0.997 A** out through the ground (Kirchhoff to 0.3%), confirming the
+  flux BC and unit chain. **Finding (recorded, not a bug):** the error grows with
+  query distance only when the domain is too small — it is *truncation*
+  (`err ≈ d/R`), so accuracy needs an adequately large grounded shell; the
+  regime is mapped in P4 S5 and the convergence knob is P4 S4. The
+  electrode-surface flux recovered by differentiating a P1 solution is unreliable
+  (the ground integral is the trustworthy conservation check).
 - **P4 S3 — Layered conductivity (the value-add).** Extend the backend to
   `LayeredConductivity`. Validate against the **two-layer half-space closed form**
   (image series) and/or an MMS with a discontinuous σ across the layer interface.
