@@ -114,7 +114,7 @@ engine/eval/
 engine/study/
   geometry.py        + generators for 3D arrays and insertion configurations          [P6 S5]
 docs/
-  electrode-geometry.md   the domain model, overlap policy, conventions, caveats       [P6 S6]
+  electrode-geometry.md   the domain model, overlap policy, conventions, caveats       [done]
 ```
 
 ---
@@ -214,12 +214,17 @@ docs/
   (P5 D2). Face-group selection on imported CAD (tip/sides) and array tilt remain
   the documented extensions.
 
-- **P6 S6 — Cross-check, regime, and docs.** NGSolve agreement on a representative
-  **placed 3D array** mesh; `electrode-geometry.md` documenting the domain model
-  (tissue − electrodes), the coordinate convention, the conductive-surface
-  convention, the **overlap policy**, the accepted CAD formats, and the honest
-  caveats (FEM-only; near-contact leaves the passive-probe regime; mesh-resolution
-  and truncation sensitivity for fine 3D features).
+- **P6 S6 — Cross-check, regime, and docs — done.** The second-solver cross-check
+  is extended to a **representative planted array**: DOLFINx ≈ NGSolve to **<3%** on
+  a placed **mixed** array (a flat disk + a penetrating cylinder, translated into
+  the tissue), read from one mesh (`test_mesh3d_fem.py`, `fem`). The user-facing
+  reference [electrode-geometry.md](electrode-geometry.md) documents the domain
+  model (tissue − electrodes), the coordinate convention, how to describe each
+  electrode kind (2D shape / 3D body / imported CAD), planting an array, the
+  **overlap policy**, sweeping 3D designs, the accepted CAD formats (STEP/BREP; STL
+  out), and the honest caveats (FEM-only; near-contact leaves the passive-probe
+  regime; 3D mesh resolution + truncation sensitivity; the deferred extensions).
+  **Phase 6 complete.**
 
 ---
 

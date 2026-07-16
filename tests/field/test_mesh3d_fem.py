@@ -181,3 +181,27 @@ def test_imported_cad_cylinder_reproduces_the_primitive_field(tmp_path):
         M.FieldDomain(ElectrodeArray((prim_e,)), SIGMA, 1000.0, 1000.0, 2.0, 150.0), q
     )[:, 0]
     assert np.max(np.abs(a_cad - a_prim) / np.abs(a_prim)) < 0.03
+
+
+def test_dolfinx_and_ngsolve_agree_on_a_placed_mixed_3d_array(tmp_path):
+    # P6 S6: the second-solver cross-check on a representative planted array —
+    # a flat disk + a penetrating cylinder, translated into the tissue.
+    pytest.importorskip("ngsolve")
+    from engine.field.fem_ngsolve import _solve_on_mesh_ngsolve
+    from engine.spec import ArrayPlacement
+
+    flat = Electrode(id="F", pos_um=(-30.0, 0.0, 0.0), shape="disk", size_um=12.0)
+    cyl = Electrode(id="C", pos_um=(30.0, 0.0, 0.0), shape="disk", size_um=0.0,
+                    body=Cylinder(radius_um=5.0, height_um=25.0))
+    arr = ElectrodeArray(
+        electrodes=(flat, cyl), placement=ArrayPlacement(offset_um=(10.0, 5.0, 0.0))
+    )
+    dom = M.FieldDomain(arr, SIGMA, 400.0, 200.0, 3.0, 60.0)
+    # query points near each planted electrode (placement shifts them +10,+5 in x,y)
+    q = np.array([[-20.0, 5.0, 18.0], [40.0, 5.0, 40.0], [10.0, 5.0, 30.0]])
+    result = M.build_mesh(dom, str(tmp_path / "placed_mixed.msh"))  # one mesh, both solvers
+    a_dolfinx = _solve_on_mesh(result, dom, q, 1)
+    a_ngsolve = _solve_on_mesh_ngsolve(result, dom, q, 1)
+    assert a_dolfinx.shape == a_ngsolve.shape == (3, 2)
+    rel = np.abs(a_dolfinx - a_ngsolve) / np.abs(a_dolfinx)
+    assert np.max(rel) < 0.03, f"placed-array solver disagreement {np.max(rel):.4f}"

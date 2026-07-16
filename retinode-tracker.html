@@ -345,7 +345,7 @@ const milestones = [
    steps:["Build the sweep engine with a cost estimate surfaced before any launch.","Add parametric FEM, coarse-to-fine, with an optional surrogate model.","Add async, resumable jobs and adapters for a local pool, Slurm (FarmShare / Sherlock), and cloud.","Run the result cache at scale, reusing transfer matrices across configurations."],
    deliverable:"A geometry sweep that runs to a selectivity-versus-cost Pareto frontier without manual bookkeeping.",
    done:"A sweep completes to a Pareto frontier, reusing fields and recomputing per geometry, unattended."},
-  {id:"P6", tag:"ambition", effort:"Fall · local (FEM)", title:"Electrode geometry & 3D array placement in tissue",
+  {id:"P6", tag:"ambition", effort:"Done · local (FEM)", title:"Electrode geometry & 3D array placement in tissue",
    obj:"Design novel electrodes — arbitrary 2D outlines, true 3D bodies (primitives + CAD), and whole arrays planted into tissue — and simulate how they stimulate the neuron population, behind the same field contract.",
    steps:["Arbitrary 2D shapes (square, polygon) in the FEM mesh: generalize the disk imprint; validate vs the analytic small-limit + convergence.","3D electrode bodies (pillar, well, frustum, penetrating tip): build in gmsh OCC, subtract from the tissue, tag conductive vs insulated surfaces; validate vs a hemispherical known-answer + convergence + NGSolve; 3D charge-density safety.","3D array placement & insertion: pin one depth convention (tissue, electrodes, cells all on one side of the plane), array pose + per-electrode insertion depth, mixed flat + penetrating arrays; the mesh becomes tissue minus every electrode body.","Cell ↔ electrode interaction: detect compartments inside an electrode body; reject the conflict by default (or opt-in displace them, modeling insertion); flag near-contact as leaving the passive-probe regime.","CAD import (STEP/BREP) + provenance (file hash + pose) + study generators so the sweep and surrogate explore 3D array and insertion configurations.","Cross-check (NGSolve on a placed 3D array) + docs: the domain model (tissue minus electrodes), overlap policy, conventions, formats, and the FEM-only / near-contact caveats."],
    deliverable:"A 3D electrode array can be defined, planted into tissue at a chosen pose and depth, solved (tissue minus bodies), overlap-resolved, and scored for the RGC population end-to-end — validated.",
@@ -509,7 +509,7 @@ const paperIds = weeks.flatMap(w=>w.papers.map(p=>p.id));
 
 // Phases built so far (through Phase 3). Seeded so the tracker reflects real
 // progress on load; localStorage toggles still override per item.
-let state = {P0:true, P1:true, P2:true, P3:true, P4:true, P5:true};
+let state = {P0:true, P1:true, P2:true, P3:true, P4:true, P5:true, P6:true};
 let canPersist = false;
 (function probe(){
   try{
