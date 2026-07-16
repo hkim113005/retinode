@@ -49,7 +49,7 @@ resumable runner, local parallelism, and an optional surrogate — not a rewrite
 engine/study/
   sweep.py           config sweep on a fixed array (backend-agnostic, store-backed)  [done]
   cost.py            cost estimate + cell benchmark                                   [done]
-  geometry.py        parametric array generators (diameter/pitch/arrangement -> spec) [P5 S1]
+  geometry.py        parametric array generators (diameter/pitch/arrangement -> spec) [done]
   geometry_sweep.py  outer geometry loop: field per geometry, config sweep reused     [P5 S2]
   runner.py          resumable, store-checkpointed runner + progress callbacks        [P5 S3]
   parallel.py        local process-pool execution adapter                            [P5 S4]
@@ -60,12 +60,16 @@ docs/
 
 ## Ordered steps
 
-- **P5 S1 — Parametric geometry generators.** `geometry.py`: pure, deterministic,
-  hashable functions mapping geometry parameters — electrode **diameter**,
-  **pitch**, **arrangement** (grid / hex), count/extent — to canonical
-  `ElectrodeArray` specs, validated (no electrode overlaps, within a stated
-  aperture). This is the axis a geometry sweep moves along. Fast-tested (pure
-  spec; no field, no NEURON).
+- **P5 S1 — Parametric geometry generators — done.** `engine/study/geometry.py`:
+  `ArrayGeometry` (frozen, hashable: diameter, pitch, arrangement, aperture) +
+  `build_array` — a pure function filling a disk aperture on z=0 with a square
+  (`"grid"`) or hexagonal (`"hex"`) lattice at nearest-neighbour spacing `pitch`.
+  Verified: grid → centre + 4 axial, hex → centre + 6, uniform pitch, ids
+  deterministic (sorted y-then-x) and unique, geometries hashable/value-equal.
+  `pitch >= diameter` is enforced so generated arrays **never overlap** and pass
+  `engine.spec.validate` (checked in the tests). `geometry_grid` enumerates the
+  diameter × pitch product, dropping overlapping combos — the parameter list P5 S2
+  sweeps. Fast-tested (pure spec, no field/NEURON).
 - **P5 S2 — Geometry sweep + Pareto frontier.** `geometry_sweep.py`: for each
   generated geometry, solve the field **once** (via the injected `FieldBackend`),
   run the config sub-sweep **reusing that `A`** (delegating to `sweep()`), collect
