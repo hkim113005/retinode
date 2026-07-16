@@ -51,7 +51,7 @@ engine/study/
   cost.py            cost estimate + cell benchmark                                   [done]
   geometry.py        parametric array generators (diameter/pitch/arrangement -> spec) [done]
   geometry_sweep.py  outer geometry loop: field per geometry, config sweep reused     [done]
-  runner.py          resumable, store-checkpointed runner + progress callbacks        [P5 S3]
+  runner.py          resumable, store-checkpointed runner + progress callbacks        [done]
   parallel.py        local process-pool execution adapter                            [P5 S4]
   surrogate.py       optional GP emulator over the selectivity-score surface          [P5 S6]
 docs/
@@ -88,11 +88,21 @@ docs/
   analytical-tier sweep over two geometries (~50 s) confirming real fields +
   threshold searches drive the frontier and a resumed run recomputes nothing.
   **This is the done-when's core.**
-- **P5 S3 — Resumability + provenance at scale.** Thread a `Project` store through
-  the geometry sweep so each geometry's `A` and results are cached by the P4 S4
-  provenance keys; a re-run **skips completed geometries with no recompute**.
-  Per-geometry progress callbacks. Verified by interrupting a sweep and resuming
-  it to completion from the store. This is the "without manual bookkeeping" clause.
+- **P5 S3 — Resumability + provenance at scale — done.**
+  `engine/study/runner.py`. The store already persists each result the moment it
+  is evaluated (P5 S2), so the substrate is there; S3 adds the two things that make
+  it a study you run unattended: **`study_status`** — asks a store *how far along a
+  study is* without computing anything (it recomputes each geometry's `result_key`
+  and checks membership → `n_complete`, `fraction_done`, `remaining_geometries`),
+  the provenance-at-scale query; and **`run_geometry_study`** — the same run as
+  `geometry_sweep` but emitting a structured `GeometryProgress` per geometry
+  (index/total, `from_cache`, cumulative cached-vs-evaluated, `fraction`) for a
+  progress bar or long log. **Interrupt-and-resume is verified:** a run that
+  crashes after the first geometry (a progress callback that raises) leaves that
+  geometry durably stored; re-invoking against the same store completes the study
+  with **only the completed geometry served from cache** (`n_cached == 1`) and
+  `study_status` going 0→1→3 complete across the crash and resume. This is the
+  "without manual bookkeeping" clause. Fast-tested (no NEURON/FEM).
 - **P5 S4 — Local parallel execution.** `parallel.py`: a process-pool adapter that
   runs independent per-geometry evaluations concurrently, gated by the S5 cost
   estimate. Content-addressed store writes keep parallel workers collision-free.
