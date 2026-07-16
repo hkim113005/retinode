@@ -55,7 +55,7 @@ engine/study/
   parallel.py        local process-pool execution adapter                            [done]
   surrogate.py       optional GP emulator over the selectivity-score surface          [P5 S6]
 docs/
-  compute-adapters.md   Slurm (FarmShare/Sherlock) + Sim4Life-cloud adapter design    [P5 S5, deferred]
+  compute-adapters.md   Slurm (FarmShare/Sherlock) + Sim4Life-cloud adapter design    [done, deferred]
 ```
 
 ## Ordered steps
@@ -118,12 +118,16 @@ docs/
   re-run caching; and a **real ProcessPool + NEURON** run over two geometries in two
   worker processes (**~30 s vs ~50 s serial** — actual speedup), resuming fully
   cached. Cost gating before launch is the existing `estimate_sweep_cost` (D5).
-- **P5 S5 — Cluster/cloud adapters (documented, deferred).**
-  `docs/compute-adapters.md`: the Slurm (FarmShare → Sherlock via a sponsoring lab)
-  and Sim4Life-cloud execution-adapter interfaces — job submission shape, how the
-  store syncs results back — **documented, not built** (needs lab/cloud access),
-  mirroring P4 S6. Ties to the Sim4Life import adapter in
-  [fem-independent-checks.md](fem-independent-checks.md).
+- **P5 S5 — Cluster/cloud adapters (documented, deferred) — done.**
+  [compute-adapters.md](compute-adapters.md): the Slurm (FarmShare → Sherlock via a
+  sponsoring lab) and Sim4Life-cloud execution-adapter designs — **documented, not
+  built** (needs lab/cloud access), mirroring P4 S6. The key point recorded there:
+  `parallel.py` already isolates *where* work runs (the `executor`) from *what* it
+  is (a picklable `_GeometryJob`), and workers compute with `store=None` while the
+  main process records — so a new target (a `SlurmExecutor` array-job dispatcher,
+  or a Sim4Life field backend) is a drop-in `Executor`/backend and changes nothing
+  in the sweep, store, or Pareto path. The gate: wire Slurm when a sweep's cost
+  estimate (D5) exceeds the local wall-clock budget.
 - **P5 S6 (optional) — Surrogate model.** `surrogate.py`: a Gaussian-process (or
   simpler) emulator over the selectivity score as a function of geometry
   parameters, proposing the next geometry to sample (active learning /
