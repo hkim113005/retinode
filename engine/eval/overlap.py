@@ -18,8 +18,12 @@ This module detects both from pure geometry -- ``point_in_body`` /
   then runs on the surviving compartments -- still no change to NEURON itself, only
   to *which* compartments are simulated.
 
-Nothing here touches NEURON or the field solve; it is geometry + a policy decision
-the evaluator consumes.
+Nothing here touches NEURON or the field solve; it is geometry + a policy decision.
+``evaluate`` / ``population_thresholds`` consume that decision: they recompute the
+overlap in the model's ``segment_coords`` order (so the indices align with the
+transfer-matrix rows) and either raise on ``reject`` or, on ``displace``, sever the
+interior compartments from both the field solve and spike detection. This module
+stays NEURON-free; the wiring lives in :mod:`engine.cable.population`.
 """
 
 from __future__ import annotations

@@ -20,10 +20,11 @@ from typing import TYPE_CHECKING
 
 from engine.cable.multisite import multisite_threshold
 from engine.cable.placement import place_cell
-from engine.cable.population import PopulationThresholds
+from engine.cable.population import PopulationThresholds, severed_segments
 from engine.cable.solved import solve_field
 from engine.eval import EVALUATOR_VERSION, OffTargetSet, evaluate
 from engine.eval.offtarget import select_off_targets
+from engine.eval.overlap import OverlapConflict, OverlapPolicy
 from engine.eval.result import EvaluationResult
 from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
 from engine.field import AnalyticalBackend, FieldBackend
@@ -105,13 +106,26 @@ class _SolvedPopulation:
         conductivity: ConductivityModel,
         off_target_set: OffTargetSet,
         backend: FieldBackend,
+        *,
+        overlap_eps_um: float = 1.0,
     ) -> None:
         self._array = array
         self._conductivity = conductivity
+        self._has_body = any(e.body is not None for e in array.electrodes)
+
+        def solve(cell):  # sever any in-metal compartments before the (reused) solve
+            sev = (
+                severed_segments(cell, array, eps_um=overlap_eps_um)
+                if self._has_body
+                else frozenset()
+            )
+            return solve_field(cell, array, conductivity, backend, deactivated=sev), sev
+
         self._target = place_cell(patch.target(), optic_disc=patch.optic_disc_um)
-        self._target_solved = solve_field(self._target, array, conductivity, backend)
+        self._target_solved, self._target_severed = solve(self._target)
+        self._target_id = patch.target().id
         self._offs = [
-            (rgc.id, cell, solve_field(cell, array, conductivity, backend))
+            (rgc.id, cell, *solve(cell))
             for rgc in select_off_targets(patch, array, off_target_set)
             for cell in (place_cell(rgc, optic_disc=patch.optic_disc_um),)
         ]
@@ -125,14 +139,28 @@ class _SolvedPopulation:
         *,
         off_target_set: OffTargetSet | None = None,
         backend: FieldBackend | None = None,
+        overlap_policy: OverlapPolicy = "reject",
+        overlap_eps_um: float = 1.0,
     ) -> PopulationThresholds:
+        if overlap_policy == "reject" and self._target_severed:
+            raise OverlapConflict(
+                f"cell {self._target_id!r} has {len(self._target_severed)} compartment(s) "
+                f"inside an electrode body; use the 'displace' overlap policy or move the cell"
+            )
         target_thr = multisite_threshold(
-            self._target, self._array, config, self._conductivity, solved=self._target_solved
+            self._target, self._array, config, self._conductivity,
+            solved=self._target_solved, deactivated=self._target_severed,
         ).threshold_uA
         off: dict[str, float] = {}
-        for cid, cell, solved in self._offs:
+        for cid, cell, solved, severed in self._offs:
+            if overlap_policy == "reject" and severed:
+                raise OverlapConflict(
+                    f"cell {cid!r} has {len(severed)} compartment(s) inside an electrode "
+                    f"body; use the 'displace' overlap policy or move the cell"
+                )
             thr = multisite_threshold(
-                cell, self._array, config, self._conductivity, solved=solved
+                cell, self._array, config, self._conductivity,
+                solved=solved, deactivated=severed,
             ).threshold_uA
             if thr is not None:
                 off[cid] = thr
@@ -149,6 +177,8 @@ def sweep(
     off_target_set: OffTargetSet | None = None,
     backend: FieldBackend | None = None,
     safety_limits: SafetyLimits = DEFAULT_SAFETY_LIMITS,
+    overlap_policy: OverlapPolicy = "reject",
+    overlap_eps_um: float = 1.0,
     thresholds_provider: ThresholdsProvider | None = None,
 ) -> SweepResult:
     """Evaluate each configuration over a fixed array, reusing fields and the cache.
@@ -186,7 +216,10 @@ def sweep(
         provider = thresholds_provider
         if provider is None:
             if solved_pop is None:  # lazy: place + solve once, on the first miss
-                solved_pop = _SolvedPopulation(patch, array, conductivity, off_target_set, backend)
+                solved_pop = _SolvedPopulation(
+                    patch, array, conductivity, off_target_set, backend,
+                    overlap_eps_um=overlap_eps_um,
+                )
             provider = solved_pop.thresholds
 
         result = evaluate(
@@ -197,6 +230,8 @@ def sweep(
             off_target_set=off_target_set,
             safety_limits=safety_limits,
             backend=backend,
+            overlap_policy=overlap_policy,
+            overlap_eps_um=overlap_eps_um,
             thresholds_provider=provider,
         )
         if store is not None:

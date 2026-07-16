@@ -106,25 +106,33 @@ electrode's body.
 
 ## Cell ↔ electrode overlap
 
-Because an electrode body and a neuron cannot occupy the same space,
-`check_overlap` flags every compartment **inside** a body (a conflict) or within
-`ε` of a surface (near-contact), and `resolve_overlap` applies the policy:
+Because an electrode body and a neuron cannot occupy the same space, `evaluate`
+takes an `overlap_policy` that governs any cell a 3D body intersects. It runs the
+same geometry check (`check_overlap`) the standalone helpers expose, but wired
+straight into the population solve — the overlap indices are computed in the
+NEURON model's own `segment_coords` order, so they line up exactly with the
+transfer-matrix rows and the spike detectors:
 
 ```python
-from engine.eval import check_overlap, resolve_overlap
-report = check_overlap(array, {"target": target_compartments}, near_contact_eps_um=1.0)
-dropped = resolve_overlap(report, "reject")    # raises OverlapConflict on any conflict
-dropped = resolve_overlap(report, "displace")  # {cell: {compartments to deactivate}}
+from engine.eval import evaluate
+res = evaluate(patch, array, config, conductivity, overlap_policy="reject")    # default
+res = evaluate(patch, array, config, conductivity, overlap_policy="displace")  # sever + score survivors
 ```
 
 - **`reject`** (default) refuses a scene that puts a neuron inside metal — often the
   right answer, since for an epiretinal design a penetrating electrode hitting cells
-  is usually a red flag, not a feature.
+  is usually a red flag, not a feature. It raises `OverlapConflict` naming the cell.
 - **`displace`** models the electrode having displaced/severed the cell there: the
-  interior compartments are deactivated and the survivors still simulate. This only
-  changes *which* compartments run — the NEURON model is unchanged.
+  interior compartments are **severed** — the field is never queried at them (an
+  in-metal point that the FEM backend would reject) and no spike is detected there —
+  and the cell is scored on its surviving compartments. The NEURON model itself is
+  unchanged; only *which* compartments are driven and monitored changes.
 - **near-contact** is flagged, not acted on: it marks where the passive-probe field
   approximation starts to fray (a compartment nearly touching the conductive metal).
+
+The lower-level `check_overlap` / `resolve_overlap` helpers remain available for
+inspecting a scene's conflicts directly (`resolve_overlap(report, "displace")`
+returns `{cell: {compartments}}`); `evaluate` is the wired path that acts on them.
 
 Overlap detection is exact for the primitives; for a CAD body it uses a conservative
 **bounding cylinder** (it over-flags rather than misses).

@@ -39,7 +39,7 @@ GEOMS = [
 def _provider():
     # denser arrays: slightly higher target (less safe) but much higher off-target
     # threshold (more selective) -> a genuine selectivity/safety trade-off.
-    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None):
+    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None, **_):
         n = len(array.electrodes)
         return PopulationThresholds(patch.target_id, 6.0 + 0.5 * n, {"n1": 6.0 + 3.0 * n})
 

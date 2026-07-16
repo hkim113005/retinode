@@ -22,6 +22,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 from engine.eval import EVALUATOR_VERSION, OffTargetSet
+from engine.eval.overlap import OverlapPolicy
 from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
 from engine.field import FieldBackend
 from engine.spec import ConductivityModel, RetinalPatch
@@ -169,6 +170,8 @@ def run_geometry_study(
     backend_selector: BackendSelector | None = None,
     off_target_set: OffTargetSet | None = None,
     safety_limits: SafetyLimits = DEFAULT_SAFETY_LIMITS,
+    overlap_policy: OverlapPolicy = "reject",
+    overlap_eps_um: float = 1.0,
     thresholds_provider: ThresholdsProvider | None = None,
     progress: ProgressCallback | None = None,
 ) -> GeometrySweepResult:
@@ -211,6 +214,8 @@ def run_geometry_study(
         store=store,
         off_target_set=off_target_set,
         safety_limits=safety_limits,
+        overlap_policy=overlap_policy,
+        overlap_eps_um=overlap_eps_um,
         thresholds_provider=thresholds_provider,
         on_geometry=_on,
     )

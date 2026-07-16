@@ -39,7 +39,7 @@ def _patch():
 def _provider(target_uA, off):
     """A thresholds provider that returns fixed values (no NEURON)."""
 
-    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None):
+    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None, **_):
         return PopulationThresholds(patch.target_id, target_uA, dict(off))
 
     return provider

@@ -25,6 +25,7 @@ from engine.store.keys import field_key, result_key
 
 from .metrics import SOW, selective_operating_window
 from .offtarget import OffTargetSet
+from .overlap import OverlapPolicy
 from .result import EvaluationResult, OperatingWindow
 from .safety import (
     DEFAULT_SAFETY_LIMITS,
@@ -49,6 +50,8 @@ class ThresholdsProvider(Protocol):
         *,
         off_target_set: OffTargetSet | None = ...,
         backend: FieldBackend | None = ...,
+        overlap_policy: OverlapPolicy = ...,
+        overlap_eps_um: float = ...,
     ) -> PopulationThresholds: ...
 
 
@@ -61,14 +64,28 @@ def evaluate(
     off_target_set: OffTargetSet | None = None,
     safety_limits: SafetyLimits = DEFAULT_SAFETY_LIMITS,
     backend: FieldBackend | None = None,
+    overlap_policy: OverlapPolicy = "reject",
+    overlap_eps_um: float = 1.0,
     thresholds_provider: ThresholdsProvider = population_thresholds,
 ) -> EvaluationResult:
-    """Score one configuration into a safe-and-selective operating window."""
+    """Score one configuration into a safe-and-selective operating window.
+
+    ``overlap_policy`` handles a cell that a 3D electrode body intersects (P6 S4):
+    ``"reject"`` (default) raises :class:`OverlapConflict`; ``"displace"`` severs
+    the interior compartments and scores the cell on its survivors.
+    """
     off_target_set = off_target_set or OffTargetSet()
     backend = backend or AnalyticalBackend()
 
     thresholds = thresholds_provider(
-        patch, array, config, conductivity, off_target_set=off_target_set, backend=backend
+        patch,
+        array,
+        config,
+        conductivity,
+        off_target_set=off_target_set,
+        backend=backend,
+        overlap_policy=overlap_policy,
+        overlap_eps_um=overlap_eps_um,
     )
 
     key = result_key(

@@ -47,9 +47,24 @@ def solve_field(
     array: ElectrodeArray,
     conductivity: ConductivityModel,
     backend: FieldBackend | None = None,
+    *,
+    deactivated: frozenset[int] = frozenset(),
 ) -> SolvedField:
-    """Solve the transfer matrix once for a placed cell under an array + medium."""
+    """Solve the transfer matrix once for a placed cell under an array + medium.
+
+    ``deactivated`` are segment indices (in ``segment_coords`` order) that the
+    ``displace`` overlap policy has severed — they lie inside an electrode body. The
+    field is **not** queried there (that point is inside the metal, cut out of the
+    FEM mesh, and would raise), and their rows in ``A`` are left zero, so ``Ve`` is
+    zero at those segments and the surviving segments key and solve unchanged.
+    """
     backend = backend or AnalyticalBackend()
     coords, segs = segment_coords(model)
-    a = backend.transfer_matrix(array, conductivity, coords)
+    if not deactivated:
+        a = backend.transfer_matrix(array, conductivity, coords)
+        return SolvedField(a=a, segs=segs, array=array)
+    keep = [i for i in range(len(segs)) if i not in deactivated]
+    a = np.zeros((len(segs), len(array.electrodes)), dtype=float)
+    if keep:  # all-severed cell -> all-zero A (no drive, never fires)
+        a[keep] = backend.transfer_matrix(array, conductivity, coords[keep])
     return SolvedField(a=a, segs=segs, array=array)

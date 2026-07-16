@@ -268,6 +268,13 @@ Hashing/serialization for all three round-trip and **content-address distinctly*
   `neuron` alongside dolfinx; its mechanisms compile on first use), closing the one
   gap that the conda/uv env split had left untested: 3D geometry → tissue-minus-body
   FEM field → NEURON population → score, end to end.
+- **`neuron` (overlap policy, wired):** `evaluate`'s `overlap_policy` is exercised
+  against a penetrating body that swallows the target's soma. `reject` raises
+  `OverlapConflict`; `displace` **severs** the interior compartments — the field is
+  never queried there (the property the FEM backend needs, since an in-metal point
+  raises) and no spike is detected there — yet the cell still reaches threshold on
+  its survivors. This is the policy running through the real cable solve, not just a
+  report (`tests/cable/test_displace.py`).
 
 ---
 

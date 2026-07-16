@@ -45,23 +45,34 @@ def run_multisite(
     dt_ms: float = 0.025,
     v_init_mV: float = -65.0,
     threshold_mV: float = -10.0,
+    deactivated: frozenset[int] = frozenset(),
 ) -> MultisiteResult:
     """Drive the field and detect a spike at any compartment.
 
     Pass ``solved`` (a pre-solved field for this cell + array + medium) to reuse
     the transfer matrix instead of re-solving it — the caller does this to sweep
     configs or amplitudes cheaply. Without it, the field is solved for this call.
+
+    ``deactivated`` are segment indices severed by the ``displace`` overlap policy
+    (they lie inside an electrode body): no detector is placed on them, so a spike
+    there cannot count as activation — the cell is scored on its surviving
+    compartments. A caller passing ``solved`` must have built it with the same
+    ``deactivated`` set (so ``Ve`` is zero there); without ``solved`` we solve it
+    here consistently.
     """
     if solved is None:
-        solved = solve_field(model, array, conductivity, backend)
+        solved = solve_field(model, array, conductivity, backend, deactivated=deactivated)
     ve = solved.ve(config)
     segs = solved.segs
     regions = segment_regions(model)
     h = model.h
 
-    vecs = []
+    vecs: list = []
     detectors = []
-    for seg in segs:
+    for i, seg in enumerate(segs):
+        if i in deactivated:  # severed: inside the metal, not a live compartment
+            vecs.append(None)
+            continue
         vec = h.Vector()
         nc = h.NetCon(seg._ref_v, None, sec=seg.sec)
         nc.threshold = threshold_mV
@@ -85,6 +96,8 @@ def run_multisite(
     first_idx: int | None = None
     n_active = 0
     for i, vec in enumerate(vecs):
+        if vec is None:  # severed compartment — never monitored
+            continue
         if vec.size() > 0:
             n_active += 1
             t0 = float(vec[0])
@@ -108,20 +121,27 @@ def multisite_threshold(
     amp_max: float = 500.0,
     ladder: float = 1.5,
     rel_tol: float = 0.03,
+    deactivated: frozenset[int] = frozenset(),
 ) -> ThresholdResult:
     """Threshold (µA) using multi-site activation — a spike anywhere counts.
 
     The transfer matrix is solved **once** (or taken from ``solved``) and reused
     across every amplitude the search probes — the field is fixed; only the
     current scale changes. Pass ``solved`` to also reuse it across configurations.
+
+    ``deactivated`` (the ``displace`` policy's severed segments) is applied to both
+    the field solve and spike detection; a caller-supplied ``solved`` must already
+    encode the same set.
     """
     if solved is None:
-        solved = solve_field(model, array, conductivity, backend)
+        solved = solve_field(model, array, conductivity, backend, deactivated=deactivated)
 
     def activates(amp: float) -> bool:
         wf = dataclasses.replace(config.waveform, amplitude_scale_uA=amp)
         scaled = dataclasses.replace(config, waveform=wf)
-        return run_multisite(model, array, scaled, conductivity, solved=solved).activated
+        return run_multisite(
+            model, array, scaled, conductivity, solved=solved, deactivated=deactivated
+        ).activated
 
     return find_threshold(
         activates, amp_min=amp_min, amp_max=amp_max, ladder=ladder, rel_tol=rel_tol

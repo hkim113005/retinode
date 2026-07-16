@@ -18,7 +18,7 @@ def _scene():
 
 
 def _result(target_uA, off):
-    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None):
+    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None, **_):
         return PopulationThresholds(patch.target_id, target_uA, dict(off))
 
     s = _scene()

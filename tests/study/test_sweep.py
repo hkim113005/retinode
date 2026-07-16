@@ -31,7 +31,7 @@ PATCH = spec.RetinalPatch(
 
 
 def _provider(target_uA, off):
-    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None):
+    def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None, **_):
         return PopulationThresholds(patch.target_id, target_uA, dict(off))
 
     return provider
@@ -77,7 +77,7 @@ def test_sweep_serves_cached_results_and_skips_re_evaluation(tmp_path):
     store = Project.open(tmp_path / "proj")
     calls: list[float] = []
 
-    def counting(patch, array, config, conductivity, *, off_target_set=None, backend=None):
+    def counting(patch, array, config, conductivity, *, off_target_set=None, backend=None, **_):
         calls.append(config.waveform.phase_width_us)
         return PopulationThresholds(patch.target_id, 8.0, {"n1": 12.0})
 

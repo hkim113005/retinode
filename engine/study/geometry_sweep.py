@@ -31,6 +31,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from engine.eval import OffTargetSet
+from engine.eval.overlap import OverlapPolicy
 from engine.eval.result import EvaluationResult
 from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
 from engine.field import AnalyticalBackend, FenicsxBackend, FieldBackend
@@ -119,6 +120,8 @@ def geometry_sweep(
     store: Project | None = None,
     off_target_set: OffTargetSet | None = None,
     safety_limits: SafetyLimits = DEFAULT_SAFETY_LIMITS,
+    overlap_policy: OverlapPolicy = "reject",
+    overlap_eps_um: float = 1.0,
     thresholds_provider: ThresholdsProvider | None = None,
     on_geometry: Callable[[int, GeometryOutcome], None] | None = None,
 ) -> GeometrySweepResult:
@@ -151,6 +154,8 @@ def geometry_sweep(
             off_target_set=off_target_set,
             backend=chosen_backend,
             safety_limits=safety_limits,
+            overlap_policy=overlap_policy,
+            overlap_eps_um=overlap_eps_um,
             thresholds_provider=thresholds_provider,
         )
         outcome = GeometryOutcome(
