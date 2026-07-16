@@ -213,6 +213,23 @@
   .paper .role{margin:0;font-size:13px;color:var(--ink-soft);}
   .paper.done h4{text-decoration:line-through;text-decoration-color:var(--ink-faint);text-decoration-thickness:1.5px;color:var(--ink-faint);}
   .paper.done .role{color:var(--ink-faint);}
+  .notes-toggle{
+    appearance:none;background:none;border:none;cursor:pointer;
+    margin-top:8px;padding:2px 0;display:inline-flex;align-items:center;gap:6px;
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--field);
+  }
+  .notes-toggle:hover{color:var(--field-ink);}
+  .notes-toggle:focus-visible{outline:2px solid var(--field);outline-offset:2px;border-radius:4px;}
+  .notes-toggle .caret{font-size:14px;line-height:1;display:inline-block;}
+  .notes-toggle[aria-expanded="true"] .caret{transform:rotate(90deg);}
+  .paper-body{margin-top:11px;padding-top:12px;border-top:1px solid var(--line-soft);}
+  .paper-body .block:first-child{margin-top:0;}
+  .paper-body .block p{font-size:13px;color:var(--ink);line-height:1.5;}
+  .terms{margin:0;}
+  .terms dt{font-size:12.5px;font-weight:600;color:var(--ink);margin-top:8px;}
+  .terms dt:first-of-type{margin-top:0;}
+  .terms dd{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);line-height:1.45;}
   .hub{font-size:12.5px;color:var(--ink-soft);margin:0 2px 16px;}
   .hub a{color:var(--field);text-decoration:none;border-bottom:1px solid #bcd3f7;}
   .hub a:hover{border-bottom-color:var(--field);}
@@ -232,7 +249,7 @@
 
   @media (prefers-reduced-motion: no-preference){
     .node,.electrode,.fill,.gate,.gate::before{transition:background .18s ease, border-color .18s ease, box-shadow .18s ease, width .35s cubic-bezier(.4,0,.2,1);}
-    .chev{transition:transform .18s ease;}
+    .chev,.notes-toggle .caret{transition:transform .18s ease;}
     .card[open] .chev{transform:rotate(90deg);}
   }
   @media (min-width:560px){
@@ -303,24 +320,26 @@ const milestones = [
    obj:"Drive NEURON RGC models with the field, find thresholds by bisection, and score selectivity — validated on single cells.",
    steps:["Build NEURON RGC models with Fohlmeister–Miller channels and distinct compartment classes, driven through the extracellular mechanism.","Implement a bisection threshold search per cell, with multi-site activation: a spike initiating at any compartment counts.","Place a small population with axon trajectories toward the optic disc, modeling axons of passage.","Freeze the evaluator: selective operating window, thresholds, charge density against the Shannon limit, activated area."],
    deliverable:"A pipeline that returns defensible thresholds and one fixed selectivity score for any spec.",
-   done:"Gate 1 — single-cell thresholds match Tsai 2012 and Greenberg 1999 in trend and magnitude. If they do not, adopt a reference channel implementation before moving on.",
-   note:"NEURON is the summer's long pole, so this phase gets the most room and a mid-phase validation checkpoint in Week 4."},
-  {id:"P2", tag:"core", effort:"Wk 5–6 · Aug 10–23", title:"The minimal usable app",
-   obj:"A Python dashboard over the engine so someone who is not you can design and score on the analytical tier.",
-   steps:["Scaffold a Dash / Plotly dashboard that calls the engine directly.","Build the Patch, Array, Tissue, Stimulus, and Results screens on the analytical tier.","Wire the two-speed live preview loop: edit → cached A × new current → score, in under a second.","Show field, activation, and scorecard views with tier and safety badges."],
-   deliverable:"A dashboard where a non-coder designs an array, sets a configuration, and reads a selectivity result without touching code.",
-   done:"Gate 2 — a non-coder completes the design-to-score loop unaided. Fix only what blocks them; do not gold-plate."},
-  {id:"P3", tag:"core", headline:true, effort:"Wk 7–9 · Aug 24–Sep 13", title:"Reproduce the published results",
-   obj:"Recover the lab's own results and wire them into CI and a Validation screen. This is the credibility hinge.",
-   steps:["Reproduce the local-return selectivity gain (Fan 2019).","Reproduce bi-electrode axon avoidance (Vilkhu 2021) via the activating function.","Reproduce multi-electrode nonlinearity (Vilkhu 2025) through multi-site activation.","Wire all three into regression tests and a first Validation screen."],
-   deliverable:"Three reproductions green in CI and visible in the app.",
-   done:"Gate 3 — all three reproductions pass in CI and show in the app. If one misses, ship the two that pass and document the third as an open finding; the tool is still a validated testbed.",
-   note:"The strong summer stopping point: a usable, validated testbed. This is the milestone that makes the whole project believable."},
+   done:"Gate 1 — single-cell thresholds match Greenberg 1999 / Tsai 2012 in trend, ratios, initiation site, and range (density-robust). Absolute magnitude matching is deferred to the FEM + primate tier (P4).",
+   note:"Built as S1–S7; the evaluator scores a safe-and-selective operating window. Finding: the axon of passage is more excitable than the soma (axon 15 vs soma 26 µA) — the modern understanding, which diverges from Greenberg 1999's original soma-first prediction and is the premise of axon avoidance."},
+  {id:"P2", tag:"core", effort:"Wk 5–6", title:"Store, sweeps, and the minimal app",
+   obj:"Turn the single-shot evaluator into a cached, sweepable engine, then put a Dash/Plotly dashboard on top. (Plan change: infra first, then the app.)",
+   steps:["Solved-field reuse (P2 S1): compute each cell's transfer matrix A once, reuse it across every configuration and amplitude.","Content-addressed project store (P2 S2): HDF5 fields + parquet results, keyed by content hash, with cache-hit reuse.","Append-only provenance (P2 S3): every run records spec hashes and values, software versions, and the git commit, and replays its keys.","Configuration-sweep engine + cost estimate (P2 S4–S5): reuse A across configs, cache hits skip the solve, rank a shortlist and a Pareto frontier; estimate cost before a run.","The dashboard (P2b): a liquid-glass Dash/Plotly app — live analytical field preview, evaluate to the safe-and-selective window, recent-runs compare with click-to-restore."],
+   deliverable:"A sweepable, cached, traceable engine plus a dashboard where a non-coder designs an array, sets a configuration, and reads a selectivity result without code.",
+   done:"Gate 2 — a non-coder completes the design-to-score loop unaided.",
+   note:"Plan change: split into engine infrastructure (the content store + configuration sweeps — the cheap Tier-1 half) then the app. Geometry sweeps, FEM, cluster/cloud, and the surrogate stay in P5. The UI was later reworked to a blue liquid-glass design with a recent-runs comparison strip."},
+  {id:"P3", tag:"core", headline:true, effort:"Wk 7–9", title:"Reproduce the published results",
+   obj:"Recover the lab's own results, wire them into CI, and show them in a Validation panel. The credibility hinge.",
+   steps:["Fan 2019 local return (P3 S1): the field-sharpening mechanism reproduces (soma-Ve selectivity 3.2× → 16.9×); the full somatic threshold gain is confounded by AIS/dendrites here and is deferred to P4.","Vilkhu 2021 axon avoidance (P3 S2): a confined pattern flattens the axon activating function and raises its threshold 17 → 373 µA (22×). Clean.","Vilkhu 2025 multi-electrode summation (P3 S3): two individually-subthreshold electrodes jointly fire (paired ≈ half the single threshold). Clean.","Validation report + app panel (P3 S4): a precomputed JSON the app renders as a 13/13 Validation panel; CI's neuron job independently gates the science.","Validation hardening: field reciprocity, far-field decay (1/r, 1/r²), chronaxie 0.59 ms, cathodic > anodic, and robustness sweeps across geometry."],
+   deliverable:"13/13 reproductions green in CI and visible in the app's Validation panel.",
+   done:"Gate 3 — reproductions pass in CI and show in the app. The two axon/multi-site claims reproduce cleanly; Fan's threshold-level gain is honestly deferred to P4 (the field mechanism reproduces). A validated testbed.",
+   note:"Bar is trend/direction, not absolute magnitude (analytical + mouse RGC). The one honest deferral — Fan's somatic threshold gain — is what makes the passing set credible: reproductions were not tuned until they passed."},
   {id:"P4", tag:"ambition", effort:"Fall · lab compute", title:"FEM accuracy layer",
    obj:"Add accurate finite-element fields behind the existing contract, cross-checked by a second solver.",
    steps:["Add a FEniCSx backend behind the transfer-matrix contract, meshing with gmsh.","Add NGSolve as an independent cross-check on the same mesh; add Sim4Life as a field-only check and stub a COMSOL adapter.","Store a mesh-independence (convergence) check with every FEM result.","Add cross-backend agreement tests and map where the analytical tier can be trusted."],
    deliverable:"A validated, drop-in FEM backend, confirmed by a second backend, with the analytical-versus-FEM regime mapped.",
-   done:"An open-source FEM field is validated and swappable, and two solvers agree within tolerance on shared problems."},
+   done:"An open-source FEM field is validated and swappable, and two solvers agree within tolerance on shared problems.",
+   note:"Inherits what P1/P3 deferred: absolute threshold magnitudes and Fan 2019's full somatic selectivity gain need the FEM field plus primate morphology to validate at the magnitude level."},
   {id:"P5", tag:"ambition", effort:"Fall · lab compute", title:"Study engine and compute scaling",
    obj:"Run parameter sweeps to a Pareto frontier, reusing fields and recomputing only what geometry changes.",
    steps:["Build the sweep engine with a cost estimate surfaced before any launch.","Add parametric FEM, coarse-to-fine, with an optional surrogate model.","Add async, resumable jobs and adapters for a local pool, Slurm (FarmShare / Sherlock), and cloud.","Run the result cache at scale, reusing transfer matrices across configurations."],
@@ -409,6 +428,69 @@ const paperLinks = {
   p20:"https://www.jneurosci.org/content/43/26/4808"
 };
 
+const paperNotes = {
+  p1:{summary:"A perspective that maps the whole bi-directional artificial retina: a device that both reads (records) and writes (stimulates) the spiking of retinal ganglion cells at cellular resolution. It lays out the computational problems — calibrating which electrodes drive which cells, learning each cell's electrical sensitivity, and choosing stimulus patterns in real time — that a high-acuity implant must solve.",
+    terms:[["Bi-directional interface","A device that both records neural activity and stimulates it, using the recordings to calibrate and steer the stimulation."],["Cellular resolution","Reading or activating individual cells rather than blurry groups; the fidelity target for a good prosthesis."],["Electrical receptive field","A map of how sensitive a cell is to current from each electrode; the stimulation analogue of a visual receptive field."],["RGC types (parasol, midget)","The main primate ganglion-cell classes that tile the retina and must be driven selectively to reproduce natural signals."],["Temporal dithering","Playing a precomputed set of single-electrode responses rapidly and combining them over time to approximate a target pattern."]],
+    read:"Read this first and lightly; it is the map, not a method. Note where selectivity and current steering sit inside the larger read-write loop, so every later paper has a place to fit. Skim the heavy optimization sections."},
+  p2:{summary:"Using a 512-electrode array on isolated primate and rat retina, this study shows single electrodes can fire target ganglion cells at single-spike resolution but frequently also excite axons of passage — fibers from distant cells crossing under the electrode. It introduces a way to detect that bundle activation from its distinctive, bidirectionally propagating electrical signature.",
+    terms:[["Axon of passage","An axon from a distant ganglion cell that happens to run beneath the electrode; stimulating it produces a smeared, mislocalized percept."],["Axon bundle","Many such axons running together toward the optic disc; the main off-target the tool must avoid."],["Bidirectional propagation","A spike started mid-axon travels both ways along it — the tell-tale signature the paper uses to flag bundle activation."],["Electrical image","The spatiotemporal footprint a cell's spike leaves across the array, used to identify and track cells."],["Single-spike resolution","Detecting individual evoked spikes from individual cells, the precision this recording system enables."]],
+    read:"This is the problem Retinode exists to score. Focus on the bundle-detection signature and the comparison of soma versus axon thresholds; that soma/axon gap is essentially the selective operating window your evaluator computes."},
+  p3:{summary:"Derives the activating function: to first order, an extracellular field excites an axon in proportion to the second spatial derivative of the extracellular potential along the fiber. It gives a cheap, geometry-based predictor of where a fiber will depolarize without running a full simulation.",
+    terms:[["Activating function","The driving term for axonal excitation, proportional to the second derivative of Ve along the fiber; positive values depolarize."],["Extracellular potential (Ve)","The voltage the electrode produces in the tissue at each point along the axon."],["Second spatial derivative","How sharply Ve curves along the axon; sharp curvature, not absolute voltage, is what drives spiking."],["Compartment / cable model","Representing a neuron as connected electrical segments so current flow along it can be computed."],["Virtual cathode / anode","Regions where the activating function is positive (depolarizing) or negative (hyperpolarizing)."]],
+    read:"Very short and foundational. Extract one idea — activation follows the curvature of Ve, not its magnitude — and the sign convention. This is the exact quantity that bi-electrode axon avoidance (Vilkhu 2021) flattens and that Retinode exposes along each axon."},
+  p4:{summary:"An early compartmental model of a single ganglion cell under extracellular stimulation, built to ask whether an electrode preferentially fires the soma beneath it or axons passing by. It compares passive, Hodgkin-Huxley, and fully active (five-channel) membranes on realistic cell morphology.",
+    terms:[["Compartmental model","A neuron split into many connected cylinders, each with its own membrane equations."],["FCM channels","The Fohlmeister-Coleman-Miller active ganglion-cell channel set used for the fully active membrane."],["Strength-duration curve","Threshold current versus pulse width; steep for short pulses, flattening for long ones."],["Chronaxie / rheobase","Two classic points on that curve: the minimum current (rheobase) and the pulse width at twice rheobase (chronaxie)."],["Cathodic / anodic","Stimulation with negative (cathodic) or positive (anodic) leading current, which change where excitation begins."]],
+    read:"Read for method, not results; it is a template for how to couple a field to a cable model (your P1). Note the conclusion that thresholds depend strongly on cell morphology and electrode position."},
+  p5:{summary:"A practical, tutorial-style treatment of how to model extracellular stimulation of ganglion cells end to end: representing the electrode field, coupling it to a multi-compartment cable model, and searching for activation thresholds, with attention to the modeling choices that trip people up.",
+    terms:[["Volume conductor","The tissue treated as a medium that conducts current; its conductivity sets how the field spreads."],["Quasi-static approximation","Ignoring time-lag in the field so Ve can be solved as a static problem at each instant."],["Extracellular mechanism","The simulator feature that imposes Ve on each compartment to drive the cell."],["Threshold search","Bisection on stimulus amplitude to find the current that just evokes a spike."],["Mesh convergence","For finite-element fields, refining the mesh until the answer stops changing."]],
+    read:"Use it as a build checklist for P0-P1. Focus on the practical pitfalls — units, how Ve is applied per compartment, and convergence — rather than reading cover to cover."},
+  p6:{summary:"A model-based analysis of ganglion-cell responses to extracellular stimulation, scaling from single cells to a population. It shows that where the electrode sits controls where the spike initiates, and that low-threshold hotspots (near the axon's sodium band) limit how selectively cells can be activated.",
+    terms:[["Activation threshold","The current amplitude that first evokes a spike in a given cell."],["Low-threshold hotspot","A spot (often the sodium-channel band near the axon) that fires at unusually low current, hurting selectivity."],["Sodium band / initial segment","The high-sodium-density region just past the soma where spikes usually start."],["Monopolar stimulation","One active electrode with a distant return; the simplest, least selective configuration."],["Population activation","Which set of cells fire together at a given current, versus just the one target."]],
+    read:"Your Gate-1 validation reference. Focus on how threshold varies with electrode size and position; those trends and rough magnitudes are what your single-cell pipeline must reproduce before you trust anything else."},
+  p7:{summary:"In isolated primate retina with a 512-electrode array, surrounding a stimulating electrode with nearby return electrodes (a local return) confines the current and selectively activates the target ganglion cell far better than a distant monopolar return. This is the headline result Retinode reproduces.",
+    terms:[["Local return","Return current routed through electrodes right next to the source, confining the field locally."],["Monopolar return","A single distant return, which spreads current widely and activates many cells."],["Current confinement","Keeping the stimulating field tight around the target to avoid off-target cells and axons."],["Selectivity","How exclusively a configuration fires the target versus its neighbors and bundles."],["Cellular resolution","Confirming activation cell by cell via simultaneous recording on the same array."]],
+    read:"Your P3 headline. Pin down exactly which selectivity quantity they report and the precise local-return geometry, because reproducing that number and effect direction is the credibility hinge of the whole summer."},
+  p8:{summary:"Shows in primate retina that spatial patterns of current across several electrodes — not just single-electrode pulses — raise the effective resolution of stimulation, activating chosen cells more selectively. An early precedent that where you place current, not only how much, controls the outcome.",
+    terms:[["Spatial patterning","Distributing weighted current over multiple electrodes to shape the field."],["Resolution","How finely distinct cells can be addressed separately."],["Cell-type specificity","Preferentially driving one ganglion-cell type over the interleaved others."],["Linear summation","The regime where multi-electrode fields add up predictably (contrast with Vilkhu 2025)."],["Multielectrode array","The dense electrode grid enabling both the patterning and the readout."]],
+    read:"Read as the conceptual precursor to current steering. It motivates why Retinode treats configuration, not just geometry, as a design axis, and sets up the later nonlinear-summation story."},
+  p9:{summary:"Turns Rattay's theory into an experiment: bi-electrode patterns shaped to flatten the second spatial derivative of the field along axons avoid firing axon bundles while still activating target somas, verified cell by cell in primate retina. Direct evidence that axon activation can be engineered away.",
+    terms:[["Bi-electrode configuration","Two or more electrodes driven together to shape the field's curvature along axons."],["Axon avoidance","Choosing currents so the activating function along bundles stays below threshold."],["Activating function","The curvature of Ve along the axon — the quantity the pattern is designed to minimize (see Rattay)."],["Somatic activation","Firing the cell body of the target, which is what you want to keep."],["Single-spike resolution","Confirming avoidance at the level of individual evoked spikes."]],
+    read:"Read right after Rattay; it is the theory made real. For P3, note the bi-electrode geometry and the exact criterion used to declare a bundle avoided, since that criterion is a metric your evaluator can mirror."},
+  p10:{summary:"Builds a biophysical model of ganglion-cell responses to multi-electrode stimulation and validates it against primate data, explaining why currents from several electrodes combine nonlinearly: a spike can start at any compartment, so subthreshold inputs at different sites can jointly cross threshold. The rationale for a full cable model.",
+    terms:[["Multi-site activation","A spike may initiate at any part of the cell, so several weak inputs can combine to fire it."],["Nonlinear summation","Multi-electrode responses that do not equal the sum of the single-electrode responses."],["Biophysical model","A mechanistic model with real channels and morphology, not a fitted black box."],["Spike initiation site","The compartment where the action potential actually begins for a given stimulus."],["Superposition breakdown","Linear addition holds for the field Ve but fails for spiking once threshold nonlinearity enters."]],
+    read:"This is why Retinode runs the full NEURON model instead of a linear proxy. Focus on the multi-site-activation argument and the conditions under which linearity breaks; it justifies your whole cable engine and is a P3 reproduction."},
+  p11:{summary:"A scalable framework for current steering — passing weighted current through neighboring electrodes to target locations between them — tested in macaque and human retina. It shows currents combine linearly or nonlinearly depending on the electrode-cell geometry, and exploits spike-generation biophysics to hit individual cells.",
+    terms:[["Current steering","Weighting several electrodes to place the effective stimulus between them."],["Virtual electrode","The steered focal point that behaves like an electrode where none physically sits."],["Single-neuron resolution","Driving an individual target cell amid its neighbors."],["Linear vs nonlinear combination","Whether multi-electrode currents add predictably, set by geometry — the practical face of Vilkhu 2025."],["Spike-generation biophysics","Using where and how spikes start to choose the steering weights."]],
+    read:"Read once single-electrode activation is solid. It is the basis for a steering optimizer (a later Retinode phase). Note how geometry decides linear versus nonlinear combination, which determines when cheap superposition is safe."},
+  p12:{summary:"In the central primate retina, patterned electrical stimulation can reproduce the light-evoked response patterns of ganglion cells. Precision per electrode is lower centrally than in the periphery, but because central cells are denser and carry more signal, the expected quality of reconstructed vision is actually higher.",
+    terms:[["Visual signal reconstruction","How well the evoked spikes let you rebuild the intended image."],["Light-evoked response","The natural firing pattern a cell would produce to a visual stimulus — the target to imitate."],["Central vs peripheral retina","The high-acuity center versus the periphery; they differ in cell density and precision."],["Reconstruction fidelity","A quantitative score of imitation quality, tying stimulation back to perception."],["Midget / parasol","Central ganglion-cell types that dominate acute vision."]],
+    read:"This connects selectivity to the actual goal — a faithful visual signal. Read for how reconstruction fidelity is measured, so your selectivity metric stays tied to what ultimately matters."},
+  p13:{summary:"A computational framework that simulates the visual percept a prosthesis would produce and how image reconstruction (and learning) improves it, running from eye optics through modeled retinal responses to a decoded image. It frames what a patient actually experiences.",
+    terms:[["Percept","The subjective image the stimulation produces, often blurry or distorted."],["Forward model","The pipeline from stimulus to predicted neural response to perceived image."],["Image reconstruction","Decoding an image back from retinal activity, often with a linear decoder."],["Simulated prosthetic vision","Rendering what the restored vision would look like, for evaluation."],["Learning / plasticity","Improvement as the system or patient adapts the decoder over time."]],
+    read:"The perception-side bookend to the selectivity work. Read for the reconstruction framing and why fidelity matters to a patient; it pairs naturally with pulse2percept (p17)."},
+  p14:{summary:"Establishes the ganglion-cell membrane model your simulated neurons use: five voltage- and ion-gated conductances whose interplay reproduces spike shape and repetitive firing, derived from whole-cell recordings plus simulation. The biophysical heart of your cable engine.",
+    terms:[["I_Na","Fast sodium current; drives the action-potential upstroke."],["I_Ca","Calcium current; contributes to firing and gates the calcium-activated potassium current."],["I_K (delayed rectifier)","The main repolarizing potassium current."],["I_K,A","Transient A-type potassium current; shapes firing rate and delay."],["I_K,Ca","Calcium-activated potassium current; controls adaptation and repetitive firing."]],
+    read:"You do not need every gating derivation. Extract the five conductances, their roles, and that their densities differ by compartment (soma versus axon band); that spatial distribution is what makes spike initiation, and therefore selectivity, work."},
+  p15:{summary:"Proposes the widely used safety criterion for electrical stimulation: log(D) = k − log(Q), relating charge density D to charge per phase Q, with k about 1.5 (conservative) up to 1.85 marking the boundary between safe and tissue-damaging. This is the exact rule Retinode's safety verdict enforces.",
+    terms:[["Charge per phase (Q)","Total charge delivered in one phase of the pulse: current times pulse width."],["Charge density (D)","Charge per phase divided by the electrode's active surface area."],["k value","The single number placing a stimulus on the Shannon plot; below about 1.5 is considered safe."],["Shannon plot","A log-log plot of D versus Q with the safe/damaging boundary line."],["Biphasic pulse","A charge-balanced pulse (cathodic then anodic) used to avoid net charge accumulation."]],
+    read:"One page. Memorize the equation and the k threshold; that is literally the safety check in your scorecard. Remember it was derived for larger electrodes, so treat it as conservative-to-uncertain for very small ones."},
+  p16:{summary:"The experimental study behind the Shannon limit: in cat cortex, charge density and charge per phase interact synergistically to set the threshold for stimulation-induced neural injury — neither quantity alone predicts damage. The data that justify using both together.",
+    terms:[["Charge per phase","The total charge in one pulse phase, one of the two injury cofactors."],["Charge density","Charge per phase per unit electrode area, the second cofactor."],["Synergistic cofactors","Two factors whose combined effect is worse than either alone; the paper's central finding."],["Stimulation-induced injury","Histological tissue damage caused by overly aggressive stimulation."],["Electrode material","Platinum and iridium electrodes, whose properties bound safe injection."]],
+    read:"Read alongside Shannon. The takeaway is conceptual — why safety depends on both Q and D together — which is why Retinode checks charge density and charge per phase, not just one."},
+  p17:{summary:"Introduces pulse2percept, an open-source Python framework that predicts the percept a retinal implant produces from a given stimulus, modeling the spatial and temporal distortions (notably elongated streaks along nerve-fiber paths) that blur artificial vision. The downstream tool Retinode could one day feed.",
+    terms:[["Phosphene","The spot or streak of light a single stimulated site produces in perception."],["Axon map / streak","Because stimulation excites passing axons, percepts elongate along fiber trajectories."],["Forward model","The stimulus-to-percept pipeline, the inverse of what a patient wants to specify."],["Temporal model","How percepts build and fade over a pulse train, not just in space."],["Scoreboard vs distortion model","The naive dot-per-electrode assumption versus the realistic, streaky reality."]],
+    read:"Out of Retinode's scope, so skim the architecture and the axon-streak result. That streak is precisely why axon avoidance matters, and the framework shows how a stimulus-to-percept bridge is structured if you add one later."},
+  p18:{summary:"Explains, biophysically, why ganglion cells have roughly linear electrical receptive fields — their subthreshold response to stimulation adds up approximately linearly across electrodes — which is what makes a reciprocity or lead-field shortcut defensible for fast sensitivity estimates.",
+    terms:[["Electrical receptive field","A cell's sensitivity map to current from each electrode, analogous to its visual receptive field."],["Linearity","Subthreshold responses summing predictably across space and electrodes."],["Reciprocity / lead field","A theorem letting you compute a cell's sensitivity from one field solve instead of many stimulations."],["Subthreshold response","The membrane response below the spiking threshold, where linearity mostly holds."],["Threshold nonlinearity","Where linearity breaks — the spike itself — bounding how far the shortcut can be trusted."]],
+    read:"Read for why Retinode's fast subthreshold shortcut is legitimate and where it stops being legitimate (at threshold). It underpins using a linear estimate for screening while keeping the full model as ground truth."},
+  p19:{summary:"The reference paper for NEURON, the simulator you will build on. It explains how NEURON represents a cell as sections and segments, integrates the cable equation efficiently, and lets you impose extracellular potentials — the machinery under your P1 cable engine.",
+    terms:[["Section / segment (nseg)","A section is a continuous neurite; nseg sets how many computational compartments it holds."],["Range variable","A property that varies with position along a section, such as diameter or channel density."],["Cable equation","The partial differential equation for voltage spread along a neurite that NEURON integrates."],["extracellular mechanism","NEURON's feature for imposing an external Ve on each compartment — how you inject your field."],["d-lambda rule","A guideline for choosing nseg fine enough for spatial accuracy."]],
+    read:"Skim conceptually, then learn by doing with NEURON's tutorials. Focus on sections and segments, range variables, and especially the extracellular mechanism, since that is exactly how Retinode couples the transfer matrix to the cells."},
+  p20:{summary:"Shows that a ganglion cell's electrical stimulation sensitivity (its threshold) can be predicted from its recorded activity and electrical image, rather than measured by exhaustively stimulating every cell. A route to calibrate an implant quickly and to tie predicted thresholds to measurable features.",
+    terms:[["Stimulation sensitivity","How readily a cell is driven by a given electrode; essentially its threshold map."],["Electrical image (EI)","The footprint a cell's spike casts across the array, used here as a predictive feature."],["Spike sorting","Assigning recorded spikes to individual cells so their activity can be measured."],["Calibration","Setting per-cell stimulation parameters, ideally without brute-force testing."],["Inference / prediction","Estimating thresholds from recordings instead of direct stimulation trials."]],
+    read:"Read for how thresholds relate to recordable features. It matters for validation: it suggests measurable ground truth you could eventually check Retinode's predicted thresholds against."}
+};
+
 const gates = [
   {id:"G0", phase:"P0", label:"Gate 0", name:"Spec frozen", when:"end Wk 2 · Jul 26"},
   {id:"G1", phase:"P1", label:"Gate 1", name:"Thresholds validated", when:"end Wk 5 · Aug 16"},
@@ -419,7 +501,9 @@ const gates = [
 const allIds = [...milestones.map(m=>m.id), ...weeks.flatMap(w=>w.papers.map(p=>p.id))];
 const paperIds = weeks.flatMap(w=>w.papers.map(p=>p.id));
 
-let state = {};
+// Phases built so far (through Phase 3). Seeded so the tracker reflects real
+// progress on load; localStorage toggles still override per item.
+let state = {P0:true, P1:true, P2:true, P3:true};
 let canPersist = false;
 (function probe(){
   try{
@@ -434,8 +518,8 @@ function loadState(){
   if(!canPersist) return;
   try{
     const raw = window.localStorage.getItem(KEY);
-    if(raw) state = JSON.parse(raw) || {};
-  }catch(e){ state = {}; }
+    if(raw) state = {...state, ...(JSON.parse(raw) || {})};  // seed defaults, saved toggles win
+  }catch(e){}
 }
 let saveTimer=null;
 function saveState(){
@@ -543,12 +627,34 @@ function buildWeeks(){
       row.className="paper"; row.id="item-"+p.id;
       const url=paperLinks[p.id];
       const titleHTML = url ? `<a href="${url}" target="_blank" rel="noopener">${p.t}</a>` : p.t;
+      const nt=paperNotes[p.id];
+      let notesHTML="";
+      if(nt){
+        const termsHTML=nt.terms.map(t=>`<dt>${t[0]}</dt><dd>${t[1]}</dd>`).join("");
+        notesHTML=`
+          <button class="notes-toggle" aria-expanded="false" aria-controls="notes-${p.id}"><span class="caret" aria-hidden="true">›</span>Reading notes</button>
+          <div class="paper-body" id="notes-${p.id}" hidden>
+            <div class="block"><span class="block-label">Summary</span><p>${nt.summary}</p></div>
+            <div class="block"><span class="block-label">Key terms</span><dl class="terms">${termsHTML}</dl></div>
+            <div class="block"><span class="block-label">How to read it</span><p>${nt.read}</p></div>
+          </div>`;
+      }
       row.innerHTML=`
         <button class="electrode" data-id="${p.id}" aria-pressed="false" aria-label="Mark ${p.t} as read"></button>
         <div class="p-main">
           <h4>${titleHTML}</h4>
           <p class="role">${p.role}</p>
+          ${notesHTML}
         </div>`;
+      const tog=row.querySelector(".notes-toggle");
+      if(tog){
+        const body=row.querySelector(".paper-body");
+        tog.addEventListener("click",()=>{
+          const isHidden=body.hasAttribute("hidden");
+          if(isHidden){ body.removeAttribute("hidden"); tog.setAttribute("aria-expanded","true"); }
+          else{ body.setAttribute("hidden",""); tog.setAttribute("aria-expanded","false"); }
+        });
+      }
       sec.appendChild(row);
     });
     c.appendChild(sec);
