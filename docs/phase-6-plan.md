@@ -261,10 +261,13 @@ Hashing/serialization for all three round-trip and **content-address distinctly*
   **placed 3D array** (mixed flat + penetrating) solves with independent columns;
   CAD-import round-trip vs the primitive; a small 3D-insertion geometry sweep to a
   frontier.
-- **`neuron`:** one end-to-end — a **placed 3D array driving a real RGC population**
-  to thresholds/selectivity, exercising the overlap policy (a cell near / into an
-  electrode: `reject` refuses, `displace` drops interior compartments and the rest
-  still fire).
+- **`neuron`:** the **full pipeline in one environment** — a 3D electrode's FEM
+  field drives a **real RGC population** to a threshold/selectivity result
+  (`evaluate(..., backend=FenicsxBackend(...))`), with the S4 overlap guard checked
+  on the placed somata. This runs in the **FEM CI job** (which now installs
+  `neuron` alongside dolfinx; its mechanisms compile on first use), closing the one
+  gap that the conda/uv env split had left untested: 3D geometry → tissue-minus-body
+  FEM field → NEURON population → score, end to end.
 
 ---
 

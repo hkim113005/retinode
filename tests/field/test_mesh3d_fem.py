@@ -205,3 +205,36 @@ def test_dolfinx_and_ngsolve_agree_on_a_placed_mixed_3d_array(tmp_path):
     assert a_dolfinx.shape == a_ngsolve.shape == (3, 2)
     rel = np.abs(a_dolfinx - a_ngsolve) / np.abs(a_dolfinx)
     assert np.max(rel) < 0.03, f"placed-array solver disagreement {np.max(rel):.4f}"
+
+
+@pytest.mark.neuron
+@pytest.mark.slow
+def test_fem_3d_field_drives_a_real_neuron_population(neuron_h):
+    """P6 end-to-end: a 3D electrode's FEM field drives a real RGC population to a
+    selectivity result -- the full pipeline (3D geometry -> tissue-minus-body FEM
+    field -> NEURON thresholds) in one environment. Requires both dolfinx and
+    neuron, so it runs only in the FEM CI job."""
+    from engine.eval import check_overlap, evaluate, resolve_overlap
+    from engine.spec import RGC, RetinalPatch, StimConfig, Waveform
+
+    cyl = Electrode(id="C", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=0.0,
+                    body=Cylinder(radius_um=5.0, height_um=30.0))
+    arr = ElectrodeArray(electrodes=(cyl,))
+    # cells in the tissue (z >= 0), the target just past the pillar tip (z=30)
+    patch = RetinalPatch(
+        cells=(RGC(id="t", cell_type="parasol_on", soma_um=(18.0, 0.0, 40.0)),
+               RGC(id="n1", cell_type="parasol_on", soma_um=(70.0, 0.0, 40.0))),
+        target_id="t", optic_disc_um=(2000.0, 0.0, 40.0),
+    )
+    # the somata sit clear of the electrode metal (the S4 overlap guard is happy)
+    somata = {c.id: [c.soma_um] for c in patch.cells}
+    assert not check_overlap(arr, somata).has_conflict
+    assert resolve_overlap(check_overlap(arr, somata), "reject") == {}
+
+    dom = M.FieldDomain(arr, SIGMA, 1500.0, 500.0, 4.0, 200.0)  # contains the cells
+    cfg = StimConfig.from_map({"C": -1.0}, waveform=Waveform(phase_width_us=200.0))
+    res = evaluate(patch, arr, cfg, SIGMA, backend=FenicsxBackend(domain=dom))
+
+    assert res.activated  # the FEM 3D field drove the target to threshold
+    assert res.thresholds.target_threshold_uA is not None
+    assert res.thresholds.target_threshold_uA > 0.0

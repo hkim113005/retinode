@@ -31,3 +31,7 @@ dependencies:
       # osx-arm64 build, but it ships pip wheels (universal2 + manylinux) that
       # coexist with the conda DOLFINx, so it goes in the pip section.
       - ngsolve
+      # NEURON lets the one FEM-marked end-to-end test drive a real RGC population
+      # from the FEM field (dolfinx + neuron in one env). Its mechanisms compile on
+      # first use via the neuron_h fixture.
+      - neuron
