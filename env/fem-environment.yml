@@ -24,4 +24,5 @@ dependencies:
   - python-gmsh             # gmsh Python API (the `import gmsh` module)
   - numpy
   - pytest
+  - hypothesis   # some tests/field modules import it at collection time
   - pip
