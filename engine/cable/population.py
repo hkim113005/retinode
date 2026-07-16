@@ -12,9 +12,14 @@ distribution (spread) is trajectories.py, and full trajectory×population sweeps
 are a Phase-5 concern.
 
 Coordinate convention (matters for the half-space field): the array/electrodes
-sit on the insulating boundary at **z = 0** and the tissue — every cell — is
-**below, at z < 0**. Placing a cell above the boundary (z > 0) mirrors it onto an
-electrode's method-of-images source and yields a spurious field.
+sit on the insulating boundary at **z = 0**; the tissue — every cell — is on one
+side of it. The analytical field is built by the method of images, so it is
+*exactly mirror-symmetric across z = 0*: a cell at +z and its mirror at -z see the
+identical field. Either sign is therefore valid analytically. The FEM path,
+however, meshes an explicit z >= 0 tissue slab, so the shared Phase-6 convention is
+**+z into the tissue, cells at z >= 0** (see docs/electrode-geometry.md). Prefer
+z >= 0 for every scene so the same patch drives the analytical and FEM backends
+identically.
 """
 
 from __future__ import annotations

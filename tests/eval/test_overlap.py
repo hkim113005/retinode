@@ -78,3 +78,26 @@ def test_a_flat_only_array_never_conflicts():
     )
     rep = check_overlap(flat, {"c": [(0.0, 0.0, 0.0), (0.0, 0.0, 5.0)]})
     assert rep.flags == () and not rep.has_conflict
+
+
+def test_check_overlap_respects_a_frustum_taper():
+    # check_overlap is exercised end-to-end with Cylinder above; a Frustum narrows
+    # with depth, so a point clear of the wall near the base is *inside* deeper down
+    # only if the taper still encloses it. Same (x=6) column, two depths: inside the
+    # wide base, outside where the wall has receded.
+    from engine.spec import Frustum
+
+    arr = ElectrodeArray(
+        electrodes=(
+            Electrode(
+                id="T",
+                pos_um=(0.0, 0.0, 0.0),
+                shape="disk",
+                size_um=0.0,
+                body=Frustum(base_radius_um=8.0, top_radius_um=2.0, height_um=20.0),
+            ),
+        )
+    )
+    rep = check_overlap(arr, {"cell": [(6.0, 0.0, 1.0), (6.0, 0.0, 18.0)]})
+    assert rep.inside_compartments("cell") == {0}  # base encloses it; the narrowed tip does not
+    assert all(f.electrode_id == "T" for f in rep.conflicts)

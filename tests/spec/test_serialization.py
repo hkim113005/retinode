@@ -147,3 +147,36 @@ def test_missing_field_falls_back_to_default():
     # Forward-compatibility: an older payload without schema_version still decodes.
     wf = spec.from_json('{"__type__":"Waveform","phase_width_us":100.0}')
     assert wf == spec.Waveform(phase_width_us=100.0)
+
+
+def test_placed_mixed_3d_array_round_trips_whole():
+    # The Phase-6 stress case for the decoder: one array carrying a flat electrode
+    # AND two different ElectrodeBody arms (Cylinder, Hemisphere) AND an
+    # ArrayPlacement. This is what forced the multi-arm-union decode order — a
+    # single payload where the tagged-dict branch must win over the union unpack.
+    arr = spec.ElectrodeArray(
+        electrodes=(
+            spec.Electrode(id="F", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=12.0),
+            spec.Electrode(
+                id="P",
+                pos_um=(30.0, 0.0, 0.0),
+                shape="disk",
+                size_um=0.0,
+                body=spec.Cylinder(radius_um=5.0, height_um=30.0, conductive_faces="sides"),
+            ),
+            spec.Electrode(
+                id="H",
+                pos_um=(-30.0, 0.0, 0.0),
+                shape="disk",
+                size_um=0.0,
+                body=spec.Hemisphere(radius_um=8.0),
+            ),
+        ),
+        placement=spec.ArrayPlacement(offset_um=(100.0, 0.0, 0.0)),
+    )
+    back = spec.from_json(spec.to_json(arr))
+    assert back == arr  # every body arm and the placement survive intact
+    assert back.placement == arr.placement
+    assert type(back.electrodes[1].body) is spec.Cylinder
+    assert type(back.electrodes[2].body) is spec.Hemisphere
+    assert spec.spec_hash(back) == spec.spec_hash(arr)  # a re-decoded array keys identically
