@@ -6,6 +6,7 @@ geometry/configuration split is enforced *structurally*: geometry objects
 no position — so the two cannot blur even under a careless edit.
 """
 
+from .body import Cylinder, ElectrodeBody, Frustum, Hemisphere
 from .conductivity import (
     ConductivityModel,
     HomogeneousConductivity,
@@ -26,6 +27,10 @@ __all__ = [
     # geometry
     "Electrode",
     "ElectrodeArray",
+    "ElectrodeBody",
+    "Hemisphere",
+    "Cylinder",
+    "Frustum",
     "Shape",
     # configuration
     "Waveform",

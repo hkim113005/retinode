@@ -12,7 +12,7 @@ from engine import spec
 # Locking each object's exact field set makes "the spec is frozen" enforceable:
 # adding, removing, or renaming a field is now a deliberate, reviewed event.
 EXPECTED_FIELDS = {
-    spec.Electrode: {"id", "pos_um", "shape", "size_um", "normal", "boundary_um"},
+    spec.Electrode: {"id", "pos_um", "shape", "size_um", "normal", "boundary_um", "body"},
     spec.ElectrodeArray: {"electrodes", "frame", "schema_version"},
     spec.Waveform: {
         "phase_width_us",

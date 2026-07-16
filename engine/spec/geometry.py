@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass
 from typing import Literal
 
+from .body import ElectrodeBody, body_base_radius_um, body_conductive_area_um2
 from .conventions import SCHEMA_VERSION
 
 Shape = Literal["disk", "square", "hex", "poly"]
@@ -23,6 +24,7 @@ class Electrode:
     size_um: float  # disk diameter / square edge / hex flat-to-flat
     normal: Vec3 = (0.0, 0.0, 1.0)  # facing direction (toward the retina by default)
     boundary_um: tuple[Vec3, ...] | None = None  # explicit outline, only for shape="poly"
+    body: ElectrodeBody | None = None  # a 3D body (protrudes into tissue); None = flat 2D face
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,8 @@ def radius_um(electrode: Electrode) -> float:
 
     Shared by overlap validation and the analytical field's near-field
     regularization so the two cannot disagree about an electrode's extent."""
+    if electrode.body is not None:  # a 3D body's lateral radius at the array plane
+        return body_base_radius_um(electrode.body)
     if electrode.shape == "poly":
         if not electrode.boundary_um:
             return 0.0
@@ -97,7 +101,10 @@ def _polygon_area_um2(verts: tuple[tuple[float, float], ...]) -> float:
 def electrode_area_um2(electrode: Electrode) -> float:
     """Geometric area of the electrode face, in square microns. Shared by the
     safety charge-density check and the FEM mesh's electrode-surface matching, so
-    the two cannot disagree about an electrode's area."""
+    the two cannot disagree about an electrode's area. For a 3D body this is the
+    conductive-surface area."""
+    if electrode.body is not None:
+        return body_conductive_area_um2(electrode.body)
     if electrode.shape == "disk":
         return math.pi * (electrode.size_um / 2.0) ** 2
     if electrode.shape == "square":

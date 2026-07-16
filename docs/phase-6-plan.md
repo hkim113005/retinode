@@ -135,14 +135,23 @@ docs/
   areas, footprints, and validation; `fem` tests cover the meshed areas and the
   square solve.
 
-- **P6 S2 — 3D electrode body (single electrode).** Add the **`ElectrodeBody`** spec
-  — a parametric 3D primitive (base shape + height + taper + which surface is
-  conductive → pillar / cylinder / frustum / recessed well / penetrating tip). In
-  `mesh3d.py`: build the body in occ, **subtract it from the tissue slab**, and tag
-  its **conductive surface(s)** (Neumann flux) and **insulated surface(s)**
-  (zero-flux). Compute the **conductive-surface area** for `safety.py` (3D charge
-  density). Solve + validate against a **known-answer 3D case** (a hemispherical
-  electrode's closed form) plus convergence + NGSolve agreement.
+- **P6 S2 — 3D electrode body (single electrode) — done.** `spec/body.py` adds
+  **`ElectrodeBody`** primitives — `Hemisphere`, `Cylinder`, `Frustum`, each with a
+  `conductive_faces` selector (`tip`/`sides`/`all`) — attached to an electrode via
+  an additive `body` field (`None` ⇒ today's flat face; the multi-arm union
+  serializes and content-addresses). `radius_um` and `electrode_area_um2` defer to
+  the body (the conductive-surface area flows straight into `safety.py`'s 3D charge
+  density). `field/mesh3d.py` builds each body in OCC and classifies its cavity
+  walls; `build_mesh` now **dispatches**: flat electrodes imprint faces (P4/S1),
+  body electrodes are **boolean-cut from the tissue** and their walls split into
+  conductive (Neumann flux) vs insulated (zero-flux, an insulated shank) — one
+  shared tagging/sizing tail. Mixed flat+3D arrays raise `NotImplementedError`
+  (P6 S3). **Validated (`test_mesh3d_fem.py`, fem):** a hemispherical electrode
+  reproduces the exact point-source closed form `V = I/(2πσr)` to **1–3.5%** (the
+  hemisphere *is* the equipotential source, so uniform-flux = equipotential here);
+  the field **converges** under refinement; a cylinder's **tip vs sides** selector
+  measurably reshapes the field (tip concentrates it ~1.7× deeper); and
+  **DOLFINx ≈ NGSolve** on the 3D mesh to <3%.
 
 - **P6 S3 — 3D array placement & insertion (plant an array into tissue).** Pin and
   **reconcile the coordinate convention** (D8): tissue `z ≥ 0`, electrodes at/into

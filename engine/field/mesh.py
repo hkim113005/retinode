@@ -254,6 +254,95 @@ def _expected_footprint(electrode) -> tuple[float, float, float]:
     return cx / (3.0 * a2), cy / (3.0 * a2), area
 
 
+def _imprint_faces(gmsh, occ, domain, boxes, electrodes, eps):  # noqa: ANN001 - gmsh objects
+    """2D path: imprint each electrode's face on the top plane, identify it by
+    centroid + area. Returns (electrode_surf {id: [surf]}, insulating, ground)."""
+    faces = [_add_electrode_face(occ, e) for e in electrodes]
+    occ.fragment([(3, b) for b in boxes], [(2, f) for f in faces])
+    occ.synchronize()
+    volumes = [tag for (dim, tag) in gmsh.model.getEntities(3)]
+    boundary = gmsh.model.getBoundary([(3, v) for v in volumes], combined=True, oriented=False)
+    top_faces: list[int] = []
+    ground_faces: list[int] = []
+    for _dim, surf in boundary:
+        _cx, _cy, cz = occ.getCenterOfMass(2, surf)
+        (top_faces if abs(cz) <= eps else ground_faces).append(surf)
+
+    footprints = {e.id: _expected_footprint(e) for e in electrodes}
+    electrode_surf: dict[str, list[int]] = {}
+    insulating_faces: list[int] = []
+    for surf in top_faces:
+        cx, cy, _cz = occ.getCenterOfMass(2, surf)
+        area = occ.getMass(2, surf)
+        matched: str | None = None
+        for e in electrodes:
+            if e.id in electrode_surf:
+                continue
+            ex, ey, e_area = footprints[e.id]
+            char = math.sqrt(e_area)  # characteristic length for the tolerance
+            if math.dist((cx, cy), (ex, ey)) <= 0.25 * char and abs(area - e_area) <= 0.1 * e_area:
+                matched = e.id
+                break
+        if matched is not None:
+            electrode_surf[matched] = [surf]
+        else:
+            insulating_faces.append(surf)
+
+    missing = [e.id for e in electrodes if e.id not in electrode_surf]
+    if missing:
+        raise RuntimeError(f"gmsh did not imprint electrode surface(s): {missing}")
+    return electrode_surf, insulating_faces, ground_faces
+
+
+def _cut_bodies(gmsh, occ, domain, boxes, electrodes, eps):  # noqa: ANN001 - gmsh objects
+    """3D path: cut each electrode body from the tissue and split the resulting
+    cavity walls into conductive (per the body) vs insulated. The z=0 substrate and
+    the far shell are insulating / ground. Returns (electrode_surf {id: [conductive
+    surfs]}, insulating, ground)."""
+    from .mesh3d import add_body_solid, classify_cavity_surfaces
+
+    w, depth = domain.half_width_um, domain.depth_um
+    bodies = {e.id: add_body_solid(occ, e) for e in electrodes}
+    occ.cut([(3, b) for b in boxes], [(3, bodies[e.id]) for e in electrodes], removeTool=True)
+    occ.synchronize()
+    volumes = [tag for (dim, tag) in gmsh.model.getEntities(3)]
+    boundary = gmsh.model.getBoundary([(3, v) for v in volumes], combined=True, oriented=False)
+
+    top_faces: list[int] = []
+    ground_faces: list[int] = []
+    wall_faces: list[int] = []
+    for _dim, surf in boundary:
+        cx, cy, cz = occ.getCenterOfMass(2, surf)
+        far = (
+            abs(abs(cx) - w) <= 1e-3 * w
+            or abs(abs(cy) - w) <= 1e-3 * w
+            or abs(cz - depth) <= 1e-3 * depth
+        )
+        if far:
+            ground_faces.append(surf)
+        elif abs(cz) <= eps:
+            top_faces.append(surf)  # the z=0 substrate (insulating)
+        else:
+            wall_faces.append(surf)  # a cavity wall (electrode-tissue interface)
+
+    # assign each cavity wall to the nearest electrode centre (by x, y)
+    walls: dict[str, list[int]] = {e.id: [] for e in electrodes}
+    for surf in wall_faces:
+        cx, cy, _cz = occ.getCenterOfMass(2, surf)
+        nearest = min((math.dist((cx, cy), (e.pos_um[0], e.pos_um[1])), e.id) for e in electrodes)
+        walls[nearest[1]].append(surf)
+
+    electrode_surf: dict[str, list[int]] = {}
+    insulating_faces = list(top_faces)
+    for e in electrodes:
+        conductive, insulated = classify_cavity_surfaces(occ, e, walls[e.id])
+        if not conductive:
+            raise RuntimeError(f"electrode {e.id!r} has no conductive surface after the cut")
+        electrode_surf[e.id] = conductive
+        insulating_faces.extend(insulated)
+    return electrode_surf, insulating_faces, ground_faces
+
+
 def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
     """Mesh ``domain`` with gmsh and write it to ``path`` (a ``.msh`` file both
     DOLFINx and NGSolve read). Returns the physical-group tags a backend applies
@@ -268,61 +357,29 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
     electrodes = domain.array.electrodes
     radii = [radius_um(e) for e in electrodes]
 
+    has_bodies = any(e.body is not None for e in electrodes)
+    if has_bodies and not all(e.body is not None for e in electrodes):
+        raise NotImplementedError("mixed flat + 3D-body arrays arrive in P6 S3")
+
     gmsh.initialize()
     try:
         gmsh.model.add("retinode")
         occ = gmsh.model.occ
 
-        # One box per layer, stacked in z, then fragmented into a conformal solid
-        # so the layer interfaces are shared (matched) surfaces.
+        # One box per layer, stacked in z, then joined into a conformal solid so
+        # the layer interfaces are shared (matched) surfaces.
         boxes = [occ.addBox(-w, -w, s.z0_um, 2 * w, 2 * w, s.z1_um - s.z0_um) for s in slabs]
-        # Electrode faces (disk / square / hex / polygon) imprinted on the top
-        # face z=0 -> one tagged surface per electrode.
-        faces = [_add_electrode_face(occ, e) for e in electrodes]
-        vol_dimtags = [(3, b) for b in boxes]
-        tool_dimtags = [(2, f) for f in faces]
-        occ.fragment(vol_dimtags, tool_dimtags)
-        occ.synchronize()
-
-        # Classify the outer boundary of the whole solid. Internal layer
-        # interfaces cancel in getBoundary(combined=True), leaving only real
-        # boundary faces: top plane (z~0) and the grounded shell (z>0).
-        volumes = [tag for (dim, tag) in gmsh.model.getEntities(3)]
-        boundary = gmsh.model.getBoundary([(3, v) for v in volumes], combined=True, oriented=False)
-        top_faces: list[int] = []
-        ground_faces: list[int] = []
         eps = 1e-6 * domain.depth_um
-        for _dim, surf in boundary:
-            _cx, _cy, cz = occ.getCenterOfMass(2, surf)
-            (top_faces if abs(cz) <= eps else ground_faces).append(surf)
 
-        # Match each top face to an electrode by its expected centroid + area
-        # (shape-aware), or fall through to the insulating remainder.
-        footprints = {e.id: _expected_footprint(e) for e in electrodes}
-        electrode_surf: dict[str, int] = {}
-        insulating_faces: list[int] = []
-        for surf in top_faces:
-            cx, cy, _cz = occ.getCenterOfMass(2, surf)
-            area = gmsh.model.occ.getMass(2, surf)
-            matched: str | None = None
-            for e in electrodes:
-                if e.id in electrode_surf:
-                    continue
-                ex, ey, e_area = footprints[e.id]
-                char = math.sqrt(e_area)  # characteristic length for the tolerance
-                near = math.dist((cx, cy), (ex, ey)) <= 0.25 * char
-                area_ok = abs(area - e_area) <= 0.1 * e_area
-                if near and area_ok:
-                    matched = e.id
-                    break
-            if matched is not None:
-                electrode_surf[matched] = surf
-            else:
-                insulating_faces.append(surf)
-
-        missing = [e.id for e in electrodes if e.id not in electrode_surf]
-        if missing:
-            raise RuntimeError(f"gmsh did not imprint electrode surface(s): {missing}")
+        if has_bodies:
+            electrode_surf, insulating_faces, ground_faces = _cut_bodies(
+                gmsh, occ, domain, boxes, electrodes, eps
+            )
+        else:
+            electrode_surf, insulating_faces, ground_faces = _imprint_faces(
+                gmsh, occ, domain, boxes, electrodes, eps
+            )
+        volumes = [tag for (dim, tag) in gmsh.model.getEntities(3)]
 
         # Assign each volume to the layer whose z-range holds its centroid.
         layer_vols: dict[int, list[int]] = {s.index: [] for s in slabs}
@@ -341,7 +398,7 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
         electrode_tags: dict[str, int] = {}
         for i, e in enumerate(electrodes):
             tag = ELECTRODE_TAG_BASE + i
-            gmsh.model.addPhysicalGroup(2, [electrode_surf[e.id]], tag)
+            gmsh.model.addPhysicalGroup(2, electrode_surf[e.id], tag)
             gmsh.model.setPhysicalName(2, tag, f"electrode_{e.id}")
             electrode_tags[e.id] = tag
         layer_tags: list[int] = []
@@ -351,10 +408,10 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
             gmsh.model.setPhysicalName(3, tag, f"layer_{s.index}")
             layer_tags.append(tag)
 
-        # Graded sizing: fine at the electrode surfaces, coarse toward the shell.
+        # Graded sizing: fine at the electrode (conductive) surfaces, coarse to the shell.
         dist = gmsh.model.mesh.field.add("Distance")
         gmsh.model.mesh.field.setNumbers(
-            dist, "FacesList", [electrode_surf[e.id] for e in electrodes]
+            dist, "FacesList", [s for e in electrodes for s in electrode_surf[e.id]]
         )
         thr = gmsh.model.mesh.field.add("Threshold")
         gmsh.model.mesh.field.setNumber(thr, "InField", dist)

@@ -22,6 +22,7 @@ from dataclasses import fields, is_dataclass
 from functools import cache
 from typing import Any
 
+from .body import Cylinder, Frustum, Hemisphere
 from .conductivity import HomogeneousConductivity, Layer, LayeredConductivity
 from .geometry import Electrode, ElectrodeArray
 from .patch import RGC, RetinalPatch
@@ -34,6 +35,9 @@ _REGISTRY: dict[str, type] = {
     for c in (
         Electrode,
         ElectrodeArray,
+        Hemisphere,
+        Cylinder,
+        Frustum,
         Waveform,
         StimConfig,
         Layer,
@@ -85,12 +89,17 @@ def _decode_value(raw: Any, hint: Any) -> Any:
     if raw is None:
         return None
 
+    # A tagged dataclass dict is self-describing: decode by its __type__ tag,
+    # before consulting the annotation. This handles multi-arm unions (e.g. an
+    # ElectrodeBody = Hemisphere | Cylinder | Frustum) that the single-arm unpack
+    # below cannot resolve.
+    if isinstance(raw, dict) and "__type__" in raw:
+        return _decode_obj(raw)
+
     origin = typing.get_origin(hint)
 
-    # Every union field in the spec is Optional[X]; None is handled above, so
-    # exactly one non-None arm remains. (The ConductivityModel union is only
-    # ever top-level, decoded via its __type__ tag, not through here.) A
-    # multi-arm union field would fail the unpack loudly rather than silently.
+    # The remaining union fields in the spec are Optional[primitive]; None is
+    # handled above, so exactly one non-None arm remains.
     if origin is typing.Union or origin is types.UnionType:
         (arm,) = [a for a in typing.get_args(hint) if a is not type(None)]
         return _decode_value(raw, arm)
@@ -101,10 +110,6 @@ def _decode_value(raw: Any, hint: Any) -> Any:
         if len(args) == 2 and args[1] is Ellipsis:
             return tuple(_decode_value(e, args[0]) for e in raw)
         return tuple(_decode_value(e, t) for e, t in zip(raw, args, strict=False))
-
-    # Nested dataclass carried as a tagged dict.
-    if isinstance(raw, dict) and "__type__" in raw:
-        return _decode_obj(raw)
 
     return raw  # primitives, Literal strings, bool, int
 
