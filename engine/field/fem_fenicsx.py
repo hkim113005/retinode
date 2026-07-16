@@ -34,9 +34,17 @@ from engine.spec import (
     ConductivityModel,
     ElectrodeArray,
     HomogeneousConductivity,
+    LayeredConductivity,
 )
 
-from .mesh import FieldDomain, MeshResult, build_mesh, default_domain
+from .mesh import (
+    LAYER_TAG_BASE,
+    FieldDomain,
+    MeshResult,
+    build_mesh,
+    default_domain,
+    layer_partition,
+)
 
 # V[volts] per I[amps] -> A[mV/uA]; mV/uA = 1e-3 * V/A. Matches analytical.py.
 _MV_PER_UA_FROM_SI = 1.0e-3
@@ -49,8 +57,9 @@ class FenicsxBackend:
     The domain (extent + mesh resolution) is auto-sized from the array via
     :func:`engine.field.mesh.default_domain` unless one is passed explicitly.
     ``degree`` is the Lagrange element order (1 is enough for the potential; 2
-    sharpens the near field at more cost). Homogeneous conductivity only in
-    Phase-4 S2; layered support arrives in S3.
+    sharpens the near field at more cost). Homogeneous and (isotropic) layered
+    conductivity are both supported; diagonal anisotropy is a planned extension
+    and raises NotImplementedError for now.
     """
 
     def __init__(
@@ -71,11 +80,7 @@ class FenicsxBackend:
         conductivity: ConductivityModel,
         query_points_um: np.ndarray,
     ) -> np.ndarray:
-        if not isinstance(conductivity, HomogeneousConductivity):
-            raise NotImplementedError(
-                "the DOLFINx backend is homogeneous-only in Phase-4 S2; layered "
-                "conductivity arrives in S3"
-            )
+        _reject_anisotropy(conductivity)
         domain = self._domain or default_domain(
             array, conductivity, margin_factor=self.margin_factor
         )
@@ -97,29 +102,40 @@ def solve_transfer_matrix(
     """
     import tempfile
 
-    conductivity = domain.conductivity
-    if not isinstance(conductivity, HomogeneousConductivity):
-        raise NotImplementedError("solve_transfer_matrix is homogeneous-only (S2)")
+    _reject_anisotropy(domain.conductivity)
 
     if _mesh_path is not None:
         result = build_mesh(domain, _mesh_path)
-        cols = _solve_on_mesh(result, conductivity.sigma_S_per_m, query_points_um, degree)
+        cols = _solve_on_mesh(result, domain, query_points_um, degree)
     else:
         with tempfile.TemporaryDirectory() as tmp:
             result = build_mesh(domain, f"{tmp}/domain.msh")
-            cols = _solve_on_mesh(result, conductivity.sigma_S_per_m, query_points_um, degree)
+            cols = _solve_on_mesh(result, domain, query_points_um, degree)
     return cols
+
+
+def _reject_anisotropy(conductivity: ConductivityModel) -> None:
+    """Diagonal anisotropy is a planned extension; refuse it early (before any
+    mesh build or dolfinx import) so the guard is cheap and fast-testable."""
+    if isinstance(conductivity, LayeredConductivity) and any(
+        layer.anisotropy is not None for layer in conductivity.layers
+    ):
+        raise NotImplementedError(
+            "anisotropic layers are not yet supported by the FEM backend; use "
+            "isotropic per-layer conductivities (diagonal anisotropy is planned)"
+        )
 
 
 def _solve_on_mesh(
     result: MeshResult,
-    sigma_S_per_m: float,
+    domain: FieldDomain,
     query_points_um: np.ndarray,
     degree: int,
 ) -> np.ndarray:
     """The DOLFINx core: read the tagged mesh, assemble ``sigma grad u . grad v``
     with V=0 on the ground shell, and solve a unit-current Neumann problem per
-    electrode. Returns A (mV/uA) sampled at the query points."""
+    electrode. ``sigma`` is a constant (homogeneous) or a per-layer DG0 field
+    (layered). Returns A (mV/uA) sampled at the query points."""
     import ufl
     from dolfinx import default_scalar_type, fem
     from dolfinx.fem.petsc import LinearProblem
@@ -129,6 +145,7 @@ def _solve_on_mesh(
     data = read_from_msh(result.path, MPI.COMM_WORLD, gdim=3)
     mesh = data.mesh
     facet_tags = data.facet_tags
+    cell_tags = data.cell_tags
 
     # microns -> metres so the assembly is pure SI.
     mesh.geometry.x[:] *= _UM_TO_M
@@ -136,7 +153,7 @@ def _solve_on_mesh(
     V = fem.functionspace(mesh, ("Lagrange", degree))
     u = ufl.TrialFunction(V)
     v = ufl.TestFunction(V)
-    sigma = fem.Constant(mesh, default_scalar_type(sigma_S_per_m))
+    sigma = _build_sigma(mesh, cell_tags, domain, fem, default_scalar_type)
     a = sigma * ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
 
     # V = 0 on the grounded far-field shell.
@@ -169,6 +186,26 @@ def _solve_on_mesh(
         columns.append(ve_volts * _MV_PER_UA_FROM_SI)
 
     return np.column_stack(columns)
+
+
+def _build_sigma(mesh, cell_tags, domain, fem, default_scalar_type):
+    """The conductivity coefficient for the bilinear form. Homogeneous -> a
+    constant. Layered -> a DG0 (cell-wise constant) field taking each layer's
+    sigma on the cells the mesh tagged for that layer, so the sigma jump sits
+    exactly on the meshed interface (a conforming FEM then enforces V- and
+    flux-continuity across it automatically)."""
+    cond = domain.conductivity
+    if isinstance(cond, HomogeneousConductivity):
+        return fem.Constant(mesh, default_scalar_type(cond.sigma_S_per_m))
+
+    slabs = layer_partition(domain)
+    Q = fem.functionspace(mesh, ("DG", 0))  # one dof per cell
+    sigma = fem.Function(Q)
+    dof_of_cell = Q.dofmap.list.reshape(-1)  # DG0: cell -> its single dof
+    for slab in slabs:
+        cells = cell_tags.find(LAYER_TAG_BASE + slab.index)
+        sigma.x.array[dof_of_cell[cells]] = slab.sigma_S_per_m
+    return sigma
 
 
 def _assemble_scalar(fem, mesh, MPI, form_expr) -> float:

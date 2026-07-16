@@ -27,8 +27,12 @@ def test_backend_satisfies_the_protocol_and_names_itself():
     assert backend.name == "fem_fenicsx"
 
 
-def test_layered_conductivity_is_deferred_to_s3():
-    cond = LayeredConductivity(layers=(Layer(sigma_S_per_m=1.0, thickness_um=50.0),))
+def test_anisotropic_layers_are_deferred():
+    """Isotropic layers are supported (S3); diagonal anisotropy is not yet, and
+    the refusal must fire before any mesh build or dolfinx import."""
+    cond = LayeredConductivity(
+        layers=(Layer(sigma_S_per_m=1.0, thickness_um=50.0, anisotropy=(1.0, 1.0, 0.5)),)
+    )
     q = np.array([[0.0, 0.0, 20.0]])
-    with pytest.raises(NotImplementedError, match="S3"):
+    with pytest.raises(NotImplementedError, match="anisotrop"):
         FenicsxBackend().transfer_matrix(_array(), cond, q)

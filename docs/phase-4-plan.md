@@ -60,7 +60,7 @@ engine/field/
   backend.py       transfer-matrix contract + UnsupportedByBackend             [done]
   analytical.py    Tier-1 analytical backend                                    [done]
   mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers)  [done]
-  fem_fenicsx.py   DOLFINx backend behind the contract                          [done (homog); layered=S3]
+  fem_fenicsx.py   DOLFINx backend behind the contract                          [done (homog + isotropic layered)]
   fem_ngsolve.py   NGSolve backend (second-solver cross-check)                  [P4 S5]
   convergence.py   mesh-refinement convergence check                           [P4 S4]
 env/
@@ -109,9 +109,23 @@ env/
   regime is mapped in P4 S5 and the convergence knob is P4 S4. The
   electrode-surface flux recovered by differentiating a P1 solution is unreliable
   (the ground integral is the trustworthy conservation check).
-- **P4 S3 — Layered conductivity (the value-add).** Extend the backend to
-  `LayeredConductivity`. Validate against the **two-layer half-space closed form**
-  (image series) and/or an MMS with a discontinuous σ across the layer interface.
+- **P4 S3 — Layered conductivity (the value-add) — done.** The backend now
+  builds a **DG0 (cell-wise) σ** from the mesh's per-layer volume tags, so the σ
+  jump sits exactly on the meshed interface and a conforming FEM enforces V- and
+  flux-continuity across it. Isotropic layers are supported; diagonal anisotropy
+  raises `NotImplementedError` (a planned extension — refused early, before any
+  mesh build, so it is fast-tested). Validated two ways (`test_fem_layered.py`,
+  `fem`): **(a) two-layer closed form** — for a unit source on the insulating
+  surface of a two-layer half-space, FEM `A` matches the **image-series** in-layer
+  potential to **median 3.4% / max 3.5%** (z = 20–40 µm inside the top layer);
+  **(b) layered MMS** — a flux-continuous piecewise-linear exact solution
+  (`σ₁A₁ = σ₂A₂`) is recovered to **relative L2 3.6e-16** (machine), through the
+  backend's own `_build_sigma`. The **value-add is quantified and sign-checked**:
+  a buried *resistive* layer (σ₂<σ₁) banks current up and raises the layer-1 field
+  **1.3–1.7×** above the homogeneous-σ₁ field the analytical tier would give,
+  while a *conductive* buried layer (σ₂>σ₁) drains it and lowers the field — a
+  large, correctly-signed effect the analytical backend cannot represent (it
+  rejects layered models by contract).
 - **P4 S4 — Convergence + provenance.** Refine the mesh until Ve (or the target
   metric) changes < tolerance between refinements; store the convergence curve so
   the claim is auditable. Thread mesh parameters + backend name into `field_key`
