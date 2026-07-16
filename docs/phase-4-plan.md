@@ -160,9 +160,15 @@ env/
   discretization floor → trustworthy; a resistive (0.3×) or conductive (3×) buried
   layer drives it to **28–35%** → not trustworthy, escalate to FEM. The map's
   arithmetic is fast-tested with injected solvers; the real sweep is `fem`-marked.
-- **P4 S6 (optional) — Independent check + adapters.** Sim4Life field-only import
-  (a solved file → `A`), a documented COMSOL adapter stub. Deferred to the
-  cloud/lab; documented, not built.
+- **P4 S6 (optional) — Independent check + adapters — documented, deferred.**
+  Sim4Life field-only import (a solved file → `A`) and a COMSOL adapter stub are
+  **recorded as a design, not built** — both are commercial tools behind cloud/lab
+  access we do not have, and they were always third-vote nice-to-haves: Phase 4's
+  done-whens are met by the open-source stack (DOLFINx validated, NGSolve
+  cross-check, regime mapped). The adapter designs, the one-method contract they
+  satisfy, and the gate for un-deferring them live in
+  [fem-independent-checks.md](fem-independent-checks.md). This is the intended
+  first cut under pressure (D7 + the cut list).
 
 ## Testing strategy
 
