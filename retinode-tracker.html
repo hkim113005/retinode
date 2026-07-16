@@ -268,7 +268,7 @@
       <div class="panel-top">
         <div class="readout">
           <span class="pct" id="pct">0%</span>
-          <span class="count" id="count">0 of 29 complete</span>
+          <span class="count" id="count">0 of 30 complete</span>
         </div>
         <span class="array-hint">tap a node to jump</span>
       </div>
@@ -334,28 +334,34 @@ const milestones = [
    deliverable:"13/13 reproductions green in CI and visible in the app's Validation panel.",
    done:"Gate 3 — reproductions pass in CI and show in the app. The two axon/multi-site claims reproduce cleanly; Fan's threshold-level gain is honestly deferred to P4 (the field mechanism reproduces). A validated testbed.",
    note:"Bar is trend/direction, not absolute magnitude (analytical + mouse RGC). The one honest deferral — Fan's somatic threshold gain — is what makes the passing set credible: reproductions were not tuned until they passed."},
-  {id:"P4", tag:"ambition", effort:"Fall · lab compute", title:"FEM accuracy layer",
+  {id:"P4", tag:"ambition", effort:"Done · local (DOLFINx runs on the Mac)", title:"FEM accuracy layer",
    obj:"Add accurate finite-element fields behind the existing contract, cross-checked by a second solver.",
    steps:["Add a FEniCSx backend behind the transfer-matrix contract, meshing with gmsh.","Add NGSolve as an independent cross-check on the same mesh; add Sim4Life as a field-only check and stub a COMSOL adapter.","Store a mesh-independence (convergence) check with every FEM result.","Add cross-backend agreement tests and map where the analytical tier can be trusted."],
    deliverable:"A validated, drop-in FEM backend, confirmed by a second backend, with the analytical-versus-FEM regime mapped.",
    done:"An open-source FEM field is validated and swappable, and two solvers agree within tolerance on shared problems.",
    note:"Inherits what P1/P3 deferred: absolute threshold magnitudes and Fan 2019's full somatic selectivity gain need the FEM field plus primate morphology to validate at the magnitude level."},
-  {id:"P5", tag:"ambition", effort:"Fall · lab compute", title:"Study engine and compute scaling",
+  {id:"P5", tag:"ambition", effort:"Done · local (parallel across cores)", title:"Study engine and compute scaling",
    obj:"Run parameter sweeps to a Pareto frontier, reusing fields and recomputing only what geometry changes.",
    steps:["Build the sweep engine with a cost estimate surfaced before any launch.","Add parametric FEM, coarse-to-fine, with an optional surrogate model.","Add async, resumable jobs and adapters for a local pool, Slurm (FarmShare / Sherlock), and cloud.","Run the result cache at scale, reusing transfer matrices across configurations."],
    deliverable:"A geometry sweep that runs to a selectivity-versus-cost Pareto frontier without manual bookkeeping.",
    done:"A sweep completes to a Pareto frontier, reusing fields and recomputing per geometry, unattended."},
-  {id:"P6", tag:"ambition", effort:"Fall · if warranted", title:"The polished application",
+  {id:"P6", tag:"ambition", effort:"Fall · local (FEM)", title:"Electrode geometry — arbitrary 2D and 3D CAD",
+   obj:"Test genuinely novel electrode designs — arbitrary 2D outlines and true 3D bodies (parametric primitives and imported CAD) — behind the same field contract.",
+   steps:["Arbitrary 2D shapes in the FEM mesh (square, polygon): generalize the disk imprint; validate vs the analytic small-limit + convergence.","3D electrode primitives (pillar, well, frustum): build in gmsh OpenCASCADE, boolean-fragment into the tissue, tag conductive surfaces; validate vs a known-answer 3D case + convergence + NGSolve agreement.","CAD import (STEP/BREP): place and orient an imported solid, tag its conductive surface(s); round-trip a CAD cylinder against the primitive.","Provenance + sweep: content-address 3D/CAD geometry (file hash + placement); generators so the geometry sweep + surrogate explore 3D patterns and configurations.","Cross-check + docs: NGSolve agreement on a 3D mesh; document the geometry model, conductive-surface convention, accepted formats, and the FEM-only caveat."],
+   deliverable:"A non-disk 2D electrode and a 3D electrode (primitive and imported CAD) each mesh, solve, validate, and score end-to-end.",
+   done:"You can define a custom 3D electrode and test its selectivity and safety before fabrication — the design-space explorer the tool was for.",
+   note:"Behind the transfer-matrix contract: a custom electrode changes only the mesh and which surfaces inject current — the cable model, evaluator, sweep, and surrogate are unchanged. Shaped and 3D electrodes are FEM-only (the analytical tier is a point source)."},
+  {id:"P7", tag:"ambition", effort:"Fall · if warranted", title:"The polished application",
    obj:"Re-skin the working tool as a clean FastAPI + React app in the instrument-panel visual language.",
    steps:["Stand up a FastAPI backend over the engine and a React client to the fixed view data contracts.","Build the full screen set: Compare, Study and Pareto, Validation, and Candidates.","Add a secondary react-three-fiber 3D scene and a real 2D charting layer.","Add figure-quality export (SVG / PDF vector, high-DPI PNG)."],
    deliverable:"A clean, keyboard- and mobile-respectful app, pleasant enough to hand to a labmate.",
    done:"The tool is polished and legible to a newcomer, with the full screen set and figure-quality export."},
-  {id:"P7", tag:"ambition", effort:"Fall · in-lab", title:"Geometry study and validation dashboard",
+  {id:"P8", tag:"ambition", effort:"Fall · in-lab", title:"Geometry study and validation dashboard",
    obj:"Use the accurate engine to compare geometries systematically and produce a defensible design finding.",
    steps:["Sweep geometry — return-ring radius, pitch, electrode size, layout — together with steering weights.","Produce the selectivity-versus-current Pareto frontier, reported with tier and trajectory sensitivity.","Identify which geometries dominate the frontier and explain why.","Complete the Validation dashboard: reproductions plus backend agreement."],
    deliverable:"A one-sentence, robust design finding backed by the frontier, and a complete trust panel.",
    done:"You can state a design finding in one sentence and back it with the frontier. This is the original contribution."},
-  {id:"P8", tag:"ambition", effort:"Fall · release", title:"Packaging, docs, and release",
+  {id:"P9", tag:"ambition", effort:"Fall · release", title:"Packaging, docs, and release",
    obj:"Make the engine and app installable, reproducible, and legible to a stranger.",
    steps:["Make the engine and app pip-installable; clean the repo, README, environment, and license.","Make one headline result reproducible from its provenance with a single command.","Write the documentation and the reproducibility guarantees.","Publish a public repo with examples and have someone clone it cold."],
    deliverable:"A public repo plus docs where a stranger installs, reproduces a headline result with one command, and learns to use it.",
@@ -503,7 +509,7 @@ const paperIds = weeks.flatMap(w=>w.papers.map(p=>p.id));
 
 // Phases built so far (through Phase 3). Seeded so the tracker reflects real
 // progress on load; localStorage toggles still override per item.
-let state = {P0:true, P1:true, P2:true, P3:true};
+let state = {P0:true, P1:true, P2:true, P3:true, P4:true, P5:true};
 let canPersist = false;
 (function probe(){
   try{
@@ -715,7 +721,7 @@ function updateStatus(){
   const done=allIds.filter(isDone).length;
   const s=document.getElementById("status");
   if(done===0){ s.textContent = canPersist? "Nothing checked yet. Progress saves automatically." : "Nothing checked yet."; return; }
-  if(done===allIds.length){ s.innerHTML="<b>All 29 done. Go talk to Michael.</b>"; return; }
+  if(done===allIds.length){ s.innerHTML="<b>All "+allIds.length+" done. Go talk to Michael.</b>"; return; }
   const p3 = isDone("P3");
   s.textContent = p3 ? "Core validated. The headline result is in hand." : (done + " down. Phase P3 is the one that counts.");
 }

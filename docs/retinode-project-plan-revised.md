@@ -102,11 +102,11 @@ retinode/
     store/           # cache, project store, provenance
     validate/        # property tests, cross-backend, reproductions
   api/               # FastAPI; imports engine, never the reverse
-  app/               # dashboard (Phase 2) then React client (Phase 6)
+  app/               # dashboard (Phase 2) then React client (Phase 7)
   tests/
 ```
 
-A single lint rule — `engine/` may not import from `api/` or `app/` — is worth a CI check, because this one boundary is what makes the Phase 6 re-skin a re-skin and not a rewrite.
+A single lint rule — `engine/` may not import from `api/` or `app/` — is worth a CI check, because this one boundary is what makes the Phase 7 re-skin a re-skin and not a rewrite.
 
 ---
 
@@ -324,7 +324,7 @@ The field heatmap and isopotential contours, the activation animation over ampli
 Staged so the tool is usable early and polished later, exploiting the engine's UI-independence:
 
 - **Early, usable (Phase 2).** A Python-native dashboard (Dash, Panel, or Streamlit — leaning Dash/Plotly for interaction fidelity) that calls the engine directly and gives forms plus Plotly field, activation, and Pareto views. Minimal frontend effort, good enough to validate the UX and be genuinely usable on the fast analytical tier.
-- **Later, clean (Phase 6).** If the tool proves worth productizing, a FastAPI backend and a React frontend, with react-three-fiber for the 3D scene and a real charting layer for the 2D views, built to the instrument-panel visual language. Because the engine and specs are unchanged and the view data contracts (§16) are fixed, this is a re-skin of a working tool, not a rewrite of the science.
+- **Later, clean (Phase 7).** If the tool proves worth productizing, a FastAPI backend and a React frontend, with react-three-fiber for the 3D scene and a real charting layer for the 2D views, built to the instrument-panel visual language. Because the engine and specs are unchanged and the view data contracts (§16) are fixed, this is a re-skin of a working tool, not a rewrite of the science.
 
 The recommendation is to resist building the polished app until the engine is trustworthy. A beautiful UI over an unvalidated engine is worse than a plain UI over a correct one, because it invites belief the numbers have not earned.
 
@@ -370,13 +370,16 @@ The FEniCSx backend behind the existing contract, the NGSolve backend as its cro
 ### Phase 5: Study engine and compute scaling
 The sweep engine, cost estimation, parametric FEM, optional surrogate model, parallel and cluster and cloud execution, resumable jobs, and the result cache at scale. **Done when** a geometry sweep runs to a Pareto frontier, reusing transfer matrices and recomputing fields per geometry, without manual bookkeeping.
 
-### Phase 6: The polished application
-If warranted, the FastAPI-plus-React app to the instrument-panel visual language, with the full screen set, the Compare and Study and Pareto and Candidates views, figure-quality visualization, and export. **Done when** the tool is clean, keyboard- and mobile-respectful, and pleasant enough to hand to a labmate.
+### Phase 6: Electrode geometry — arbitrary 2D shapes and 3D CAD models
+Extend the electrode geometry from planar disks to arbitrary 2D outlines (square, polygon) and true 3D electrode bodies — parametric 3D primitives (pillars, wells, frustums) and imported CAD (STEP/BREP) — all behind the existing transfer-matrix contract, so the cable engine, evaluator, sweep, and surrogate are unchanged; a custom electrode changes only the mesh and which surfaces inject current. Validated with the Phase-4 machinery (known-answer, convergence, second-solver agreement); shaped and 3D electrodes are FEM-only. **Done when** a user can define and test a non-disk 2D electrode and a 3D electrode (primitive and imported CAD) end-to-end to a selectivity/safety score, validated. This is what turns the tool from an array-layout comparator into a design-space explorer for novel 3D electrodes. See [phase-6-plan.md](phase-6-plan.md).
 
-### Phase 7: The geometry study and validation dashboard
-Use the accurate engine to compare geometries systematically, producing the Pareto frontier and a defensible design finding, reported with tier and trajectory sensitivity, and complete the Validation dashboard. **Done when** there is a one-sentence, robust design finding backed by the frontier, and the trust panel is complete.
+### Phase 7: The polished application
+If warranted, the FastAPI-plus-React app to the instrument-panel visual language, with the full screen set, the Compare and Study and Pareto and Candidates views, figure-quality visualization, and export (the react-three-fiber 3D scene now also renders the Phase-6 3D electrode geometry). **Done when** the tool is clean, keyboard- and mobile-respectful, and pleasant enough to hand to a labmate.
 
-### Phase 8: Packaging, docs, and release
+### Phase 8: The geometry study and validation dashboard
+Use the accurate engine to compare geometries systematically — including the Phase-6 3D electrode designs — producing the Pareto frontier and a defensible design finding, reported with tier and trajectory sensitivity, and complete the Validation dashboard. **Done when** there is a one-sentence, robust design finding backed by the frontier, and the trust panel is complete.
+
+### Phase 9: Packaging, docs, and release
 A pip-installable engine and app, documentation, reproducibility guarantees, and a public repo with a clear README and examples. **Done when** a stranger can install it, reproduce a headline result with one command, and read how to use it.
 
 ## 20. The summer schedule (Phases 0–3)
@@ -400,7 +403,7 @@ The critical, unmovable milestones are the four gates. If a week slips, the buff
 
 ## 21. Dependencies and the critical path
 
-Phase 0 blocks everything. Phase 1 needs Phase 0. Phase 2 needs Phase 1 for real results but its screens can be scaffolded against Phase 0. Phase 3 needs Phases 1 and 2. Phase 4 needs the Phase 0 contract and nothing else, so FEM can be prototyped in parallel once the contract is frozen. Phase 5 needs Phase 4. Phases 6 and 7 need 4 and 5. Phase 8 is last. The one hard serialization is **spec → engine → validation**; the UI and FEM can proceed in parallel once the spec is frozen. This is why freezing the spec at the end of Week 2 (Gate 0) is the highest-leverage moment in the whole schedule: everything downstream forks from it, and every day the spec stays fluid is a day nothing built on it is safe.
+Phase 0 blocks everything. Phase 1 needs Phase 0. Phase 2 needs Phase 1 for real results but its screens can be scaffolded against Phase 0. Phase 3 needs Phases 1 and 2. Phase 4 needs the Phase 0 contract and nothing else, so FEM can be prototyped in parallel once the contract is frozen. Phase 5 needs Phase 4. Phase 6 (arbitrary 2D + 3D CAD electrode geometry) needs Phase 4's FEM backend and reuses Phase 5's sweep, and lands before the geometry study that would use 3D designs. Phases 7 and 8 need 4, 5, and 6. Phase 9 is last. The one hard serialization is **spec → engine → validation**; the UI and FEM can proceed in parallel once the spec is frozen. This is why freezing the spec at the end of Week 2 (Gate 0) is the highest-leverage moment in the whole schedule: everything downstream forks from it, and every day the spec stays fluid is a day nothing built on it is safe.
 
 ---
 
