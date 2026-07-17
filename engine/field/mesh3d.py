@@ -109,13 +109,16 @@ def classify_cavity_surfaces(occ, electrode, wall_surfs, rotation: Mat3 | None =
     return tip + sides, []  # "all"
 
 
-def load_cad_body(cad_path: str, *, conductive_faces: str = "all") -> CadBody:
+def load_cad_body(
+    cad_path: str, *, conductive_faces: str = "all", overlap_mesh_size_um: float | None = None
+) -> CadBody:
     """Read a STEP/BREP solid and build a :class:`~engine.spec.body.CadBody`: hash
-    its content (the geometric identity, for provenance), and measure its bounding
-    radius/height and its exposed surface area (for mesh sizing, the overlap check,
-    and the safety charge density). The CAD's origin is taken as the electrode's
-    base on the array plane; the exposed area excludes the z=0 base face (that is
-    the substrate opening, not a conductive surface). Requires gmsh (the fem env)."""
+    its content (the geometric identity, for provenance), measure its bounding
+    radius/height and its exposed surface area (split tip/sides), and bake a coarse
+    triangulated surface so the pure-Python overlap check can test point-in-solid
+    exactly without gmsh (P6 S9). The CAD's origin is taken as the electrode's base
+    on the array plane; the exposed area excludes the z=0 base face (the substrate
+    opening, not a conductive surface). Requires gmsh (the fem env)."""
     import gmsh
 
     with open(cad_path, "rb") as f:
@@ -145,6 +148,10 @@ def load_cad_body(cad_path: str, *, conductive_faces: str = "all") -> CadBody:
                 tip_area += area
             else:
                 sides_area += area
+        # A coarse surface triangulation of the whole closed solid (base included, so
+        # the ray-parity point-in-solid test is watertight) for exact overlap.
+        size = overlap_mesh_size_um or max(bounding_radius, bounding_height) / 6.0
+        points, tris = _surface_triangulation(gmsh, size)
     finally:
         gmsh.finalize()
 
@@ -157,4 +164,29 @@ def load_cad_body(cad_path: str, *, conductive_faces: str = "all") -> CadBody:
         conductive_faces=conductive_faces,  # type: ignore[arg-type]
         tip_area_um2=tip_area,
         sides_area_um2=sides_area,
+        surface_points_um=points,
+        surface_tris=tris,
     )
+
+
+def _surface_triangulation(gmsh, size_um: float):  # noqa: ANN001
+    """Surface-mesh the loaded solid at ``size_um`` and return ``(points, tris)`` —
+    node coordinates (microns) and triangles indexing them — for the exact overlap
+    proxy. The model already holds the synchronized solid."""
+    gmsh.option.setNumber("Mesh.MeshSizeMax", size_um)
+    gmsh.option.setNumber("Mesh.MeshSizeMin", size_um)
+    gmsh.model.mesh.generate(2)  # surfaces only
+    node_tags, coords, _ = gmsh.model.mesh.getNodes()
+    coords = coords.reshape(-1, 3)
+    tag_to_idx = {int(t): i for i, t in enumerate(node_tags)}
+    points = tuple((float(x), float(y), float(z)) for x, y, z in coords)
+    tris: list[tuple[int, int, int]] = []
+    etypes, _etags, enodes = gmsh.model.mesh.getElements(dim=2)
+    for et, conn in zip(etypes, enodes, strict=True):
+        if et == 2:  # 3-node triangle
+            flat = [int(n) for n in conn]
+            tris.extend(
+                (tag_to_idx[flat[i]], tag_to_idx[flat[i + 1]], tag_to_idx[flat[i + 2]])
+                for i in range(0, len(flat), 3)
+            )
+    return points, tuple(tris)

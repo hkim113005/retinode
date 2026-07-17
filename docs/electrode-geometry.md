@@ -150,8 +150,12 @@ The lower-level `check_overlap` / `resolve_overlap` helpers remain available for
 inspecting a scene's conflicts directly (`resolve_overlap(report, "displace")`
 returns `{cell: {compartments}}`); `evaluate` is the wired path that acts on them.
 
-Overlap detection is exact for the primitives; for a CAD body it uses a conservative
-**bounding cylinder** (it over-flags rather than misses).
+Overlap detection is exact for the primitives, and for an imported CAD body it is
+exact to mesh resolution (P6 S9): `load_cad_body` bakes a coarse **triangulated
+surface** into the `CadBody`, and the check does a pure-Python point-in-solid test
+(ray parity) against it — no gmsh needed in the eval path. A `CadBody` with no baked
+triangulation (e.g. hand-constructed) falls back to the conservative bounding
+cylinder.
 
 ## Sweeping 3D designs
 
@@ -193,9 +197,11 @@ The regime-aware backend selection routes these to FEM automatically.
   selects tip / sides / all, split by centroid depth at load time. The split is a
   depth heuristic, not a semantic face-tagging — a genuinely branched electrode may
   need its groups defined in the CAD tool.
-- **CAD overlap is still a bounding-cylinder approximation** for the near-contact /
-  displace check — conservative (over-flags, never misses); an exact CAD overlap
-  test is the remaining extension (P6 S9).
+- **CAD overlap is exact to mesh resolution** (P6 S9): the check ray-casts against a
+  baked triangulated surface, so it catches conflicts a bounding cylinder would miss
+  (a square corner) and rejects points a bounding cylinder would over-flag (off to
+  the side of a thin slab). Accuracy is set by the triangulation density chosen at
+  load time.
 - **The biophysics caveats are unchanged** — mouse RGC morphology, trend-not-magnitude
   validation (Phases 1/3). 3D geometry raises *field/placement* fidelity, not
   physiological fidelity: this is a hypothesis tester for electrode designs, not an

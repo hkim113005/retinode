@@ -255,6 +255,21 @@ docs/
   than the fully-conductive **all**. The split is a depth heuristic (documented), not
   semantic face-tagging.
 
+- **P6 S9 — Exact CAD overlap — done.** The overlap check for an imported solid was a
+  conservative bounding cylinder (both over- and under-flags a non-cylindrical CAD).
+  Now `load_cad_body` bakes a coarse **triangulated surface** (the whole closed solid,
+  in the body-local frame) into `CadBody`, and `point_in_body` / `surface_distance_um`
+  do a pure-Python **point-in-solid** test (ray-parity, Möller–Trumbore with a skewed
+  ray to dodge edge/vertex degeneracies) and closest-point-to-triangle signed
+  distance — **no gmsh in the eval path**, so overlap stays a uv-env concern. Empty
+  triangulation falls back to the bounding cylinder. Validated: unit (a square
+  pillar's corner is caught where the bounding cylinder misses it; signed distance
+  sign + magnitude; serialization round-trip of the baked mesh); FEM — a **loaded
+  wide-slab STEP** correctly excludes an off-axis point the bounding cylinder would
+  over-flag. Accuracy is set by the load-time triangulation density.
+
+**Phase 6 complete — core (S1–S6) and all three extensions (S7–S9).**
+
 ---
 
 ## Spec additions (concrete shape)

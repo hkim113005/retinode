@@ -139,6 +139,69 @@ def test_cad_body_round_trips():
     assert from_json(to_json(e)) == e
 
 
+def _box_trimesh(hx, hy, z0, z1):
+    """8 corners + 12 triangles of the box [-hx,hx] x [-hy,hy] x [z0,z1]."""
+    v = [
+        (-hx, -hy, z0), (hx, -hy, z0), (hx, hy, z0), (-hx, hy, z0),
+        (-hx, -hy, z1), (hx, -hy, z1), (hx, hy, z1), (-hx, hy, z1),
+    ]
+    faces = [
+        (0, 1, 2), (0, 2, 3),  # bottom
+        (4, 6, 5), (4, 7, 6),  # top
+        (0, 4, 5), (0, 5, 1),  # -y
+        (1, 5, 6), (1, 6, 2),  # +x
+        (2, 6, 7), (2, 7, 3),  # +y
+        (3, 7, 4), (3, 4, 0),  # -x
+    ]
+    return tuple(v), tuple(faces)
+
+
+def _square_pillar_cad(hx=2.0, hy=2.0, z1=20.0):
+    from engine.spec import CadBody
+
+    pts, tris = _box_trimesh(hx, hy, 0.0, z1)
+    return CadBody(
+        cad_path="/tmp/sq.step", content_hash="sq", bounding_radius_um=max(hx, hy),
+        bounding_height_um=z1, surface_area_um2=0.0,
+        surface_points_um=pts, surface_tris=tris,
+    )
+
+
+def test_exact_cad_overlap_catches_a_corner_the_bounding_cylinder_misses():
+    # P6 S9: a square pillar's corner sticks out past its bounding *cylinder*, so the
+    # old rho<=bounding_radius test under-flags it; the triangulated test is exact.
+    pillar = _square_pillar_cad(hx=2.0, hy=2.0, z1=20.0)
+    corner = (1.8, 1.8, 10.0)  # inside the square, but rho=2.55 > bounding_radius 2
+    assert point_in_body(pillar, *corner)  # exact: inside the metal
+    # the same body with no triangulation falls back to the bounding cylinder, which
+    # wrongly reports the corner as outside (rho exceeds the radius)
+    from engine.spec import CadBody
+
+    no_mesh = CadBody(
+        cad_path="/tmp/sq.step", content_hash="sq", bounding_radius_um=2.0,
+        bounding_height_um=20.0, surface_area_um2=0.0,
+    )
+    assert not point_in_body(no_mesh, *corner)  # bounding-cylinder fallback disagrees
+
+
+def test_triangulated_cad_body_round_trips():
+    e = _with_body(_square_pillar_cad())
+    back = from_json(to_json(e))
+    assert back == e  # the baked triangulation survives serialization
+    assert type(back.body.surface_tris[0]) is tuple  # nested tuples, not lists
+
+
+def test_exact_cad_overlap_inside_outside_and_signed_distance():
+    pillar = _square_pillar_cad(hx=2.0, hy=2.0, z1=20.0)
+    assert point_in_body(pillar, 0.0, 0.0, 10.0)  # axis, inside
+    assert not point_in_body(pillar, 0.0, 0.0, 25.0)  # above the top
+    assert not point_in_body(pillar, 5.0, 0.0, 10.0)  # well outside
+    # signed distance: negative inside, positive outside, ~exact magnitude
+    assert surface_distance_um(pillar, 0.0, 0.0, 10.0) < 0.0
+    # 2 um past the +x wall (which sits at x=2)
+    assert surface_distance_um(pillar, 4.0, 0.0, 10.0) == pytest.approx(2.0, abs=1e-6)
+
+
 def test_cad_conductive_area_honors_the_face_group():
     from engine.spec import CadBody
 

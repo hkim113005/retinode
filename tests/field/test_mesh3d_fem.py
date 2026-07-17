@@ -223,6 +223,39 @@ def test_imported_cad_cylinder_reproduces_the_primitive_field(tmp_path):
     assert np.max(np.abs(a_cad - a_prim) / np.abs(a_prim)) < 0.03
 
 
+def _write_step_slab(path: str, hx: float, hy: float, height: float) -> None:
+    import gmsh
+
+    gmsh.initialize()
+    try:
+        gmsh.model.add("slab")
+        gmsh.model.occ.addBox(-hx, -hy, 0.0, 2 * hx, 2 * hy, height)
+        gmsh.model.occ.synchronize()
+        gmsh.write(path)
+    finally:
+        gmsh.finalize()
+
+
+def test_loaded_cad_overlap_is_exact_not_the_bounding_cylinder(tmp_path):
+    # P6 S9: a wide thin slab (x half-extent 15, y half-extent 3). Its bounding
+    # cylinder has radius 15, so a point 10 um off-axis in y is *inside* the cylinder
+    # but well outside the actual slab — the baked triangulation excludes it exactly,
+    # where the old bounding-cylinder test would over-flag it.
+    from engine.field.mesh3d import load_cad_body
+    from engine.spec.body import point_in_body
+
+    slab = str(tmp_path / "slab.step")
+    _write_step_slab(slab, 15.0, 3.0, 20.0)
+    cad = load_cad_body(slab)
+    assert cad.surface_tris, "the loader must bake a triangulated surface"
+    assert cad.bounding_radius_um == pytest.approx(15.0, abs=1e-3)
+
+    assert point_in_body(cad, 0.0, 0.0, 10.0)  # centre, inside
+    assert point_in_body(cad, 14.0, 0.0, 10.0)  # near the +x end, inside the slab
+    over = (0.0, 10.0, 10.0)  # rho=10 < bounding_radius 15, but |y|=10 > 3 -> outside
+    assert not point_in_body(cad, *over)  # exact: correctly excluded
+
+
 def test_cad_face_groups_split_and_shape_the_field(tmp_path):
     # P6 S8: the loader splits an imported solid's exposed area into a deep tip and
     # lateral sides, and conductive_faces selects which inject — so a "sides"-only

@@ -74,6 +74,12 @@ class CadBody:
     conductive_faces: ConductiveFaces = "all"
     tip_area_um2: float = 0.0
     sides_area_um2: float = 0.0
+    # A coarse triangulated surface (body-local frame, base at the origin) the loader
+    # bakes in so the pure-Python overlap check can test point-in-solid exactly (to
+    # mesh resolution) without gmsh (P6 S9). Empty => fall back to the bounding
+    # cylinder. Points are (x, y, z) microns; tris index into points.
+    surface_points_um: tuple[tuple[float, float, float], ...] = ()
+    surface_tris: tuple[tuple[int, int, int], ...] = ()
 
 
 ElectrodeBody = Hemisphere | Cylinder | Frustum | CadBody
@@ -113,6 +119,103 @@ def body_conductive_area_um2(body: ElectrodeBody) -> float:
     return _select_faces_area(math.pi * r1 * r1, math.pi * (r0 + r1) * slant, body.conductive_faces)
 
 
+# A deliberately skewed ray direction (not axis-aligned) so the parity ray rarely
+# grazes a shared triangle edge or vertex, which would miscount crossings.
+_RAY_DIR = (0.5773502691896257, 0.5773802691896257, 0.5772502691896257)
+
+
+def _point_in_trimesh(
+    pts: tuple[tuple[float, float, float], ...],
+    tris: tuple[tuple[int, int, int], ...],
+    p: tuple[float, float, float],
+) -> bool:
+    """Point-in-closed-triangle-mesh by ray parity: cast a ray from ``p`` along a
+    fixed skewed direction and count triangle crossings — odd means inside
+    (Möller–Trumbore)."""
+    dx, dy, dz = _RAY_DIR
+    crossings = 0
+    for i, j, k in tris:
+        a, b, c = pts[i], pts[j], pts[k]
+        e1 = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+        e2 = (c[0] - a[0], c[1] - a[1], c[2] - a[2])
+        h = (dy * e2[2] - dz * e2[1], dz * e2[0] - dx * e2[2], dx * e2[1] - dy * e2[0])  # dir x e2
+        det = e1[0] * h[0] + e1[1] * h[1] + e1[2] * h[2]
+        if -1e-12 < det < 1e-12:
+            continue  # ray parallel to the triangle
+        inv = 1.0 / det
+        s = (p[0] - a[0], p[1] - a[1], p[2] - a[2])
+        u = (s[0] * h[0] + s[1] * h[1] + s[2] * h[2]) * inv
+        if u < 0.0 or u > 1.0:
+            continue
+        q = (s[1] * e1[2] - s[2] * e1[1], s[2] * e1[0] - s[0] * e1[2], s[0] * e1[1] - s[1] * e1[0])
+        v = (dx * q[0] + dy * q[1] + dz * q[2]) * inv  # dir . q
+        if v < 0.0 or u + v > 1.0:
+            continue
+        t = (e2[0] * q[0] + e2[1] * q[1] + e2[2] * q[2]) * inv
+        if t > 1e-9:  # crossing strictly ahead of the point
+            crossings += 1
+    return crossings % 2 == 1
+
+
+def _point_tri_distance(
+    a: tuple[float, float, float],
+    b: tuple[float, float, float],
+    c: tuple[float, float, float],
+    p: tuple[float, float, float],
+) -> float:
+    """Euclidean distance from ``p`` to triangle ``abc`` (closest-point, Ericson)."""
+    ab = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+    ac = (c[0] - a[0], c[1] - a[1], c[2] - a[2])
+    ap = (p[0] - a[0], p[1] - a[1], p[2] - a[2])
+    d1 = ab[0] * ap[0] + ab[1] * ap[1] + ab[2] * ap[2]
+    d2 = ac[0] * ap[0] + ac[1] * ap[1] + ac[2] * ap[2]
+    if d1 <= 0.0 and d2 <= 0.0:
+        return math.dist(p, a)
+    bp = (p[0] - b[0], p[1] - b[1], p[2] - b[2])
+    d3 = ab[0] * bp[0] + ab[1] * bp[1] + ab[2] * bp[2]
+    d4 = ac[0] * bp[0] + ac[1] * bp[1] + ac[2] * bp[2]
+    if d3 >= 0.0 and d4 <= d3:
+        return math.dist(p, b)
+    cp = (p[0] - c[0], p[1] - c[1], p[2] - c[2])
+    d5 = ab[0] * cp[0] + ab[1] * cp[1] + ab[2] * cp[2]
+    d6 = ac[0] * cp[0] + ac[1] * cp[1] + ac[2] * cp[2]
+    if d6 >= 0.0 and d5 <= d6:
+        return math.dist(p, c)
+    vc = d1 * d4 - d3 * d2
+    if vc <= 0.0 and d1 >= 0.0 and d3 <= 0.0:
+        t = d1 / (d1 - d3)
+        closest = (a[0] + t * ab[0], a[1] + t * ab[1], a[2] + t * ab[2])
+        return math.dist(p, closest)
+    vb = d5 * d2 - d1 * d6
+    if vb <= 0.0 and d2 >= 0.0 and d6 <= 0.0:
+        t = d2 / (d2 - d6)
+        closest = (a[0] + t * ac[0], a[1] + t * ac[1], a[2] + t * ac[2])
+        return math.dist(p, closest)
+    va = d3 * d6 - d5 * d4
+    if va <= 0.0 and (d4 - d3) >= 0.0 and (d5 - d6) >= 0.0:
+        t = (d4 - d3) / ((d4 - d3) + (d5 - d6))
+        closest = (
+            b[0] + t * (c[0] - b[0]),
+            b[1] + t * (c[1] - b[1]),
+            b[2] + t * (c[2] - b[2]),
+        )
+        return math.dist(p, closest)
+    denom = 1.0 / (va + vb + vc)  # inside the face: project onto its plane
+    v, w = vb * denom, vc * denom
+    closest = (
+        a[0] + ab[0] * v + ac[0] * w,
+        a[1] + ab[1] * v + ac[1] * w,
+        a[2] + ab[2] * v + ac[2] * w,
+    )
+    return math.dist(p, closest)
+
+
+def _cad_min_surface_distance(body: CadBody, p: tuple[float, float, float]) -> float:
+    """Unsigned distance from ``p`` to the CAD's triangulated surface."""
+    pts = body.surface_points_um
+    return min(_point_tri_distance(pts[i], pts[j], pts[k], p) for (i, j, k) in body.surface_tris)
+
+
 def _frustum_radius_at(body: Frustum, z: float) -> float:
     """The frustum's radius at depth ``z`` (linear taper), clamped to its height."""
     zc = max(0.0, min(z, body.height_um))
@@ -131,7 +234,9 @@ def point_in_body(body: ElectrodeBody, dx: float, dy: float, dz: float) -> bool:
     if isinstance(body, Cylinder):
         return 0.0 <= dz <= body.height_um and rho <= body.radius_um
     if isinstance(body, CadBody):
-        # conservative bounding cylinder (over-approximates a non-cylindrical CAD)
+        if body.surface_tris:  # exact: point-in-triangulated-solid (P6 S9)
+            return _point_in_trimesh(body.surface_points_um, body.surface_tris, (dx, dy, dz))
+        # fallback: conservative bounding cylinder (over-approximates the CAD)
         return 0.0 <= dz <= body.bounding_height_um and rho <= body.bounding_radius_um
     return 0.0 <= dz <= body.height_um and rho <= _frustum_radius_at(body, dz)  # Frustum
 
@@ -145,6 +250,9 @@ def surface_distance_um(body: ElectrodeBody, dx: float, dy: float, dz: float) ->
     if isinstance(body, Hemisphere):
         # the z>=0 half-ball is (ball) ∩ (half-space z>=0); SDF = max of the two.
         return max(math.hypot(rho, dz) - body.radius_um, -dz)
+    if isinstance(body, CadBody) and body.surface_tris:  # exact signed distance (P6 S9)
+        d = _cad_min_surface_distance(body, (dx, dy, dz))
+        return -d if point_in_body(body, dx, dy, dz) else d
     if isinstance(body, Cylinder | CadBody):
         r = body.radius_um if isinstance(body, Cylinder) else body.bounding_radius_um
         h = body.height_um if isinstance(body, Cylinder) else body.bounding_height_um
