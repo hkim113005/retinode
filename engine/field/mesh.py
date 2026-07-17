@@ -186,11 +186,19 @@ def default_domain(
     margin_factor: float = 6.0,
     depth_um: float | None = None,
     cells_per_radius: float = 2.5,
+    min_half_width_um: float = 0.0,
 ) -> FieldDomain:
     """A reasonable domain auto-sized around an array: lateral margin scaled to
     the electrode span, depth from the layer stack (or ``margin_factor`` * span
     if homogeneous), and mesh sizes from the smallest electrode radius. Handy for
-    tests and P4 S2; production runs can size the domain explicitly."""
+    tests and P4 S2; production runs can size the domain explicitly.
+
+    ``min_half_width_um`` floors the lateral extent. The array alone is a poor guide
+    when the field is sampled at points far from it — a cell's axon of passage reaches
+    hundreds of µm toward the optic disc, well outside a domain sized for a small
+    electrode. A caller that knows its query points passes their reach here so the
+    domain contains them (a point outside the mesh is a hard error, not a small
+    inaccuracy)."""
     placed = apply_placement(array)  # size the domain around the posed positions
     xs = [e.pos_um[0] for e in placed]
     ys = [e.pos_um[1] for e in placed]
@@ -203,7 +211,7 @@ def default_domain(
         2.0 * max(radii),
     )
     reach = max(abs(v) for v in (*xs, *ys)) + max(radii)
-    half_width = reach + margin_factor * max(span, max(radii))
+    half_width = max(reach + margin_factor * max(span, max(radii)), min_half_width_um)
 
     if isinstance(conductivity, LayeredConductivity):
         depth = sum(layer.thickness_um for layer in conductivity.layers)

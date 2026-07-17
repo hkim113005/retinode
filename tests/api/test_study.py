@@ -80,10 +80,45 @@ def test_study_drops_overlapping_combos():
     assert body["study"]["n_geometries"] == 1
 
 
+def test_no_provider_dispatches_the_study_to_the_fem_env(monkeypatch):
+    """Comparing geometry is FEM-only, so a production study (no injected provider)
+    dispatches the whole sweep to the conda env rather than running analytical."""
+    seen = {}
+
+    def fake_dispatch(controls, report, **_):
+        from api.models import StudyPoint, StudyResult
+
+        seen["diameters"] = controls.diameters_um
+        report(0.5, "solving geometry 1 of 1")
+        return StudyResult(
+            points=[
+                StudyPoint(
+                    diameter_um=10.0, pitch_um=50.0, cost_uA=8.0,
+                    selectivity_uA=4.0, safe=True, on_frontier=True,
+                )
+            ],
+            n_geometries=1,
+        )
+
+    monkeypatch.setattr("api.routes.study.run_study_job", fake_dispatch)
+    client = TestClient(create_app())  # NO provider -> the FEM path
+    body = _poll(client, client.post("/study", json=_STUDY).json()["id"])
+    assert body["status"] == "done"
+    assert body["study"]["n_geometries"] == 1
+    assert seen["diameters"] == _STUDY["diameters_um"]  # the real controls reached it
+
+
 @pytest.mark.neuron
 @pytest.mark.slow
-def test_study_runs_a_real_sweep(neuron_h):
-    client = TestClient(create_app())
-    small = {**_STUDY, "diameters_um": [10.0, 16.0], "pitches_um": [50.0]}
-    body = _poll(client, client.post("/study", json=small).json()["id"], timeout=240.0)
-    assert body["status"] == "done" and body["study"]["n_geometries"] == 2
+def test_a_single_geometry_runs_real_neuron_on_the_analytical_tier(neuron_h):
+    """The real threshold path, without FEM: a single diameter is not a geometry
+    comparison, so the analytical tier is legitimate and the guard stays quiet."""
+    from api.study_core import run_study
+    from engine.field import AnalyticalBackend
+
+    result = run_study(
+        {**_STUDY, "diameters_um": [10.0], "pitches_um": [50.0]},
+        backend=AnalyticalBackend(),  # real NEURON, analytical field, one geometry
+    )
+    assert result["n_geometries"] == 1
+    assert all(p["cost_uA"] > 0 for p in result["points"])

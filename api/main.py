@@ -31,6 +31,12 @@ def create_app(*, thresholds_provider: Callable[..., Any] | None = None) -> Fast
     threshold source (tests inject a fast fake; None → the real population solve)."""
     app = FastAPI(title="Retinode API", version="0.1.0")
     app.state.thresholds_provider = thresholds_provider or _default_provider()
+    # Whether a provider was EXPLICITLY injected (a fast fake). The study route needs
+    # this, not the resolved provider: production runs the default real provider AND
+    # must dispatch to the FEM env (geometry comparison is FEM-only), whereas an
+    # injected fake short-circuits the field and runs in-process. "provider is None"
+    # can't tell them apart — both are non-None by the time they reach a route.
+    app.state.provider_injected = thresholds_provider is not None
     app.state.jobs = JobRegistry()
 
     # Dev CORS: the Vite client runs on a different origin (S2). Tightened later.

@@ -68,11 +68,15 @@ class FenicsxBackend:
         domain: FieldDomain | None = None,
         degree: int = 1,
         margin_factor: float = 6.0,
+        min_half_width_um: float = 0.0,
     ) -> None:
         self.name = "fem_fenicsx"
         self._domain = domain
         self.degree = degree
         self.margin_factor = margin_factor
+        # Floors the auto-sized domain so it contains query points far from the array
+        # (a cell's axon of passage). Ignored when an explicit ``domain`` is given.
+        self.min_half_width_um = min_half_width_um
 
     def transfer_matrix(
         self,
@@ -90,7 +94,10 @@ class FenicsxBackend:
         self, array: ElectrodeArray, conductivity: ConductivityModel
     ) -> FieldDomain:
         return self._domain or default_domain(
-            array, conductivity, margin_factor=self.margin_factor
+            array,
+            conductivity,
+            margin_factor=self.margin_factor,
+            min_half_width_um=self.min_half_width_um,
         )
 
     def solve_params(self, array: ElectrodeArray, conductivity: ConductivityModel) -> str:
