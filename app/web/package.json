@@ -12,14 +12,18 @@
     "gen:types": "openapi-typescript openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.169.0",
     "@vitejs/plugin-react": "^4.3.1",
     "jsdom": "^25.0.1",
     "openapi-typescript": "^7.4.2",

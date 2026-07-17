@@ -3,7 +3,7 @@
 // refetches the analytical field (debounced) and resets any FEM/scorecard result,
 // which no longer matches. The scorecard and the FEM field each run as a background
 // job (submit then poll), kept in their own state so nothing clobbers anything else.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { getJob, postAccurateField, postCompare, postScore } from "../api/client";
 import type { CompareResponse, Scorecard as ScorecardData, SceneControls } from "../api/client";
 import { ControlRail } from "../components/ControlRail";
@@ -12,6 +12,10 @@ import { FieldCanvas } from "../components/FieldCanvas";
 import { Rail } from "../components/Rail";
 import { Scorecard } from "../components/Scorecard";
 import type { Screen } from "../nav";
+
+// three.js is heavy and only needed for the 3D loupe — lazy-load it so it stays off
+// the main chunk (and out of the synchronous test path).
+const Loupe3D = lazy(() => import("../components/Loupe3D"));
 
 const DEFAULTS: Controls = {
   layout: "single",
@@ -168,7 +172,12 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
             </button>
           )}
         </div>
-        <FieldCanvas data={scene} tier={tier} />
+        <div className="field-stack">
+          <FieldCanvas data={scene} tier={tier} />
+          <Suspense fallback={null}>
+            <Loupe3D electrodes={scene?.electrodes ?? []} cells={scene?.cells ?? []} tier={tier} />
+          </Suspense>
+        </div>
       </main>
       <aside className="inspect">
         <ControlRail controls={controls} onChange={setControls} />

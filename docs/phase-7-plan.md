@@ -209,11 +209,19 @@ Pydantic models mirror.
   9.6 µA / 10.1 µA window). **Trimmed to follow-ups:** brush-select → Candidates,
   ghost-field-on-hover, small multiples, incremental fill, and the 3D pillar sweep.
 
-- **P7 S5 — The 3D scene (react-three-fiber).** Render the posed array — flat faces,
-  3D bodies, **tilt**, imported CAD — plus the tissue slab, the cell population, and
-  **overlap flags** (a compartment inside a body). Reads the geometry spec + field;
-  secondary to the 2D views (D6). *Done:* a planted 3D/tilted array and its overlap
-  flags are visible and rotatable.
+- **P7 S5 — The 3D loupe (react-three-fiber) — done.** A `Loupe3D` component renders
+  the scene's geometry in 3D — the translucent **tissue slab**, the **array-plane
+  grid**, the **electrode disks** on the plane, and the **cell population** at depth
+  (target amber, off-target blue) — orbitable (drei `OrbitControls`), the depth axis
+  exaggerated ~5× so the thin retinal layer reads, and the view fit to the geometry.
+  It docks as a **corner inset** (auto-spinning) on the Compare field canvas and
+  **expands** to a full overlay (fully orbitable); it inks up when the tier is FEM.
+  three.js is **lazy-loaded** — code-split into its own ~225 KB-gzip chunk, off the
+  51 KB main bundle and out of the sync test path; jsdom's missing WebGL is handled
+  by stubbing the r3f `Canvas` globally in the test setup. Secondary to the 2D field
+  (D6). Verified live: the tissue/plane/electrode/cells scene renders and orbits.
+  *(3D bodies / tilt / CAD / overlap flags render when the geometry carries them — the
+  flat Compare scene shows flat disks; a body-editing surface is a later slice.)*
 
 - **P7 S6 — Validation & Candidates screens.** Port the **reproductions panel** (the
   committed validation report + solver agreement). Build **Candidates** — the payoff
