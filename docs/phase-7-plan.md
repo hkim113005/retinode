@@ -8,6 +8,12 @@ engine from Phase 5. A real 2D charting layer carries the load; a secondary
 react-three-fiber 3D scene shows the array and field; every plot exports at figure
 quality (SVG/PDF vector, high-DPI PNG).
 
+The **UX/UI craft bar** for this phase is its own document —
+[phase-7-design.md](phase-7-design.md) — with an interactive mockup of the Results
+screen at [docs/mockups/results-screen.html](mockups/results-screen.html). The plan
+below is *what* to build; the design spec is *how good it must feel* (an instrument,
+not a dashboard), and every step here is held to it.
+
 The engine and specs are **unchanged**, and the view data contracts (§16 of the
 master plan — today `app/views.py`) are the fixed seam. That is what makes this a
 **re-skin of a working tool, not a rewrite of the science** (master plan §17). A CI

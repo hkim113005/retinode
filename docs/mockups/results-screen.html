@@ -1,0 +1,583 @@
+<title>Retinode — Results (design mockup)</title>
+<style>
+  :root {
+    --bg1:#eef2f8; --bg2:#e6ecf5;
+    --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14);
+    --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05);
+    --radius:18px;
+    --mono:ui-monospace,"SF Mono",Menlo,"Cascadia Mono",monospace;
+    --sans:system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg1:#0a0e16; --bg2:#0f1420;
+      --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+      --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+      --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+      --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+      --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+      --ok:#34c759; --ok-soft:rgba(48,209,88,0.18);
+      --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+      --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35);
+      --field:#0a84ff; --canvas-ink:#f5f5f7;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg1:#eef2f8; --bg2:#e6ecf5;
+    --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14);
+    --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05);
+    --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  :root[data-theme="dark"]{
+    --bg1:#0a0e16; --bg2:#0f1420;
+    --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+    --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+    --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+    --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+    --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+    --ok:#34c759; --ok-soft:rgba(48,209,88,0.18);
+    --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+    --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35);
+    --field:#0a84ff; --canvas-ink:#f5f5f7;
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .app{
+    font-family:var(--sans); color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2)); background-attachment:fixed;
+    min-height:100vh; padding:18px; -webkit-font-smoothing:antialiased;
+    display:grid; grid-template-columns:210px minmax(0,1fr) 300px; gap:16px;
+  }
+  @media (max-width:1080px){ .app{grid-template-columns:1fr;} .rail,.inspect{position:static;} }
+
+  .card{background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow),inset 0 1px 0 var(--inset); backdrop-filter:blur(20px) saturate(1.2);
+    -webkit-backdrop-filter:blur(20px) saturate(1.2);}
+
+  /* ---- left rail ---- */
+  .rail{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .brand{padding:16px 16px 14px;}
+  .wordmark{font-size:18px; font-weight:680; letter-spacing:-0.02em;}
+  .brand .sub{font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-top:3px;}
+  .nav{padding:8px;}
+  .nav .grp{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint);
+    padding:10px 10px 6px;}
+  .step{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:11px;
+    font-size:13.5px; color:var(--muted); cursor:pointer; border:1px solid transparent;}
+  .step:hover{background:var(--accent-soft); color:var(--ink);}
+  .step .dot{width:7px; height:7px; border-radius:50%; background:var(--faint); flex:none;}
+  .step.done .dot{background:var(--ok);}
+  .step.active{background:var(--glass-strong); color:var(--ink); border-color:var(--border); font-weight:600;}
+  .step.active .dot{background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  .rail .badges{padding:12px; display:flex; flex-direction:column; gap:8px;}
+  .badge{display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:9px 11px; border-radius:12px; font-size:12px; border:1px solid var(--border);}
+  .badge .k{color:var(--muted); font-size:11px; letter-spacing:.03em;}
+  .badge .v{font-family:var(--mono); font-weight:600; font-variant-numeric:tabular-nums;}
+  .badge.tier{background:var(--accent-soft);} .badge.tier .v{color:var(--accent-strong);}
+  .badge.safe{background:var(--ok-soft);} .badge.safe .v{color:var(--ok);}
+  .kbd{font-family:var(--mono); font-size:10.5px; color:var(--faint); text-align:center; padding:2px 0 6px;}
+
+  /* ---- center stage ---- */
+  .stage{display:flex; flex-direction:column; gap:14px; min-width:0;}
+  .stage-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:2px 4px;}
+  .stage-head h1{font-size:17px; margin:0; letter-spacing:-0.01em; font-weight:640;}
+  .stage-head .crumb{font-size:12px; color:var(--muted);}
+  .chip{font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--glass-strong);
+    border:1px solid var(--border); border-radius:999px; padding:4px 10px; cursor:pointer; white-space:nowrap;}
+  .chip:hover{color:var(--accent-strong); border-color:var(--accent-soft);}
+
+  .canvas-wrap{position:relative; padding:8px;}
+  canvas#field{width:100%; height:auto; display:block; border-radius:12px; touch-action:none;}
+  .loupe{position:absolute; right:16px; top:16px; width:118px; height:96px; border-radius:12px;
+    background:var(--glass-strong); border:1px solid var(--border); box-shadow:var(--shadow);
+    overflow:hidden; cursor:pointer;}
+  .loupe .lab{position:absolute; left:8px; top:6px; font-size:9.5px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted);}
+  .diverge{position:absolute; font-family:var(--mono); font-size:10px; color:var(--warm-strong);
+    background:var(--warm-soft); border:1px solid var(--border); border-radius:8px; padding:2px 7px;
+    pointer-events:none; transform:translate(-50%,-140%); white-space:nowrap;}
+
+  /* ---- amplitude dial ---- */
+  .dial{padding:14px 18px 16px;}
+  .dial-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px;}
+  .dial-head .lab{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);}
+  .dial-head .amp{font-family:var(--mono); font-size:26px; font-weight:600; letter-spacing:-0.01em;
+    font-variant-numeric:tabular-nums;}
+  .dial-head .amp small{font-size:13px; color:var(--muted); font-weight:500;}
+  .track{position:relative; height:46px; cursor:pointer; touch-action:none;}
+  .track svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible;}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:11.5px; color:var(--muted);}
+  .legend b{color:var(--ink); font-weight:600;}
+  .legend .sw{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:middle;}
+
+  /* ---- right inspector ---- */
+  .inspect{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .panel{padding:14px 16px;}
+  .panel h2{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 12px; font-weight:600;}
+  .verdict{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .verdict .big{font-family:var(--mono); font-size:22px; font-weight:650; font-variant-numeric:tabular-nums;}
+  .pill{font-size:11px; font-weight:640; padding:3px 9px; border-radius:999px; letter-spacing:.02em;}
+  .pill.win{background:var(--ok-soft); color:var(--ok);}
+  .pill.lost{background:var(--alert-soft); color:var(--alert);}
+  .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+  .rows{display:flex; flex-direction:column; gap:2px; margin-top:12px;}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0;
+    border-top:1px solid var(--border); font-size:13px;}
+  .row:first-child{border-top:none;}
+  .row .k{color:var(--muted);}
+  .row .v{font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:600;}
+  .row .v.warm{color:var(--warm-strong);} .row .v.ok{color:var(--ok);} .row .v.alert{color:var(--alert);}
+  /* charge gauge */
+  .gauge{margin-top:6px;}
+  .gauge .bar{height:8px; border-radius:6px; background:var(--inset); position:relative; overflow:hidden;
+    border:1px solid var(--border);}
+  .gauge .fill{position:absolute; left:0; top:0; bottom:0; border-radius:6px; background:var(--ok);}
+  .gauge .limit{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--alert);}
+  .gauge .cap{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:6px;}
+  .seg{display:flex; gap:4px; background:var(--inset); border:1px solid var(--border); border-radius:11px;
+    padding:3px; margin-top:2px;}
+  .seg button{flex:1; border:0; background:transparent; color:var(--muted); font-family:var(--sans);
+    font-size:12px; font-weight:600; padding:7px 8px; border-radius:8px; cursor:pointer;}
+  .seg button.on{background:var(--glass-strong); color:var(--ink); box-shadow:var(--shadow);}
+  .seg button.on[data-tier="fem"]{color:var(--accent-strong);}
+  .ctl{margin-top:14px;}
+  .ctl label{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:7px;}
+  .ctl label b{font-family:var(--mono); color:var(--ink); font-weight:600;}
+  input[type=range]{width:100%; accent-color:var(--accent); height:22px;}
+  .foot{font-size:11px; color:var(--faint); padding:2px 4px; line-height:1.5;}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--bg1); font-size:12.5px; padding:9px 16px; border-radius:11px;
+    opacity:0; pointer-events:none; transition:.28s; font-weight:500; z-index:9;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important;} }
+</style>
+
+<div class="app">
+  <!-- LEFT RAIL : the pipeline is the navigation -->
+  <aside class="rail">
+    <div class="card brand">
+      <div class="wordmark">Retinode</div>
+      <div class="sub">Electrode studio</div>
+    </div>
+    <nav class="card nav">
+      <div class="grp">Design</div>
+      <div class="step done"><span class="dot"></span>Patch</div>
+      <div class="step done"><span class="dot"></span>Array</div>
+      <div class="step done"><span class="dot"></span>Tissue</div>
+      <div class="step done"><span class="dot"></span>Stimulus</div>
+      <div class="step active"><span class="dot"></span>Results</div>
+      <div class="grp">Analyse</div>
+      <div class="step"><span class="dot"></span>Compare</div>
+      <div class="step"><span class="dot"></span>Study</div>
+      <div class="step"><span class="dot"></span>Validation</div>
+      <div class="step"><span class="dot"></span>Candidates</div>
+    </nav>
+    <div class="card badges">
+      <div class="badge tier"><span class="k">Accuracy</span><span class="v" id="tierBadge">Analytical</span></div>
+      <div class="badge safe"><span class="k">Safety</span><span class="v" id="safeBadge">Within limit</span></div>
+      <div class="kbd">⌘K  ·  command palette</div>
+    </div>
+  </aside>
+
+  <!-- CENTER : the living canvas -->
+  <main class="stage">
+    <div class="stage-head">
+      <div>
+        <h1>Monopolar · 12&nbsp;µm disk</h1>
+        <div class="crumb">hex patch · 41 cells · target <b>t-19</b></div>
+      </div>
+      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ 8f3ac1</div>
+    </div>
+
+    <div class="card canvas-wrap">
+      <canvas id="field" width="1120" height="760" aria-label="Extracellular potential field with the retinal cell population; firing cells light as amplitude rises"></canvas>
+      <div class="loupe" id="loupe" title="The array in 3D — click to expand">
+        <span class="lab">Array · 3D</span>
+        <canvas id="loupeC" width="236" height="192"></canvas>
+      </div>
+      <div class="diverge" id="diverge" style="display:none">Δ 6% vs analytical</div>
+    </div>
+
+    <div class="card dial">
+      <div class="dial-head">
+        <span class="lab">Stimulus amplitude — drag to sweep</span>
+        <span class="amp"><span id="ampVal">0</span> <small>µA</small></span>
+      </div>
+      <div class="track" id="track" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="60"
+           aria-valuenow="0" aria-label="Stimulus amplitude in microamps">
+        <svg id="trackSvg" viewBox="0 0 1000 46" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--field)"></span><b>Ve</b> potential field</span>
+        <span><span class="sw" style="background:var(--warm)"></span><b>firing</b> cell</span>
+        <span><span class="sw" style="background:var(--ok)"></span><b>selective</b> window</span>
+        <span><span class="sw" style="background:var(--alert)"></span><b>safety</b> ceiling</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- RIGHT : scorecard + controls -->
+  <aside class="inspect">
+    <div class="card panel">
+      <h2>Scorecard</h2>
+      <div class="verdict">
+        <span class="big" id="selVal">—</span>
+        <span class="pill win" id="selPill">selective</span>
+      </div>
+      <div class="sub" id="selSub">target fires alone up to the first bystander</div>
+      <div class="rows">
+        <div class="row"><span class="k">Target threshold</span><span class="v warm" id="rThresh">8.4 µA</span></div>
+        <div class="row"><span class="k">First bystander</span><span class="v" id="rByst">17.9 µA</span></div>
+        <div class="row"><span class="k">Selective window</span><span class="v ok" id="rWin">8.4 – 17.9</span></div>
+        <div class="row"><span class="k">Safety ceiling</span><span class="v alert" id="rCeil">24.0 µA</span></div>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <h2>Charge density</h2>
+      <div class="gauge">
+        <div class="bar"><div class="fill" id="chFill" style="width:34%"></div><div class="limit" style="right:12%"></div></div>
+        <div class="cap"><span id="chVal">0.00 mC/cm²</span><span>limit 0.35</span></div>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <h2>Accuracy tier</h2>
+      <div class="seg" id="tierSeg">
+        <button class="on" data-tier="analytical">Analytical</button>
+        <button data-tier="fem">FEM</button>
+      </div>
+      <div class="foot" id="tierFoot" style="margin-top:9px;">Live point-source preview. Switch to FEM to solve the exact tissue-minus-electrode field — runs as a job.</div>
+    </div>
+
+    <div class="card panel">
+      <h2>Configuration</h2>
+      <div class="ctl">
+        <label>Electrode diameter <b><span id="dLab">12</span> µm</b></label>
+        <input id="diam" type="range" min="6" max="24" step="1" value="12">
+      </div>
+      <div class="ctl">
+        <label>Return distance <b><span id="rLab">far</span></b></label>
+        <input id="ret" type="range" min="0" max="2" step="1" value="2">
+      </div>
+      <div class="foot">Edits the geometry &amp; configuration specs. The field recomputes live on the analytical tier.</div>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const cv = document.getElementById("field"), ctx = cv.getContext("2d");
+  const loupe = document.getElementById("loupeC"), lctx = loupe.getContext("2d");
+  let DIM = {w:600, h:396};
+
+  // ---- world (µm) : cathode at origin, +x right, +y down on screen ----
+  const AMP_MAX = 60;
+  let amp = 0, tier = "analytical", diam = 12, ret = 2;
+
+  // deterministic hex-ish population
+  const cells = [];
+  (function seed(){
+    let s = 7;
+    const rnd = () => (s = (s*1103515245+12345)&0x7fffffff, s/0x7fffffff);
+    for(let gy=-3; gy<=3; gy++){
+      for(let gx=-4; gx<=4; gx++){
+        const x = gx*28 + (gy%2?14:0) + (rnd()-0.5)*7;
+        const y = gy*26 + (rnd()-0.5)*7;
+        if(Math.hypot(x,y) > 120) continue;
+        cells.push({x, y, firedAt:-1});
+      }
+    }
+  })();
+  // target = a cell a little off the cathode (clearly closest)
+  let target = cells.reduce((b,c,i)=> Math.hypot(c.x-24,c.y-8) < Math.hypot(cells[b].x-24,cells[b].y-8)?i:b, 0);
+  // nudge so it's genuinely nearest the cathode among a clear margin
+  cells[target].x = 22; cells[target].y = -7;
+
+  function thresholdOf(c){
+    // point-source activation ~ 1/r ; threshold rises with distance and shrinks a
+    // touch with electrode size. tuned so the target ~8µA, first bystander ~18µA.
+    const r = Math.hypot(c.x, c.y);
+    const k = 0.34 * (12/diam)**0.25;
+    return Math.max(2.2, k*r*1.15 - 2.5);
+  }
+  function ceiling(){ return 18 + diam*0.5; }          // safety ceiling µA (bigger disk = safer)
+  function chargeDensity(){                            // mC/cm² at current amp
+    const area = Math.PI*(diam/2)**2*1e-8;             // cm²
+    const q = amp*1e-6*0.2e-3;                         // C (0.2 ms phase)
+    return q/area*1e3;                                 // mC/cm²
+  }
+
+  // geometry -> screen
+  function fit(){
+    const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio||1, 2);
+    if(!r.width) return;
+    cv.width = Math.round(r.width*dpr); cv.height = Math.round(r.width*0.66*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    DIM = {w:r.width, h:r.width*0.66};
+  }
+  function toScreen(w, x, y){ const s = w.w/300; return [w.w/2 + x*s, w.h/2 + y*s + 6]; }
+
+  function draw(){
+    const w = DIM;
+    const s = w.w/300;
+    ctx.clearRect(0,0,w.w,w.h);
+    const ink = css("--canvas-ink"), field = css("--field"), warm = css("--warm"), muted = css("--muted");
+    const isFem = tier==="fem";
+    const [cx,cy] = toScreen(w,0,0);
+
+    // faint patch boundary
+    ctx.strokeStyle = withA(muted,0.16); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.ellipse(cx,cy,120*s,120*s,0,0,7); ctx.stroke();
+
+    // Ve field : radial gestalt fill + labeled isopotential rings around the cathode
+    const rad = 150*s;
+    const g = ctx.createRadialGradient(cx,cy,3, cx,cy,rad);
+    const a0 = (isFem?0.30:0.20) * Math.min(1, 0.25+amp/28);
+    g.addColorStop(0, withA(field,a0)); g.addColorStop(0.5, withA(field,a0*0.4)); g.addColorStop(1, withA(field,0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fill();
+
+    ctx.lineWidth = isFem?1.4:1;
+    for(let i=1;i<=5;i++){
+      const rr = i*20*s;
+      ctx.strokeStyle = withA(field, isFem?0.5:0.34);
+      ctx.setLineDash(isFem?[]:[3,4]);
+      ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // contour value label
+    ctx.font = `11px ${css("--mono")||"monospace"}`; ctx.fillStyle=withA(field,0.85);
+    ctx.textAlign="left"; ctx.fillText("−40 mV", cx+40*s+4, cy-3);
+
+    // axon bundles toward optic disc (down-left), faint instrument texture
+    ctx.strokeStyle = withA(ink,0.12); ctx.lineWidth=1;
+    for(const c of cells){
+      const [sx,sy]=toScreen(w,c.x,c.y);
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx-70*s, sy+150*s); ctx.stroke();
+    }
+
+    // electrode (cathode) — a disk, glass ring
+    const er = (diam/2)*s*1.7+2;
+    ctx.fillStyle=withA(field,0.16); ctx.beginPath(); ctx.arc(cx,cy,er+3,0,7); ctx.fill();
+    ctx.fillStyle=withA(ink,0.55); ctx.beginPath(); ctx.arc(cx,cy,er,0,7); ctx.fill();
+    ctx.strokeStyle=withA("#ffffff",0.5); ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(cx,cy,er,0,7); ctx.stroke();
+    // return ring
+    if(ret<2){
+      const rr=(ret===0?42:70)*s;
+      ctx.strokeStyle=withA(ink,0.28); ctx.setLineDash([2,5]); ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // cells
+    const now = performance.now();
+    for(let i=0;i<cells.length;i++){
+      const c = cells[i]; const [sx,sy]=toScreen(w,c.x,c.y);
+      const th = thresholdOf(c);
+      const fired = amp >= th;
+      if(fired && c.firedAt<0) c.firedAt = now;
+      if(!fired) c.firedAt = -1;
+      const isT = i===target;
+      let base = 4.6;
+      if(isT) base=6.2;
+      if(fired){
+        const age = Math.min(1,(now-c.firedAt)/240);
+        const bloom = reduce?1:(0.6+0.4*easeOut(age));
+        const R = base*(1.35*bloom);
+        // glow
+        const gg = ctx.createRadialGradient(sx,sy,1,sx,sy,R*3);
+        gg.addColorStop(0,withA(warm,0.55)); gg.addColorStop(1,withA(warm,0));
+        ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(sx,sy,R*3,0,7); ctx.fill();
+        ctx.fillStyle=warm; ctx.beginPath(); ctx.arc(sx,sy,R,0,7); ctx.fill();
+      } else {
+        ctx.fillStyle=withA(ink,isT?0.55:0.34);
+        ctx.beginPath(); ctx.arc(sx,sy,base,0,7); ctx.fill();
+      }
+      if(isT){ // target ring
+        ctx.strokeStyle=fired?warm:withA(field,0.9); ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(sx,sy,base+5,0,7); ctx.stroke();
+      }
+    }
+
+    // divergence marker (FEM only)
+    const dv = document.getElementById("diverge");
+    if(isFem){ dv.style.display="block"; const [dx,dy]=toScreen(w,-46,40);
+      dv.style.left=(dx/w.w*100)+"%"; dv.style.top=(dy/w.h*100)+"%"; }
+    else dv.style.display="none";
+
+    drawLoupe();
+  }
+
+  function drawLoupe(){
+    const dpr=Math.min(devicePixelRatio||1,2);
+    loupe.width=236; loupe.height=192; lctx.setTransform(1,0,0,1,0,0);
+    lctx.clearRect(0,0,236,192);
+    const ink=css("--canvas-ink"), field=css("--field");
+    const ox=118, oy=150, iso=(x,y,z)=>[ox+(x-y)*0.66, oy-(x+y)*0.32 - z];
+    // tissue slab top (a parallelogram)
+    lctx.fillStyle=withA(field,0.10); lctx.strokeStyle=withA(ink,0.18); lctx.lineWidth=1;
+    lctx.beginPath();
+    [[-60,-60],[60,-60],[60,60],[-60,60]].forEach((p,i)=>{const[a,b]=iso(p[0],p[1],0); i?lctx.lineTo(a,b):lctx.moveTo(a,b);});
+    lctx.closePath(); lctx.fill(); lctx.stroke();
+    // a small hex of pillars, tilted
+    const tilt=8;
+    for(const [gx,gy] of [[0,0],[34,0],[-34,0],[17,30],[-17,30],[17,-30],[-17,-30]]){
+      const [bx,by]=iso(gx,gy,0); const [tx,ty]=iso(gx+tilt,gy,44);
+      lctx.strokeStyle=withA(ink,0.5); lctx.lineWidth=6; lctx.lineCap="round";
+      lctx.beginPath(); lctx.moveTo(bx,by); lctx.lineTo(tx,ty); lctx.stroke();
+      lctx.fillStyle=withA(field,0.85); lctx.beginPath(); lctx.arc(tx,ty,3.2,0,7); lctx.fill();
+    }
+  }
+
+  // ---- amplitude dial (SVG) ----
+  const trackSvg = document.getElementById("trackSvg");
+  function drawTrack(){
+    const th = thresholdOf(cells[target]);
+    const byst = cells.map((c,i)=>i===target?Infinity:thresholdOf(c)).reduce((a,b)=>Math.min(a,b),Infinity);
+    const ceil = ceiling();
+    const X = v => 8 + (v/AMP_MAX)*(984);
+    const warm=css("--warm"), ok=css("--ok"), alert=css("--alert"), field=css("--field"), muted=css("--muted"), border=css("--border");
+    const winA=X(th), winB=X(Math.min(byst,AMP_MAX));
+    let h = `<rect x="8" y="20" width="984" height="6" rx="3" fill="${withA(muted,0.25)}"/>`;
+    // selective window band
+    h += `<rect x="${winA}" y="16" width="${Math.max(0,winB-winA)}" height="14" rx="7" fill="${withA(ok,0.28)}" stroke="${withA(ok,0.55)}"/>`;
+    // ticks: target, bystander, ceiling
+    h += tick(X(th), warm, "target");
+    if(byst<AMP_MAX) h += tick(X(byst), css("--canvas-ink"), "bystander", 0.5);
+    h += tick(X(ceil), alert, "safety");
+    // progress fill up to amp
+    h += `<rect x="8" y="20" width="${Math.max(0,X(amp)-8)}" height="6" rx="3" fill="${withA(field,0.7)}"/>`;
+    // thumb
+    h += `<circle cx="${X(amp)}" cy="23" r="9" fill="${css('--glass-strong')}" stroke="${field}" stroke-width="2"/>`;
+    h += `<circle cx="${X(amp)}" cy="23" r="3" fill="${field}"/>`;
+    trackSvg.innerHTML = h;
+    function tick(x,c,label,op){ return `<line x1="${x}" y1="10" x2="${x}" y2="36" stroke="${withA(c,op||0.9)}" stroke-width="2"/>`+
+      `<text x="${x}" y="7" fill="${withA(c,op||0.9)}" font-size="9" font-family="${css('--mono')||'monospace'}" text-anchor="middle">${label}</text>`; }
+  }
+
+  // ---- scorecard ----
+  function updateCard(){
+    const th = thresholdOf(cells[target]);
+    const byst = cells.map((c,i)=>i===target?Infinity:thresholdOf(c)).reduce((a,b)=>Math.min(a,b),Infinity);
+    const ceil = ceiling(), win = Math.min(byst,ceil)-th;
+    document.getElementById("rThresh").textContent = th.toFixed(1)+" µA";
+    document.getElementById("rByst").textContent = byst.toFixed(1)+" µA";
+    document.getElementById("rWin").textContent = th.toFixed(1)+" – "+Math.min(byst,ceil).toFixed(1);
+    document.getElementById("rCeil").textContent = ceil.toFixed(1)+" µA";
+    const sel = win>0 ? win.toFixed(1) : "0.0";
+    document.getElementById("selVal").textContent = sel;
+    const selPill=document.getElementById("selPill");
+    if(win>3){ selPill.textContent="selective"; selPill.className="pill win";
+      document.getElementById("selSub").textContent="target fires alone across a "+sel+" µA window"; }
+    else { selPill.textContent="tight"; selPill.className="pill lost";
+      document.getElementById("selSub").textContent="bystanders fire close to the target — little margin"; }
+    // charge gauge
+    const cd = chargeDensity(), lim=0.35;
+    const fill=document.getElementById("chFill");
+    fill.style.width = Math.min(100, cd/lim*88)+"%";
+    fill.style.background = cd>lim? css("--alert") : css("--ok");
+    document.getElementById("chVal").textContent = cd.toFixed(2)+" mC/cm²";
+    const safe = cd<=lim;
+    const sb=document.getElementById("safeBadge");
+    sb.textContent = safe?"Within limit":"Over limit";
+    sb.parentElement.style.background = safe? css("--ok-soft"):css("--alert-soft");
+    sb.style.color = safe? css("--ok"):css("--alert");
+  }
+
+  // ---- interaction ----
+  const track=document.getElementById("track");
+  function setAmpFromX(clientX){
+    const r=track.getBoundingClientRect();
+    amp = Math.max(0, Math.min(AMP_MAX, (clientX-r.left)/r.width*AMP_MAX));
+    document.getElementById("ampVal").textContent = amp.toFixed(0);
+    track.setAttribute("aria-valuenow", amp.toFixed(0));
+    kick();
+  }
+  let dragging=false;
+  track.addEventListener("pointerdown",e=>{dragging=true; track.setPointerCapture(e.pointerId); setAmpFromX(e.clientX);});
+  track.addEventListener("pointermove",e=>{ if(dragging) setAmpFromX(e.clientX); });
+  addEventListener("pointerup",()=>dragging=false);
+  track.addEventListener("keydown",e=>{
+    if(e.key==="ArrowRight"||e.key==="ArrowUp"){amp=Math.min(AMP_MAX,amp+2); sync();}
+    if(e.key==="ArrowLeft"||e.key==="ArrowDown"){amp=Math.max(0,amp-2); sync();}
+    function sync(){document.getElementById("ampVal").textContent=amp.toFixed(0);
+      track.setAttribute("aria-valuenow",amp.toFixed(0)); kick(); e.preventDefault();}
+  });
+
+  document.getElementById("diam").addEventListener("input",e=>{
+    diam=+e.target.value; document.getElementById("dLab").textContent=diam; refresh();});
+  document.getElementById("ret").addEventListener("input",e=>{
+    ret=+e.target.value; document.getElementById("rLab").textContent=["local","near","far"][ret]; refresh();});
+
+  const seg=document.getElementById("tierSeg");
+  seg.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    [...seg.children].forEach(x=>x.className=""); b.className="on";
+    tier=b.dataset.tier;
+    document.getElementById("tierBadge").textContent = tier==="fem"?"FEM":"Analytical";
+    document.getElementById("tierFoot").textContent = tier==="fem"
+      ? "Exact tissue-minus-electrode field. Solved as a job; here it settles from draft to inked."
+      : "Live point-source preview. Switch to FEM to solve the exact field — runs as a job.";
+    toast(tier==="fem"?"FEM job complete — field settled to inked":"Back to live analytical preview");
+    refresh();
+  });
+
+  document.getElementById("hashChip").addEventListener("click",()=>{
+    toast("Link copied — reopening it restores this exact state (link = hash)");});
+  document.getElementById("loupe").addEventListener("click",()=>toast("3D scene — expands to full-bleed (bodies · tilt · CAD · overlap)"));
+
+  let toastT;
+  function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2200); }
+
+  // ---- render loop (only while blooming) ----
+  let raf=null, lastMotion=0;
+  function kick(){ lastMotion=performance.now(); loop(); drawTrack(); updateCard(); }
+  function loop(){
+    draw();
+    if(!reduce && performance.now()-lastMotion < 320){ raf=requestAnimationFrame(loop); }
+    else raf=null;
+  }
+  function refresh(){ fit(); drawTrack(); updateCard(); draw(); }
+
+  // colour helpers
+  function withA(c,a){
+    c=c.trim();
+    if(c.startsWith("#")){ let h=c.slice(1); if(h.length===3)h=h.split("").map(x=>x+x).join("");
+      const n=parseInt(h,16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+    if(c.startsWith("rgb")){ const p=c.match(/[\d.]+/g); return `rgba(${p[0]},${p[1]},${p[2]},${a})`; }
+    return c;
+  }
+  function easeOut(t){ return 1-Math.pow(1-t,3); }
+
+  // resize + theme-change repaint
+  addEventListener("resize",()=>{ refresh(); });
+  new MutationObserver(()=>refresh()).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",refresh);
+
+  // init
+  amp = 11;                                   // open mid-window so the story reads at a glance
+  document.getElementById("ampVal").textContent = amp.toFixed(0);
+  refresh();
+})();
+</script>
