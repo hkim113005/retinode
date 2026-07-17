@@ -1,0 +1,475 @@
+<title>Retinode — Study &amp; Pareto (design mockup)</title>
+<style>
+  :root{
+    --bg1:#eef2f8; --bg2:#e6ecf5;
+    --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14);
+    --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05);
+    --radius:18px; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg1:#0a0e16; --bg2:#0f1420;
+    --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+    --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+    --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+    --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+    --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+    --ok:#34c759; --ok-soft:rgba(48,209,88,0.18);
+    --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+    --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35);
+    --field:#0a84ff; --canvas-ink:#f5f5f7;
+  }}
+  :root[data-theme="light"]{
+    --bg1:#eef2f8; --bg2:#e6ecf5;
+    --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14);
+    --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05);
+    --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  :root[data-theme="dark"]{
+    --bg1:#0a0e16; --bg2:#0f1420;
+    --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+    --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+    --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+    --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+    --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+    --ok:#34c759; --ok-soft:rgba(48,209,88,0.18);
+    --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+    --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35);
+    --field:#0a84ff; --canvas-ink:#f5f5f7;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{font-family:var(--sans); color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2)); background-attachment:fixed;
+    min-height:100vh; padding:18px; -webkit-font-smoothing:antialiased;
+    display:grid; grid-template-columns:210px minmax(0,1fr) 296px; gap:16px;}
+  @media (max-width:1080px){.app{grid-template-columns:1fr;} .rail,.inspect{position:static;}}
+  .card{background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow),inset 0 1px 0 var(--inset); backdrop-filter:blur(20px) saturate(1.2);
+    -webkit-backdrop-filter:blur(20px) saturate(1.2);}
+
+  .rail{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .brand{padding:16px 16px 14px;}
+  .wordmark{font-size:18px; font-weight:680; letter-spacing:-0.02em;}
+  .brand .sub{font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-top:3px;}
+  .nav{padding:8px;}
+  .nav .grp{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); padding:10px 10px 6px;}
+  .step{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:11px; font-size:13.5px;
+    color:var(--muted); cursor:pointer; border:1px solid transparent;}
+  .step:hover{background:var(--accent-soft); color:var(--ink);}
+  .step .dot{width:7px; height:7px; border-radius:50%; background:var(--faint); flex:none;}
+  .step.done .dot{background:var(--ok);}
+  .step.active{background:var(--glass-strong); color:var(--ink); border-color:var(--border); font-weight:600;}
+  .step.active .dot{background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  .rail .badges{padding:12px; display:flex; flex-direction:column; gap:8px;}
+  .badge{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 11px;
+    border-radius:12px; font-size:12px; border:1px solid var(--border);}
+  .badge .k{color:var(--muted); font-size:11px;} .badge .v{font-family:var(--mono); font-weight:600;}
+  .badge.tier{background:var(--accent-soft);} .badge.tier .v{color:var(--accent-strong);}
+  .badge.safe{background:var(--ok-soft);} .badge.safe .v{color:var(--ok);}
+  .kbd{font-family:var(--mono); font-size:10.5px; color:var(--faint); text-align:center; padding:2px 0 6px;}
+
+  .stage{display:flex; flex-direction:column; gap:14px; min-width:0;}
+  .stage-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:2px 4px;}
+  .stage-head h1{font-size:17px; margin:0; letter-spacing:-0.01em; font-weight:640;}
+  .stage-head .crumb{font-size:12px; color:var(--muted);}
+  .chip{font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--glass-strong);
+    border:1px solid var(--border); border-radius:999px; padding:4px 10px; cursor:pointer; white-space:nowrap;}
+  .chip:hover{color:var(--accent-strong); border-color:var(--accent-soft);}
+
+  .plot-wrap{position:relative; padding:8px;}
+  canvas#pareto{width:100%; height:auto; display:block; border-radius:12px; touch-action:none; cursor:crosshair;}
+  .ghost{position:absolute; right:16px; top:16px; width:150px; border-radius:12px; background:var(--glass-strong);
+    border:1px solid var(--border); box-shadow:var(--shadow); overflow:hidden; opacity:0; transition:opacity .16s;
+    pointer-events:none;}
+  .ghost.show{opacity:1;} .ghost .g-lab{padding:7px 10px 2px; font-size:11px; font-family:var(--mono); color:var(--ink);}
+  .ghost .g-sub{padding:0 10px 7px; font-size:10.5px; color:var(--muted); font-family:var(--mono);}
+  .runbar{position:absolute; left:16px; top:16px; display:flex; align-items:center; gap:10px;
+    background:var(--glass-strong); border:1px solid var(--border); border-radius:12px; padding:7px 10px 7px 12px;
+    box-shadow:var(--shadow); font-size:11.5px;}
+  .runbar .prog{width:96px; height:6px; border-radius:4px; background:var(--inset); overflow:hidden; border:1px solid var(--border);}
+  .runbar .prog i{display:block; height:100%; width:100%; background:var(--accent); border-radius:4px;}
+  .runbar .lab{color:var(--muted);} .runbar .lab b{color:var(--ink); font-family:var(--mono);}
+
+  .multiples{padding:14px 14px 6px;}
+  .multiples h2{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; font-weight:600;}
+  .mstrip{display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;}
+  .mcell{flex:none; width:104px;}
+  .mcell canvas{width:104px; height:74px; border-radius:9px; border:1px solid var(--border); background:var(--inset); display:block;}
+  .mcell .cap{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:6px; line-height:1.35;}
+  .mcell .cap b{color:var(--ink);}
+  .mcell.sel canvas{border-color:var(--warm); box-shadow:0 0 0 2px var(--warm-soft);}
+
+  .inspect{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .panel{padding:14px 16px;}
+  .panel h2{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; font-weight:600;}
+  .param{margin-bottom:14px;}
+  .param .lab{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:8px;}
+  .param .lab b{font-family:var(--mono); color:var(--ink); font-weight:600;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap;}
+  .chips button{border:1px solid var(--border); background:var(--inset); color:var(--muted); font-family:var(--mono);
+    font-size:11.5px; padding:5px 9px; border-radius:9px; cursor:pointer;}
+  .chips button.on{background:var(--accent-soft); color:var(--accent-strong); border-color:transparent; font-weight:600;}
+  .cost{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 12px; margin:2px 0 12px;
+    background:var(--inset); border:1px solid var(--border); border-radius:12px;}
+  .cost .n{font-family:var(--mono); font-size:20px; font-weight:650; font-variant-numeric:tabular-nums;}
+  .cost .k{font-size:11px; color:var(--muted); line-height:1.4;}
+  .run{width:100%; border:0; border-radius:12px; padding:11px; font-family:var(--sans); font-size:13.5px;
+    font-weight:640; color:#fff; background:var(--accent); cursor:pointer; box-shadow:var(--shadow);}
+  .run:hover{background:var(--accent-strong);}
+  .selbar{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .selbar .n{font-family:var(--mono); font-size:22px; font-weight:650;}
+  .send{border:0; border-radius:11px; padding:9px 13px; font-family:var(--sans); font-size:12.5px; font-weight:640;
+    color:#fff; background:var(--warm-strong); cursor:pointer;}
+  .send:disabled{background:var(--inset); color:var(--faint); cursor:default;}
+  .legend{display:flex; flex-direction:column; gap:9px; font-size:12px; color:var(--muted);}
+  .legend .r{display:flex; align-items:center; gap:9px;}
+  .legend .d{width:11px; height:11px; border-radius:50%; flex:none;}
+  .legend .d.hollow{background:transparent; border:1.6px solid var(--alert);}
+  .foot{font-size:11px; color:var(--faint); line-height:1.5; margin-top:8px;}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); background:var(--ink);
+    color:var(--bg1); font-size:12.5px; padding:9px 16px; border-radius:11px; opacity:0; pointer-events:none;
+    transition:.28s; font-weight:500; z-index:9;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="card brand"><div class="wordmark">Retinode</div><div class="sub">Electrode studio</div></div>
+    <nav class="card nav">
+      <div class="grp">Design</div>
+      <div class="step done"><span class="dot"></span>Patch</div>
+      <div class="step done"><span class="dot"></span>Array</div>
+      <div class="step done"><span class="dot"></span>Tissue</div>
+      <div class="step done"><span class="dot"></span>Stimulus</div>
+      <div class="step done"><span class="dot"></span>Results</div>
+      <div class="grp">Analyse</div>
+      <div class="step"><span class="dot"></span>Compare</div>
+      <div class="step active"><span class="dot"></span>Study</div>
+      <div class="step"><span class="dot"></span>Validation</div>
+      <div class="step"><span class="dot"></span>Candidates</div>
+    </nav>
+    <div class="card badges">
+      <div class="badge tier"><span class="k">Accuracy</span><span class="v">Analytical</span></div>
+      <div class="badge safe"><span class="k">Safety</span><span class="v" id="safeBadge">filtered</span></div>
+      <div class="kbd">⌘K  ·  command palette</div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-head">
+      <div>
+        <h1>Study · diameter × pitch × return</h1>
+        <div class="crumb">selectivity vs. current on the Pareto frontier · drag to select a family</div>
+      </div>
+      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ study·2c9f</div>
+    </div>
+
+    <div class="card plot-wrap">
+      <canvas id="pareto" width="1100" height="720" aria-label="Pareto frontier of electrode designs: selectivity window versus current cost. Dominated designs are faint; the frontier is a lit curve. Drag to select a family."></canvas>
+      <div class="runbar"><span class="lab"><b id="pDone">48</b> / 48 solved</span>
+        <div class="prog"><i id="progFill"></i></div></div>
+      <div class="ghost" id="ghost">
+        <canvas id="ghostC" width="300" height="180"></canvas>
+        <div class="g-lab" id="gLab">—</div><div class="g-sub" id="gSub"></div>
+      </div>
+    </div>
+
+    <div class="card multiples">
+      <h2 id="mTitle">Frontier designs</h2>
+      <div class="mstrip" id="mstrip"></div>
+    </div>
+  </main>
+
+  <aside class="inspect">
+    <div class="card panel">
+      <h2>Build the sweep</h2>
+      <div class="param">
+        <div class="lab">Electrode diameter <b>µm</b></div>
+        <div class="chips" data-p="d"><button class="on">8</button><button class="on">12</button><button class="on">16</button><button class="on">20</button></div>
+      </div>
+      <div class="param">
+        <div class="lab">Pitch <b>µm</b></div>
+        <div class="chips" data-p="pitch"><button class="on">30</button><button class="on">40</button><button class="on">55</button><button class="on">70</button></div>
+      </div>
+      <div class="param">
+        <div class="lab">Return <b>config</b></div>
+        <div class="chips" data-p="ret"><button class="on">local</button><button class="on">near</button><button class="on">far</button></div>
+      </div>
+      <div class="cost">
+        <div class="n" id="costN">48</div>
+        <div class="k">configurations<br>≈ <b id="costT">40 s</b> · analytical tier</div>
+      </div>
+      <button class="run" id="runBtn">Run study</button>
+      <div class="foot">Fields are reused across configurations on a fixed array; each geometry re-solves. Unsafe designs are filtered from the frontier automatically.</div>
+    </div>
+
+    <div class="card panel">
+      <h2>Selection</h2>
+      <div class="selbar">
+        <div><span class="n" id="selN">0</span> <span style="font-size:12px;color:var(--muted)">designs</span></div>
+        <button class="send" id="sendBtn" disabled>Send to Candidates →</button>
+      </div>
+      <div class="foot" id="selFoot">Drag a box across the frontier to select a family of designs; the selection carries to the Candidates shortlist.</div>
+    </div>
+
+    <div class="card panel">
+      <h2>Legend</h2>
+      <div class="legend">
+        <div class="r"><span class="d" style="background:var(--accent)"></span>on the Pareto frontier — not beaten on both axes</div>
+        <div class="r"><span class="d" style="background:var(--faint)"></span>dominated — a frontier design beats it</div>
+        <div class="r"><span class="d hollow"></span>over the charge-density limit — excluded</div>
+        <div class="r"><span class="d" style="background:var(--warm)"></span>selected</div>
+      </div>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const cv = document.getElementById("pareto"), ctx = cv.getContext("2d");
+  let DIM={w:700,h:458};
+
+  // ---- generate the design cloud deterministically ----
+  const RETS=["local","near","far"];
+  const designs=[]; let s=11; const rnd=()=>(s=(s*1103515245+12345)&0x7fffffff, s/0x7fffffff-0.5);
+  for(const d of [8,12,16,20]) for(const pitch of [30,40,55,70]) for(const ret of RETS){
+    const rf = ret==="local"?2 : ret==="near"?1 : 0;
+    // current cost (µA to fire target): smaller disk + local return cost more
+    const cost = 6 + (24-d)*0.42 + rf*4.2 + rnd()*2.4;
+    // selectivity window (µA): local return + mid pitch selective; far return not
+    const pitchBonus = 6 - Math.abs(pitch-46)*0.14;
+    const sel = 1.5 + rf*5.6 + pitchBonus + rnd()*2.0;
+    // charge density unsafe for the smallest disks at high cost
+    const area=Math.PI*(d/2)**2*1e-8, q=cost*1e-6*0.2e-3, cd=q/area*1e3;
+    designs.push({d,pitch,ret,cost:Math.max(3,cost),sel:Math.max(0.4,sel),safe:cd<=0.35,cd});
+  }
+  // Pareto frontier: safe & non-dominated (lower cost AND higher sel is better)
+  function computeFrontier(list){
+    return list.map((p,i)=>{
+      if(!p.safe) return false;
+      return !list.some(q=>q!==p && q.safe && q.cost<=p.cost && q.sel>=p.sel && (q.cost<p.cost||q.sel>p.sel));
+    });
+  }
+  let active=designs.slice();          // filtered by the sweep builder
+  let onFront=computeFrontier(active);
+  let revealed=active.length;          // for the run animation
+  let selected=new Set();
+
+  // plot ranges (padded)
+  function ranges(){
+    const xs=active.map(p=>p.cost), ys=active.map(p=>p.sel);
+    return {x0:Math.min(...xs)-2, x1:Math.max(...xs)+2, y0:0, y1:Math.max(...ys)+2};
+  }
+  const PAD={l:64,r:20,t:22,b:46};
+  function px(p,r){ const w=DIM.w-PAD.l-PAD.r; return PAD.l + (p.cost-r.x0)/(r.x1-r.x0)*w; }
+  function py(p,r){ const h=DIM.h-PAD.t-PAD.b; return PAD.t + (1-(p.sel-r.y0)/(r.y1-r.y0))*h; }
+
+  function fit(){ const b=cv.getBoundingClientRect(); if(!b.width) return;
+    const dpr=Math.min(devicePixelRatio||1,2); cv.width=Math.round(b.width*dpr); cv.height=Math.round(b.width*0.62*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0); DIM={w:b.width,h:b.width*0.62}; }
+
+  let hover=-1, brush=null;
+  function draw(){
+    const r=ranges(); ctx.clearRect(0,0,DIM.w,DIM.h);
+    const ink=css("--canvas-ink"), muted=css("--muted"), accent=css("--field"), warm=css("--warm"), alert=css("--alert"), border=css("--border");
+    // axes + grid
+    ctx.strokeStyle=withA(muted,0.18); ctx.fillStyle=withA(muted,0.9); ctx.lineWidth=1;
+    ctx.font=`11px ${css("--mono")||"monospace"}`;
+    for(let i=0;i<=4;i++){
+      const gx=PAD.l+(DIM.w-PAD.l-PAD.r)*i/4, gy=PAD.t+(DIM.h-PAD.t-PAD.b)*i/4;
+      ctx.strokeStyle=withA(muted,0.10);
+      ctx.beginPath(); ctx.moveTo(gx,PAD.t); ctx.lineTo(gx,DIM.h-PAD.b); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(PAD.l,gy); ctx.lineTo(DIM.w-PAD.r,gy); ctx.stroke();
+    }
+    // axis labels (human)
+    ctx.fillStyle=withA(muted,0.95); ctx.textAlign="center";
+    ctx.fillText("µA to fire the target  →  more current", DIM.w/2, DIM.h-14);
+    ctx.save(); ctx.translate(16,DIM.h/2); ctx.rotate(-Math.PI/2); ctx.textAlign="center";
+    ctx.fillText("selective window (µA)  →  more selective", 0,0); ctx.restore();
+    ctx.textAlign="left";
+    // "better" hint arrow to the upper-left
+    ctx.fillStyle=withA(accent,0.6); ctx.font=`10px ${css("--mono")||"monospace"}`;
+    ctx.fillText("◤ better", PAD.l+6, PAD.t+14);
+
+    // frontier curve (through revealed, safe, on-front points sorted by cost)
+    const fpts=active.map((p,i)=>({p,i})).filter(o=>o.i<revealed && onFront[o.i]).sort((a,b)=>a.p.cost-b.p.cost);
+    if(fpts.length>1){
+      ctx.strokeStyle=withA(accent,0.55); ctx.lineWidth=2.5; ctx.setLineDash([]);
+      ctx.beginPath();
+      fpts.forEach((o,k)=>{ const x=px(o.p,r),y=py(o.p,r); k?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+      ctx.stroke();
+      // soft fill under the frontier
+      const g=ctx.createLinearGradient(0,PAD.t,0,DIM.h-PAD.b);
+      g.addColorStop(0,withA(accent,0.12)); g.addColorStop(1,withA(accent,0));
+      ctx.lineTo(px(fpts[fpts.length-1].p,r),DIM.h-PAD.b); ctx.lineTo(px(fpts[0].p,r),DIM.h-PAD.b);
+      ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+    }
+    // points
+    for(let i=0;i<active.length;i++){
+      if(i>=revealed) continue;
+      const p=active[i], x=px(p,r), y=py(p,r), front=onFront[i], sel=selected.has(i), hov=i===hover;
+      if(!p.safe){ ctx.strokeStyle=withA(alert,0.7); ctx.lineWidth=1.6;
+        ctx.beginPath(); ctx.arc(x,y,4,0,7); ctx.stroke(); continue; }
+      let R = front?5.5:3.6; if(hov) R+=2.5;
+      if(sel){ ctx.fillStyle=withA(warm,0.18); ctx.beginPath(); ctx.arc(x,y,R+4,0,7); ctx.fill(); }
+      ctx.fillStyle = front?accent:withA(ink,0.30);
+      if(sel) ctx.fillStyle=warm;
+      ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.fill();
+      if(front && !sel){ ctx.strokeStyle=withA("#ffffff",0.6); ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.stroke(); }
+    }
+    // brush rectangle
+    if(brush){ ctx.fillStyle=withA(warm,0.10); ctx.strokeStyle=withA(warm,0.6); ctx.lineWidth=1;
+      const x=Math.min(brush.x0,brush.x1),y=Math.min(brush.y0,brush.y1),w=Math.abs(brush.x1-brush.x0),h=Math.abs(brush.y1-brush.y0);
+      ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h); }
+  }
+
+  // ghost field thumbnail for a design
+  function drawGhost(idx){
+    const g=document.getElementById("ghost"), c=document.getElementById("ghostC"), gx=c.getContext("2d");
+    if(idx<0){ g.classList.remove("show"); return; }
+    const p=active[idx]; g.classList.add("show");
+    document.getElementById("gLab").textContent=`d${p.d} · pitch ${p.pitch} · ${p.ret}`;
+    document.getElementById("gSub").textContent=`${p.cost.toFixed(1)} µA  ·  window ${p.sel.toFixed(1)} µA`;
+    gx.setTransform(1,0,0,1,0,0); gx.clearRect(0,0,300,180);
+    const field=css("--field"), ink=css("--canvas-ink"), cxp=150, cyp=92;
+    const rad=70*(p.pitch/50);
+    const rg=gx.createRadialGradient(cxp,cyp,2,cxp,cyp,rad); rg.addColorStop(0,withA(field,0.34)); rg.addColorStop(1,withA(field,0));
+    gx.fillStyle=rg; gx.beginPath(); gx.arc(cxp,cyp,rad,0,7); gx.fill();
+    for(let i=1;i<=3;i++){ gx.strokeStyle=withA(field,0.4); gx.lineWidth=1; gx.beginPath(); gx.arc(cxp,cyp,i*16,0,7); gx.stroke(); }
+    // electrodes at pitch
+    const s2=0.7; for(const dx of [-1,0,1]){ const ex=cxp+dx*p.pitch*s2;
+      gx.fillStyle=withA(ink,0.55); gx.beginPath(); gx.arc(ex,cyp,p.d*0.28,0,7); gx.fill(); }
+    // a couple of cells, target lit
+    gx.fillStyle=css("--warm"); gx.beginPath(); gx.arc(cxp+16,cyp-10,4,0,7); gx.fill();
+    gx.fillStyle=withA(ink,0.3); gx.beginPath(); gx.arc(cxp+40,cyp+20,3.4,0,7); gx.fill();
+  }
+
+  // small multiples of the frontier
+  function renderMultiples(){
+    const strip=document.getElementById("mstrip"); strip.innerHTML="";
+    const fidx=active.map((p,i)=>i).filter(i=>i<revealed && onFront[i]).sort((a,b)=>active[a].cost-active[b].cost);
+    document.getElementById("mTitle").textContent=`Frontier designs · ${fidx.length}`;
+    for(const i of fidx){
+      const p=active[i], cell=document.createElement("div"); cell.className="mcell"+(selected.has(i)?" sel":"");
+      const c=document.createElement("canvas"); c.width=208; c.height=148; cell.appendChild(c);
+      const cap=document.createElement("div"); cap.className="cap";
+      cap.innerHTML=`<b>d${p.d} · p${p.pitch}</b><br>${p.ret} · ${p.sel.toFixed(1)}µA win`;
+      cell.appendChild(cap); strip.appendChild(cell);
+      cell.addEventListener("mouseenter",()=>{hover=i; drawGhost(i); draw();});
+      cell.addEventListener("mouseleave",()=>{hover=-1; drawGhost(-1); draw();});
+      cell.addEventListener("click",()=>{ selected.has(i)?selected.delete(i):selected.add(i); syncSel(); });
+      // mini field
+      const gx=c.getContext("2d"), field=css("--field"), ink=css("--canvas-ink");
+      const rad=64*(p.pitch/50); const rg=gx.createRadialGradient(104,74,2,104,74,rad);
+      rg.addColorStop(0,withA(field,0.30)); rg.addColorStop(1,withA(field,0));
+      gx.fillStyle=rg; gx.beginPath(); gx.arc(104,74,rad,0,7); gx.fill();
+      for(let k=1;k<=3;k++){ gx.strokeStyle=withA(field,0.34); gx.beginPath(); gx.arc(104,74,k*13,0,7); gx.stroke(); }
+      gx.fillStyle=withA(ink,0.5); gx.beginPath(); gx.arc(104,74,p.d*0.5,0,7); gx.fill();
+      gx.fillStyle=css("--warm"); gx.beginPath(); gx.arc(118,64,4,0,7); gx.fill();
+    }
+  }
+
+  // ---- interaction: hover + brush on the plot ----
+  function nearest(mx,my){
+    const r=ranges(); let best=-1, bd=16;
+    for(let i=0;i<active.length;i++){ if(i>=revealed||!active[i].safe) continue;
+      const dx=px(active[i],r)-mx, dy=py(active[i],r)-my, d=Math.hypot(dx,dy);
+      if(d<bd){bd=d; best=i;} }
+    return best;
+  }
+  function evtXY(e){ const b=cv.getBoundingClientRect(); return [ (e.clientX-b.left)/b.width*DIM.w, (e.clientY-b.top)/b.height*DIM.h ]; }
+  cv.addEventListener("pointermove",e=>{
+    const [mx,my]=evtXY(e);
+    if(brush){ brush.x1=mx; brush.y1=my; draw(); return; }
+    const n=nearest(mx,my); if(n!==hover){ hover=n; drawGhost(n); draw(); }
+  });
+  cv.addEventListener("pointerdown",e=>{ const [mx,my]=evtXY(e); brush={x0:mx,y0:my,x1:mx,y1:my}; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointerup",e=>{
+    if(!brush) return; const [mx,my]=evtXY(e);
+    const moved=Math.hypot(brush.x1-brush.x0,brush.y1-brush.y0)>6;
+    if(moved){
+      const r=ranges(), x0=Math.min(brush.x0,brush.x1),x1=Math.max(brush.x0,brush.x1),y0=Math.min(brush.y0,brush.y1),y1=Math.max(brush.y0,brush.y1);
+      selected.clear();
+      for(let i=0;i<active.length;i++){ if(i>=revealed||!active[i].safe) continue;
+        const x=px(active[i],r), y=py(active[i],r); if(x>=x0&&x<=x1&&y>=y0&&y<=y1) selected.add(i); }
+    } else { const n=nearest(mx,my); if(n>=0){ selected.has(n)?selected.delete(n):selected.add(n); } }
+    brush=null; syncSel();
+  });
+  cv.addEventListener("pointerleave",()=>{ if(!brush){hover=-1; drawGhost(-1); draw();} });
+
+  function syncSel(){
+    const n=selected.size; document.getElementById("selN").textContent=n;
+    const btn=document.getElementById("sendBtn"); btn.disabled=n===0;
+    document.getElementById("selFoot").textContent = n? `${n} design${n>1?"s":""} ready — carries to Candidates with tier, threshold, and rationale.`
+      : "Drag a box across the frontier to select a family of designs; the selection carries to the Candidates shortlist.";
+    renderMultiples(); draw();
+  }
+
+  // ---- sweep builder chips + cost ----
+  document.querySelectorAll(".chips button").forEach(b=>b.addEventListener("click",()=>{
+    b.classList.toggle("on"); rebuild();
+  }));
+  function chosen(p){ return [...document.querySelector(`.chips[data-p="${p}"]`).children].filter(x=>x.classList.contains("on")).map(x=>x.textContent); }
+  function rebuild(){
+    const ds=chosen("d").map(Number), ps=chosen("pitch").map(Number), rs=chosen("ret");
+    active=designs.filter(x=>ds.includes(x.d)&&ps.includes(x.pitch)&&rs.includes(x.ret));
+    onFront=computeFrontier(active); selected.clear(); revealed=active.length;
+    const N=active.length; document.getElementById("costN").textContent=N;
+    document.getElementById("costT").textContent = N<24? Math.max(8,Math.round(N*0.8))+" s" : Math.round(N*0.85)+" s";
+    document.getElementById("pDone").textContent=N; document.getElementById("progFill").style.width="100%";
+    syncSel();
+  }
+
+  // ---- run animation (incremental fill) ----
+  document.getElementById("runBtn").addEventListener("click",()=>{
+    if(reduce){ revealed=active.length; renderMultiples(); draw(); toast("Study complete — "+active.length+" configurations"); return; }
+    revealed=0; selected.clear(); const N=active.length; const t0=performance.now(), dur=1500;
+    document.getElementById("progFill").style.width="0%";
+    (function step(){
+      const k=Math.min(1,(performance.now()-t0)/dur);
+      revealed=Math.round(k*N);
+      document.getElementById("pDone").textContent=revealed;
+      document.getElementById("progFill").style.width=(k*100)+"%";
+      onFront=computeFrontier(active); renderMultiples(); draw();
+      if(k<1) requestAnimationFrame(step); else { toast("Study complete — frontier ready"); syncSel(); }
+    })();
+  });
+
+  document.getElementById("sendBtn").addEventListener("click",()=>toast(selected.size+" designs sent to Candidates →"));
+  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied — reopens this study at this exact state (link = hash)"));
+
+  let toastT; function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show");
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2200); }
+
+  function withA(c,a){ c=c.trim();
+    if(c.startsWith("#")){ let h=c.slice(1); if(h.length===3)h=h.split("").map(x=>x+x).join(""); const n=parseInt(h,16);
+      return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+    if(c.startsWith("rgb")){ const p=c.match(/[\d.]+/g); return `rgba(${p[0]},${p[1]},${p[2]},${a})`; }
+    return c; }
+
+  function refresh(){ fit(); renderMultiples(); draw(); }
+  addEventListener("resize",refresh);
+  new MutationObserver(refresh).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",refresh);
+  refresh();
+})();
+</script>
