@@ -14,6 +14,9 @@ export type ParetoOpts = {
   height: number;
   palette: Palette;
   background?: boolean;
+  /** The in-progress brush rectangle, in plot pixels. Screen-only: it is a gesture,
+   *  never part of an exported figure. */
+  brush?: { l: number; r: number; t: number; b: number } | null;
 };
 
 /** Maps a point to plot pixels, and carries the domain so the axes can be ticked.
@@ -56,6 +59,7 @@ export function paretoScene({
   height,
   palette,
   background,
+  brush,
 }: ParetoOpts): Scene {
   const items: Item[] = [];
   const bg = background ? palette.paper : undefined;
@@ -204,6 +208,19 @@ export function paretoScene({
       cy: py,
       r,
       fill: isSel ? palette.warm : p.on_frontier ? palette.field : withAlpha(palette.ink, 0.3),
+    });
+  }
+
+  if (brush) {
+    items.push({
+      kind: "rect",
+      x: brush.l,
+      y: brush.t,
+      w: brush.r - brush.l,
+      h: brush.b - brush.t,
+      fill: withAlpha(palette.warm, 0.1),
+      stroke: withAlpha(palette.warm, 0.7),
+      lineWidth: 1,
     });
   }
 

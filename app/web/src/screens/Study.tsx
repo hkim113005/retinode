@@ -16,10 +16,12 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export function Study({
   onNavigate,
   onPoints,
+  onFocus,
   points: initialPoints = [],
 }: {
   onNavigate?: (s: Screen) => void;
   onPoints?: (p: StudyPoint[]) => void; // lift the sweep so it carries to Candidates
+  onFocus?: (p: StudyPoint[] | null) => void; // a brushed subset to shortlist
   points?: StudyPoint[];
 }) {
   const [diameters, setDiameters] = useState<Set<number>>(new Set(DIAMETERS));
@@ -27,6 +29,7 @@ export function Study({
   const [points, setPoints] = useState<StudyPoint[]>(initialPoints);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selected, setSelected] = useState<StudyPoint | null>(null);
+  const [brushed, setBrushed] = useState<StudyPoint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const ticket = useRef(0);
 
@@ -46,6 +49,7 @@ export function Study({
   const runStudy = () => {
     const id = ++ticket.current;
     setSelected(null);
+    setBrushed(null); // a new sweep invalidates the old selection
     setProgress({ fraction: 0, message: "submitting" });
     const controls: StudyControls = {
       diameters_um: [...diameters].sort((a, b) => a - b),
@@ -97,7 +101,12 @@ export function Study({
             <p className="empty">Couldn’t run the study ({error}). Is the API running on :8000?</p>
           </div>
         )}
-        <ParetoPlot points={points} selected={selected} onSelect={setSelected} />
+        <ParetoPlot
+          points={points}
+          selected={selected}
+          onSelect={setSelected}
+          onBrush={setBrushed}
+        />
       </main>
       <aside className="inspect">
         <div className="card panel">
@@ -150,6 +159,33 @@ export function Study({
             </button>
           )}
         </div>
+
+        {brushed && (
+          <div className="card panel">
+            <h2>Brushed selection</h2>
+            <div className="verdict">
+              <span className="big">{brushed.length}</span>
+              <span className="pill win">charge-safe designs</span>
+            </div>
+            <p className="empty">
+              {brushed.length === 1
+                ? `d${brushed[0].diameter_um} · pitch ${brushed[0].pitch_um} µm.`
+                : `${brushed.filter((p) => p.on_frontier).length} of them sit on the frontier.`}
+            </p>
+            <button
+              className="btn"
+              onClick={() => {
+                onFocus?.(brushed);
+                onNavigate?.("Candidates");
+              }}
+            >
+              Shortlist these {brushed.length} →
+            </button>
+            <button className="btn ghost small" onClick={() => setBrushed(null)}>
+              Clear
+            </button>
+          </div>
+        )}
 
         <div className="card panel">
           <h2>Selected geometry</h2>

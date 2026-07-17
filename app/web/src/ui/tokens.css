@@ -91,6 +91,20 @@ button.step:hover { background: var(--accent-soft); color: var(--ink); }
 .canvas-wrap { padding: 8px; position: relative; }
 .canvas-wrap.inked { border-color: var(--accent-soft); box-shadow: var(--shadow), inset 0 0 0 1px var(--accent-soft); }
 
+/* the Pareto hover tooltip: this one DOES follow the cursor, because it is bound to
+   a specific mark rather than to the plot as a whole */
+.tip { position: absolute; z-index: 4; pointer-events: none; display: grid; gap: 1px;
+  padding: 7px 10px; border-radius: 10px; background: var(--surface);
+  border: 1px solid var(--border); box-shadow: var(--shadow); white-space: nowrap;
+  font-size: 11px; color: var(--muted); }
+.tip b { font-family: var(--mono); font-size: 11.5px; color: var(--ink); margin-bottom: 3px; }
+.tip i { font-style: normal; font-family: var(--mono); font-weight: 600; color: var(--ink); }
+.tip .ok { color: var(--ok); } .tip .bad { color: var(--alert); }
+.legend .hint { color: var(--faint); font-style: italic; }
+
+.brushnote { display: flex; align-items: center; gap: 10px; font-size: 11.5px;
+  color: var(--warm-strong); font-family: var(--mono); }
+
 /* the hover readout: the field's top-left corner (the loupe owns the right). It is
    an instrument reading, so it is monospaced and does not move with the cursor —
    a chip that chases the mouse is harder to read than one that stays put. */

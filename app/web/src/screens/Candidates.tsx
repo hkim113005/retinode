@@ -10,13 +10,16 @@ import type { Screen } from "../nav";
 
 const TOP_N = 8;
 
-function rationale(p: StudyPoint, all: StudyPoint[]): string {
+// Every superlative here is relative to what was ranked, so the scope has to be
+// named: "the widest window in this study" is a lie once the user brushed a corner
+// of the frontier and this list is only that corner.
+function rationale(p: StudyPoint, all: StudyPoint[], scope = "this study"): string {
   const maxSel = Math.max(...all.map((q) => q.selectivity_uA));
   const minCost = Math.min(...all.map((q) => q.cost_uA));
   if (p.selectivity_uA === maxSel && p.cost_uA === minCost)
-    return "Widest selective window and the lowest current — it dominates the safe set.";
-  if (p.selectivity_uA === maxSel) return "The widest selective window in this study.";
-  if (p.cost_uA === minCost) return "The lowest current of the safe set.";
+    return `Widest selective window and the lowest current — it dominates ${scope}.`;
+  if (p.selectivity_uA === maxSel) return `The widest selective window in ${scope}.`;
+  if (p.cost_uA === minCost) return `The lowest current in ${scope}.`;
   if (p.on_frontier)
     return "On the selectivity–cost frontier: no safe design beats it on both axes.";
   return "Beaten on both axes by a frontier design — listed for reference.";
@@ -25,9 +28,13 @@ function rationale(p: StudyPoint, all: StudyPoint[]): string {
 export function Candidates({
   points,
   onNavigate,
+  brushed = false,
+  onClearBrush,
 }: {
   points: StudyPoint[];
   onNavigate?: (s: Screen) => void;
+  brushed?: boolean; // these points are a brushed subset, not the whole sweep
+  onClearBrush?: () => void;
 }) {
   // safety-filtered by definition, then ranked by the selective window
   const ranked = useMemo(
@@ -40,6 +47,7 @@ export function Candidates({
     [points],
   );
   const best = ranked[0];
+  const scope = brushed ? "your brushed selection" : "this study";
 
   const rows = () =>
     ranked.map((p, i) => ({
@@ -51,7 +59,7 @@ export function Candidates({
       charge_safe: p.safe,
       on_frontier: p.on_frontier,
       tier: "analytical",
-      rationale: rationale(p, ranked),
+      rationale: rationale(p, ranked, scope),
     }));
 
   const exportJson = () =>
@@ -82,6 +90,16 @@ export function Candidates({
                 : "the payoff — a ranked shortlist to hand to the lab"}
             </div>
           </div>
+          {/* the ranking is only honest if it says what it ranked over: a brushed
+              subset is not "the best designs", it is the best of what you picked */}
+          {brushed && (
+            <div className="brushnote">
+              <span>brushed from the study</span>
+              <button className="btn ghost small" onClick={onClearBrush}>
+                Rank the whole sweep
+              </button>
+            </div>
+          )}
         </div>
 
         {!ranked.length ? (
@@ -104,9 +122,9 @@ export function Candidates({
                     d{best.diameter_um} · pitch {best.pitch_um} µm
                   </div>
                   <div className="say">
-                    The widest selective window (<b>{best.selectivity_uA.toFixed(1)} µA</b>) among the
-                    charge-safe designs, at <b>{best.cost_uA.toFixed(1)} µA</b> on the target — the
-                    one to take to tissue first.
+                    The widest selective window (<b>{best.selectivity_uA.toFixed(1)} µA</b>) among
+                    the charge-safe designs in {scope}, at <b>{best.cost_uA.toFixed(1)} µA</b> on
+                    the target — the one to take to tissue first.
                   </div>
                 </div>
               </div>
@@ -119,7 +137,7 @@ export function Candidates({
                     <div className="name">
                       d{p.diameter_um} · pitch {p.pitch_um} µm
                     </div>
-                    <div className="say">{rationale(p, ranked)}</div>
+                    <div className="say">{rationale(p, ranked, scope)}</div>
                   </div>
                   <div className="metrics">
                     <div className="m">

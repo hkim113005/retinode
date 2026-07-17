@@ -273,7 +273,26 @@ Pydantic models mirror.
     live:* rings at −2/−4/−6 mV around a 10 µm disk; the probe reads −7.95 mV at the
     centre (matching the ±7.96 colour limit) and −4.32 mV at 31 µm — exactly where
     the −4 mV ring falls, so the two readings cross-check each other.
-  - **S7c — Pareto hover tooltip + brush-to-select.**
+  - **S7c — Pareto hover tooltip + brush-to-select — done.** Hovering a design reads
+    its geometry, threshold, window and charge verdict into a tooltip bound to the
+    mark (this one *does* follow the cursor — unlike the field probe, it belongs to a
+    specific point, not to the plot). Dragging a box brushes a set: a press-release
+    is still a click, and past 4 px it becomes a brush, so inspecting and selecting
+    share one gesture without a mode. **Only charge-safe designs are brushable** — an
+    unsafe one is not a candidate for anything. The brush lifts through `App` to
+    Candidates, which ranks the subset and **says that it did**: the note reads
+    "brushed from the study", with one click back to the whole sweep, and every
+    superlative renames its scope ("the widest window in *your brushed selection*")
+    rather than quietly claiming to speak for the study. *Verified live:* brushing
+    the cheap-and-selective corner of a 16-geometry sweep shortlisted 8 charge-safe
+    designs, 2 on the frontier, and moved the recommendation from d12 to d16·40 —
+    correctly reflecting what was actually asked for. This closes the S4 deferral
+    "brush→Candidates".
+
+  *(Still deferred from S7: the activation-vs-amplitude and threshold plots need a
+  contract extension — the engine does not expose an amplitude sweep as a view
+  payload yet — and native PDF export, which the SVG already reaches via
+  Illustrator/Inkscape.)*
 
 - **P7 S8 — Polish + parity cutover.** Keyboard- and mobile-respectful layout, empty
   and error states (including the evaluator's **refusal to compare mismatched

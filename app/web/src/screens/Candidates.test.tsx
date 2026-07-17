@@ -43,10 +43,20 @@ describe("Candidates", () => {
     expect(screen.getAllByText(/d12 · pitch 40/).length).toBeGreaterThan(0);
     expect(screen.getByText(/▲ Recommended/)).toBeInTheDocument();
     expect(screen.getByText("The widest selective window in this study.")).toBeInTheDocument();
-    expect(screen.getByText("The lowest current of the safe set.")).toBeInTheDocument();
+    expect(screen.getByText("The lowest current in this study.")).toBeInTheDocument();
     expect(
       screen.getByText("Beaten on both axes by a frontier design — listed for reference."),
     ).toBeInTheDocument();
+  });
+
+  it("says its superlatives are about the brush, not the whole study", () => {
+    // "the widest window in this study" would be a lie when only a corner was ranked
+    render(<Candidates points={POINTS} onNavigate={vi.fn()} brushed />);
+    expect(
+      screen.getByText("The widest selective window in your brushed selection."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/in this study/)).not.toBeInTheDocument();
+    expect(screen.getByText("brushed from the study")).toBeInTheDocument();
   });
 
   it("exports the shortlist as JSON", () => {
