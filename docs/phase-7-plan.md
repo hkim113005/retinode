@@ -149,11 +149,19 @@ Pydantic models mirror.
   S2's generated TS types. `--extra api` (fastapi/httpx) added to the fast + neuron CI
   jobs. 331 fast pass, ruff clean.
 
-- **P7 S2 — React scaffold + the Compare screen (parity with Dash).** Vite + TS
-  client; **generate TS types from the OpenAPI schema**; build the control rail →
-  **live analytical field + scorecard**, reusing `scene.py`'s geometry-from-controls
-  logic on the server. Instrument-panel styling, one color vocabulary. *Done:* the
-  React Compare screen reproduces the Dash Compare, live, on the analytical tier.
+- **P7 S2 — React scaffold + the Compare screen (parity with Dash) — done.** A
+  Vite + React + TypeScript client under `app/web/`, in the instrument-panel design
+  language (`docs/phase-7-design.md`), talking only to the typed `/compare` contract.
+  TS types are **generated from the OpenAPI schema** (`openapi-typescript` → a
+  committed `openapi.json` snapshot, kept honest by a Python snapshot test and a CI
+  types-in-sync check). The **Compare** screen: the left pipeline rail, a control rail
+  (layout + sliders), a **live analytical field canvas** (debounced `POST /compare`,
+  diverging Ve heatmap + electrode/cell overlays), and an **on-demand scorecard**
+  (separate state, so a field refetch never clobbers it). The field-view contract
+  gained electrode + soma overlays (master plan §16). Vitest component tests run
+  against mocked responses; a new **`web` CI job** does types-in-sync + typecheck +
+  test + build. Verified live end-to-end in the browser: the field renders and
+  updates on control edits (monopolar → bipolar dipole). 7 web tests, 333 fast.
 
 - **P7 S3 — The async job model (FEM/NEURON, streamed).** A job layer over
   `engine.study.runner` (resumable) + the project store: submit an **evaluate**

@@ -77,3 +77,39 @@ jobs:
       # collecting the neuron/store/app suites, whose deps are not in this env.
       - name: FEM tests (DOLFINx Poisson gate + gmsh mesh)
         run: pytest tests/field -m fem
+
+  # The React client (Phase 7 S2). Node-only; no Python here — the API contract
+  # reaches the client through the committed OpenAPI snapshot + generated TS types.
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # The generated types must match the committed OpenAPI snapshot; a stale
+      # schema.d.ts (or openapi.json) fails here rather than drifting silently.
+      - name: Types in sync with the contract
+        run: |
+          npm run gen:types
+          git diff --exit-status src/api/schema.d.ts
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build

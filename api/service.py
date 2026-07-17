@@ -12,9 +12,10 @@ import numpy as np
 
 from app.scene import cell_depth_um
 from engine.field import AnalyticalBackend, FieldBackend, current_vector
-from engine.spec import ConductivityModel, ElectrodeArray, StimConfig
+from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimConfig
+from engine.spec.geometry import radius_um
 
-from .models import FieldGridResponse, ScorecardResponse
+from .models import CellMarker, ElectrodeMarker, FieldGridResponse, ScorecardResponse
 
 
 def field_grid_payload(
@@ -41,6 +42,22 @@ def field_grid_payload(
         ve_mV=ve.tolist(),
         vmax_mV=float(np.abs(ve).max()) or 1.0,
     )
+
+
+def electrode_markers(array: ElectrodeArray) -> list[ElectrodeMarker]:
+    """Electrode footprints on the field plane, for the overlay."""
+    return [
+        ElectrodeMarker(x_um=e.pos_um[0], y_um=e.pos_um[1], radius_um=radius_um(e))
+        for e in array.electrodes
+    ]
+
+
+def cell_markers(patch: RetinalPatch) -> list[CellMarker]:
+    """Soma positions on the field plane; the target is flagged for filled drawing."""
+    return [
+        CellMarker(x_um=c.soma_um[0], y_um=c.soma_um[1], is_target=c.id == patch.target_id)
+        for c in patch.cells
+    ]
 
 
 def scorecard_payload(result) -> ScorecardResponse:  # noqa: ANN001 - an EvaluationResult

@@ -16,7 +16,12 @@ from engine.eval import evaluate
 from engine.field import AnalyticalBackend
 
 from ..models import CompareResponse, SceneControls
-from ..service import field_grid_payload, scorecard_payload
+from ..service import (
+    cell_markers,
+    electrode_markers,
+    field_grid_payload,
+    scorecard_payload,
+)
 
 router = APIRouter()
 
@@ -45,4 +50,9 @@ def compare(controls: SceneControls, request: Request) -> CompareResponse:
             thresholds_provider=request.app.state.thresholds_provider,
         )
         scorecard = scorecard_payload(result)
-    return CompareResponse(field=field, scorecard=scorecard)
+    return CompareResponse(
+        field=field,
+        electrodes=electrode_markers(scene.array),
+        cells=cell_markers(scene.patch),
+        scorecard=scorecard,
+    )

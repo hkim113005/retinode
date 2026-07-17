@@ -40,6 +40,22 @@ class FieldGridResponse(BaseModel):
     vmax_mV: float  # symmetric colour limit, |Ve| max (>=0)
 
 
+class ElectrodeMarker(BaseModel):
+    """An electrode's footprint on the field plane, for the overlay."""
+
+    x_um: float
+    y_um: float
+    radius_um: float
+
+
+class CellMarker(BaseModel):
+    """A soma position on the field plane; the target is drawn filled."""
+
+    x_um: float
+    y_um: float
+    is_target: bool
+
+
 class ScorecardResponse(BaseModel):
     """The evaluator's operating-window verdict. ``activated=False`` means the
     target never fired in the searched range and every other field is absent."""
@@ -58,8 +74,12 @@ class ScorecardResponse(BaseModel):
 
 
 class CompareResponse(BaseModel):
-    """One configuration scored for the Compare screen: the field always, the
-    scorecard only when requested (it costs a threshold search)."""
+    """One configuration scored for the Compare screen: the field and its scene
+    overlays always, the scorecard only when requested (it costs a threshold
+    search). This is the field-view data contract — grid + electrode outlines +
+    soma overlays (master plan §16)."""
 
     field: FieldGridResponse
+    electrodes: list[ElectrodeMarker]
+    cells: list[CellMarker]
     scorecard: ScorecardResponse | None = None

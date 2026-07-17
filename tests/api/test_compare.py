@@ -56,6 +56,19 @@ def test_compare_field_matches_the_dash_view_exactly():
     # a single cathode makes Ve negative everywhere
     assert np.max(np.array(body["field"]["ve_mV"])) <= 0.0
 
+    # scene overlays: one electrode at the origin, target + neighbour cells
+    assert body["electrodes"] == [{"x_um": 0.0, "y_um": 0.0, "radius_um": 5.0}]
+    assert {"x_um": 0.0, "y_um": 0.0, "is_target": True} in body["cells"]
+    assert {"x_um": 40.0, "y_um": 0.0, "is_target": False} in body["cells"]
+
+
+def test_compare_overlays_follow_a_bipolar_layout():
+    body = TestClient(create_app()).post(
+        "/compare", json={**_CONTROLS, "layout": "bipolar", "pitch_um": 50.0, "n": 21}
+    ).json()
+    xs = sorted(e["x_um"] for e in body["electrodes"])
+    assert xs == [-25.0, 25.0]  # a pair split by the pitch
+
 
 def test_compare_scorecard_matches_the_dash_view_with_the_same_provider():
     provider = _fake_provider(8.0, {"neighbor": 12.0})

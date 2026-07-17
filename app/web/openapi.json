@@ -1,0 +1,442 @@
+{
+  "components": {
+    "schemas": {
+      "CellMarker": {
+        "description": "A soma position on the field plane; the target is drawn filled.",
+        "properties": {
+          "is_target": {
+            "title": "Is Target",
+            "type": "boolean"
+          },
+          "x_um": {
+            "title": "X Um",
+            "type": "number"
+          },
+          "y_um": {
+            "title": "Y Um",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x_um",
+          "y_um",
+          "is_target"
+        ],
+        "title": "CellMarker",
+        "type": "object"
+      },
+      "CompareResponse": {
+        "description": "One configuration scored for the Compare screen: the field and its scene\noverlays always, the scorecard only when requested (it costs a threshold\nsearch). This is the field-view data contract \u2014 grid + electrode outlines +\nsoma overlays (master plan \u00a716).",
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/CellMarker"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "electrodes": {
+            "items": {
+              "$ref": "#/components/schemas/ElectrodeMarker"
+            },
+            "title": "Electrodes",
+            "type": "array"
+          },
+          "field": {
+            "$ref": "#/components/schemas/FieldGridResponse"
+          },
+          "scorecard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorecardResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "field",
+          "electrodes",
+          "cells"
+        ],
+        "title": "CompareResponse",
+        "type": "object"
+      },
+      "ElectrodeMarker": {
+        "description": "An electrode's footprint on the field plane, for the overlay.",
+        "properties": {
+          "radius_um": {
+            "title": "Radius Um",
+            "type": "number"
+          },
+          "x_um": {
+            "title": "X Um",
+            "type": "number"
+          },
+          "y_um": {
+            "title": "Y Um",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x_um",
+          "y_um",
+          "radius_um"
+        ],
+        "title": "ElectrodeMarker",
+        "type": "object"
+      },
+      "FieldGridResponse": {
+        "description": "Ve (mV) on a square grid at the cell plane \u2014 the analytical field preview.",
+        "properties": {
+          "ve_mV": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Ve Mv",
+            "type": "array"
+          },
+          "vmax_mV": {
+            "title": "Vmax Mv",
+            "type": "number"
+          },
+          "xs_um": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Xs Um",
+            "type": "array"
+          },
+          "ys_um": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Ys Um",
+            "type": "array"
+          }
+        },
+        "required": [
+          "xs_um",
+          "ys_um",
+          "ve_mV",
+          "vmax_mV"
+        ],
+        "title": "FieldGridResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "SceneControls": {
+        "description": "The Compare screen's inputs \u2014 the same handful of controls the Dash app\nexposes, translated to specs server-side via ``app.scene.build_scene``.",
+        "properties": {
+          "electrode_um": {
+            "default": 10.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Electrode Um",
+            "type": "number"
+          },
+          "extent_um": {
+            "default": 130.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Extent Um",
+            "type": "number"
+          },
+          "include_scorecard": {
+            "default": false,
+            "title": "Include Scorecard",
+            "type": "boolean"
+          },
+          "layout": {
+            "default": "single",
+            "enum": [
+              "single",
+              "bipolar"
+            ],
+            "title": "Layout",
+            "type": "string"
+          },
+          "n": {
+            "default": 61,
+            "maximum": 257.0,
+            "minimum": 9.0,
+            "title": "N",
+            "type": "integer"
+          },
+          "neighbor_um": {
+            "default": 40.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Neighbor Um",
+            "type": "number"
+          },
+          "phase_width_us": {
+            "default": 200.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Phase Width Us",
+            "type": "number"
+          },
+          "pitch_um": {
+            "default": 60.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Pitch Um",
+            "type": "number"
+          },
+          "sigma_S_per_m": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Sigma S Per M",
+            "type": "number"
+          }
+        },
+        "title": "SceneControls",
+        "type": "object"
+      },
+      "ScorecardResponse": {
+        "description": "The evaluator's operating-window verdict. ``activated=False`` means the\ntarget never fired in the searched range and every other field is absent.",
+        "properties": {
+          "activated": {
+            "title": "Activated",
+            "type": "boolean"
+          },
+          "limiting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limiting"
+          },
+          "off_min_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Off Min Ua"
+          },
+          "ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          },
+          "safe_at_target": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safe At Target"
+          },
+          "safety_ceiling_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Ceiling Ua"
+          },
+          "target_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Ua"
+          },
+          "usable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usable"
+          },
+          "usable_margin_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usable Margin Ua"
+          },
+          "window_hi_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Hi Ua"
+          },
+          "window_lo_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Lo Ua"
+          }
+        },
+        "required": [
+          "activated"
+        ],
+        "title": "ScorecardResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Retinode API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/compare": {
+      "post": {
+        "operationId": "compare_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SceneControls"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compare"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    }
+  }
+}
