@@ -32,10 +32,6 @@ fem = [
     "ngsolve",           # open-source FEM cross-check backend (pip; universal2)
     "gmsh",              # shared mesh front-end for the FEM backends
 ]
-app = [
-    "dash",              # Phase-2 dashboard
-    "plotly",            # field / activation / Pareto views
-]
 store = [
     "h5py",              # HDF5 transfer-matrix (A) cache
     "pyarrow",           # parquet result store

@@ -294,12 +294,47 @@ Pydantic models mirror.
   payload yet — and native PDF export, which the SVG already reaches via
   Illustrator/Inkscape.)*
 
-- **P7 S8 — Polish + parity cutover.** Keyboard- and mobile-respectful layout, empty
-  and error states (including the evaluator's **refusal to compare mismatched
-  off-target sets** surfaced as an actionable warning, not a silent bad chart), the
-  full instrument-panel language, and docs. **Retire the Dash app only once React is
-  at parity.** *Done:* the app is legible to a newcomer with the full screen set, and
-  Dash is retired without loss.
+- **P7 S8 — Polish + parity cutover — done.**
+
+  - **The parity audit came back negative, and that was the point of doing it.**
+    React was *ahead on average* — FEM tier, Study, Candidates, export, 3D — but
+    ahead on average is not parity. Four real losses, every one fixable in the
+    client because the contract already carried the data: **tissue conductivity had
+    no control at all** (`sigma_S_per_m` pinned to 1 — a whole physics dimension
+    unreachable); the **selectivity ratio** was fetched and dropped; so was
+    **`limiting`**, so a user could not tell whether a bystander or the charge limit
+    closed the window — the entire design decision; and **run history with restore**
+    was absent. Plus quietly narrowed slider ranges (diameter 40→30, pitch and
+    neighbour 160→120 µm) putting real configurations out of reach, and an unbounded
+    window rendering as the literal string `"Infinity µA"`. All closed.
+  - **⌘K command palette + keyboard reachability.** Screens register their own
+    commands, so a screen's actions live beside the code that runs them and leave
+    when it unmounts. Navigation, both background jobs, the tier toggle and reset are
+    reachable without a mouse; `:focus-visible` rings cost pointer users nothing, and
+    `prefers-reduced-motion` is honoured.
+  - **Error boundaries.** React had been warning in the console: any render error
+    unmounted the whole tree, so one bad payload meant a white screen with the reason
+    only in devtools. The field, the 3D loupe (WebGL is not guaranteed) and each
+    screen now fail alone and can be retried.
+  - **The off-target refusal, honestly.** `require_same_offtarget` forbids comparing
+    windows scored against different bystanders, and the history strip is exactly
+    such a comparison — so `offtarget_hash` now rides the contract (D9: extend the
+    contract, never reach around it) and the strip flags a run it cannot compare.
+    **The guard is dormant:** `OffTargetSet` is the *policy* (soma radius, axon
+    proximity), not the cells it selects, and no control varies the policy — so every
+    run shares one. It is enforced anyway, so the day the policy becomes editable the
+    strip is already honest. Both semantics are pinned by tests.
+  - **Dash retired, at parity, without loss.** `app/ui.py`, `app/__main__.py`,
+    `app/assets/`, `tests/app/test_ui.py` and `views.field_figure` are gone, with the
+    `dash` + `plotly` extras and the `--extra app` CI steps. **Kept:** `app/scene.py`
+    (the API imports it — never Dash-only), `app/validation_report.json` (served by
+    `GET /validation`), and `views.py`'s data functions, which outlived the UI as the
+    API's **independent oracle** — `tests/api/test_compare` asserts the endpoints
+    agree with them by a separate route, so the API is not merely checked against a
+    snapshot of itself.
+
+  *Done:* the app is legible to a newcomer with the full screen set, and Dash is
+  retired without loss.
 
 ---
 

@@ -1,7 +1,11 @@
-"""P2b: the view data contract — field grid, figure, and scorecard payload."""
+"""P2b: the view data contract — field grid and scorecard payload.
+
+These survive the Dash app's retirement (P7 S8) as the API's independent oracle:
+tests/api/test_compare asserts /compare returns the same numbers by another route.
+"""
 
 from app.scene import build_scene
-from app.views import field_figure, field_grid, scorecard_data
+from app.views import field_grid, scorecard_data
 from engine.cable.population import PopulationThresholds
 from engine.eval import evaluate
 
@@ -33,13 +37,6 @@ def test_field_grid_is_square_and_cathodic_negative():
     assert g.ve_mV.max() <= 0.0
     assert g.ve_mV[20, 20] == g.ve_mV.min()
 
-
-def test_field_figure_has_heatmap_plus_cell_markers():
-    s = _scene()
-    fig = field_figure(s.array, s.config, s.conductivity, s.patch)
-    assert len(fig.data) == 3
-    assert fig.data[0].type == "heatmap"
-    assert fig.data[1].type == "scatter" and fig.data[2].type == "scatter"
 
 
 def test_scorecard_data_for_a_usable_window():

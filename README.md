@@ -30,7 +30,7 @@ Four layers, with a strict rule: **the engine knows nothing about the
 application, and the spec objects are the single source of truth.**
 
 ```
-engine/   # pure library; no fastapi, no plotly, no dash imports
+engine/   # pure library; no fastapi, no UI imports
   spec/       # domain model, validation, serialization, hashing
   field/      # transfer-matrix contract + backends
   cable/      # NEURON population + threshold search
@@ -39,7 +39,7 @@ engine/   # pure library; no fastapi, no plotly, no dash imports
   store/      # cache, project store, provenance
   validate/   # property tests, cross-backend, reproductions
 api/      # FastAPI; imports engine, never the reverse
-app/      # dashboard (Phase 2) then React client (Phase 6)
+app/      # scene translation + view payloads; web/ is the React client
 tests/
 docs/
 ```
@@ -86,13 +86,24 @@ Test markers: `neuron` (needs the compiled cable engine), `slow` (long
 NEURON/FEM runs), `fem` (needs a FEM backend). The fast suite excludes all three
 and runs on every push; both suites run in CI.
 
-### Dashboard
+### The app
 
-A minimal Dash/Plotly dashboard drives the engine — design an array, stimulus,
-and patch, watch the live field preview, and evaluate the selective operating
-window without touching code:
+A FastAPI service over the engine, with a React client. Design an array,
+stimulus, and patch, watch the live field preview, and evaluate the selective
+operating window without touching code:
 
 ```bash
-uv sync --extra cable --extra app
-uv run python -m app        # http://127.0.0.1:8050
+uv sync --extra cable --extra api
+uv run uvicorn api.main:create_app --factory --port 8000   # the engine, over HTTP
+
+cd app/web && npm install && npm run dev                   # http://localhost:5173
 ```
+
+Screens: **Compare** (live field, isopotential contours, scorecard, FEM tier, run
+history), **Study** (a diameter × pitch sweep to a selectivity-versus-cost
+frontier), **Candidates** (a charge-safe ranked shortlist, exportable), and
+**Validation** (what the engine reproduces). Every plot exports as figure-quality
+SVG or high-DPI PNG; `⌘K` opens the command palette.
+
+> The Phase-2 Dash dashboard was retired in Phase 7 once the React client reached
+> parity. `app/views.py` outlived it as the API's independent test oracle.

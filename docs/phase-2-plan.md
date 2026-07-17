@@ -113,6 +113,13 @@ app/            Python dashboard (Dash/Plotly) over the engine         [P2b]
   read a selectivity result, no code. Run with `uv run python -m app` (needs the
   `app` + `cable` extras).
 
+  > **Retired in P7 S8.** The Dash UI (`app/ui.py`, `app/__main__.py`,
+  > `app/assets/`) and the `app` extra are gone; the React client at `app/web`
+  > reached parity and replaced it. `app/scene.py` and `app/views.py`'s data
+  > functions remain — the API imports `scene`, and `views` is the independent
+  > oracle its parity tests assert against. This section is kept as the record of
+  > what Phase 2 built.
+
 ## Testing strategy
 
 - **Fast (no NEURON, every push):** store round-trips (result/field put→get,

@@ -17,11 +17,11 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      # The fast suite needs core + dev + store (h5py/pyarrow) + app (dash/plotly,
-      # for the dashboard tests) + api (fastapi/httpx, for the /compare tests).
+      # The fast suite needs core + dev + store (h5py/pyarrow) + api (fastapi/httpx,
+      # for the /compare tests). tests/app is numpy-only since the Dash UI retired.
       # NEURON tests run in the separate test-neuron job below; FEM tests join later.
-      - name: Sync (core + dev + store + app + api)
-        run: uv sync --extra dev --extra store --extra app --extra api
+      - name: Sync (core + dev + store + api)
+        run: uv sync --extra dev --extra store --extra api
 
       - name: Lint
         run: uv run ruff check .
@@ -43,10 +43,10 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      # store + app + api extras too: pytest imports every test module during
-      # collection (incl. tests/store, tests/app, tests/api) before the -m filter runs.
-      - name: Sync (cable + dev + store + app + api)
-        run: uv sync --extra cable --extra dev --extra store --extra app --extra api
+      # store + api extras too: pytest imports every test module during collection
+      # (incl. tests/store, tests/app, tests/api) before the -m filter runs.
+      - name: Sync (cable + dev + store + api)
+        run: uv sync --extra cable --extra dev --extra store --extra api
 
       - name: Compile NEURON mechanisms
         run: cd engine/cable/mechanisms && uv run nrnivmodl .
