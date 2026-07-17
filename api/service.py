@@ -19,6 +19,8 @@ from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimCon
 from engine.spec.geometry import radius_um
 
 from .models import (
+    ActivationCurve,
+    AmplitudeSweepResponse,
     CellMarker,
     ElectrodeMarker,
     FieldGridResponse,
@@ -102,4 +104,24 @@ def scorecard_payload(result) -> ScorecardResponse:  # noqa: ANN001 - an Evaluat
         safe_at_target=bool(result.safety_at_target and result.safety_at_target.safe),
         off_target_thresholds_uA=dict(result.thresholds.off_target_thresholds_uA),
         limiting_off_id=sow.limiting_off_id,
+    )
+
+
+def sweep_payload(sweep) -> AmplitudeSweepResponse:  # noqa: ANN001 - an AmplitudeSweep
+    """Map an amplitude sweep to the wire. ``crossing_uA`` is the grid crossing, NOT
+    the scorecard's bisected threshold — the client must keep them apart."""
+    amps = list(sweep.amplitudes_uA)
+    return AmplitudeSweepResponse(
+        amplitudes_uA=amps,
+        curves=[
+            ActivationCurve(
+                cell_id=c.cell_id,
+                is_target=c.is_target,
+                activated=list(c.activated),
+                initiation_region=list(c.initiation_region),
+                crossing_uA=c.crossing_uA(amps),
+                blocks=c.blocks(),
+            )
+            for c in sweep.cells
+        ],
     )

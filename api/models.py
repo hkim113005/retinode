@@ -107,6 +107,45 @@ class ValidationReport(BaseModel):
     reproductions: list[ValidationReproduction]
 
 
+class SweepControls(SceneControls):
+    """An amplitude sweep of the scene: who fires, at what current."""
+
+    amp_min_uA: float = Field(1.0, gt=0)
+    amp_max_uA: float = Field(200.0, gt=0)
+    # capped: at ~2 cells this is n × 2 NEURON runs, so 60 is ~3× a scorecard — the
+    # honest ceiling before this stops being a "seconds" job
+    n_amplitudes: int = Field(24, ge=2, le=60)
+    spacing: Literal["linear", "log"] = "linear"
+
+
+class ActivationCurve(BaseModel):
+    """One cell's response across the sweep's amplitude grid, aligned index-for-index
+    with ``AmplitudeSweepResponse.amplitudes_uA``.
+
+    Note there is deliberately no "activation fraction" here. The patch is a target
+    plus its bystanders — a handful of cells — so a fraction would be a two- or
+    three-level step function wearing the costume of a sigmoid. Per-cell traces are
+    what the engine actually knows."""
+
+    cell_id: str
+    is_target: bool
+    activated: list[bool]
+    # where the earliest spike started at each amplitude ("soma" / "ais" / ...); None
+    # where the cell did not fire. Soma-vs-axon initiation as current rises is the
+    # axon-avoidance premise made visible, and it comes back free from each run.
+    initiation_region: list[str | None]
+    # the first grid amplitude at which this cell fires. GRID RESOLUTION, not a
+    # threshold: the scorecard's bisection converges to a tolerance and is the
+    # accurate number. Kept separate so the two are never confused.
+    crossing_uA: float | None = None
+    blocks: bool = False  # stops firing again at higher current (depolarization block)
+
+
+class AmplitudeSweepResponse(BaseModel):
+    amplitudes_uA: list[float]
+    curves: list[ActivationCurve]
+
+
 class StudyControls(BaseModel):
     """A geometry sweep: the diameter × pitch grid to explore, plus the patch it is
     scored on. Combos with ``pitch < diameter`` (which would overlap) are dropped."""
@@ -153,6 +192,7 @@ class JobStatus(BaseModel):
     field: FieldGridResponse | None = None
     max_divergence_pct: float | None = None
     study: StudyResult | None = None
+    sweep: AmplitudeSweepResponse | None = None
     error: str | None = None
 
 

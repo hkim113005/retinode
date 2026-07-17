@@ -1,6 +1,88 @@
 {
   "components": {
     "schemas": {
+      "ActivationCurve": {
+        "description": "One cell's response across the sweep's amplitude grid, aligned index-for-index\nwith ``AmplitudeSweepResponse.amplitudes_uA``.\n\nNote there is deliberately no \"activation fraction\" here. The patch is a target\nplus its bystanders \u2014 a handful of cells \u2014 so a fraction would be a two- or\nthree-level step function wearing the costume of a sigmoid. Per-cell traces are\nwhat the engine actually knows.",
+        "properties": {
+          "activated": {
+            "items": {
+              "type": "boolean"
+            },
+            "title": "Activated",
+            "type": "array"
+          },
+          "blocks": {
+            "default": false,
+            "title": "Blocks",
+            "type": "boolean"
+          },
+          "cell_id": {
+            "title": "Cell Id",
+            "type": "string"
+          },
+          "crossing_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crossing Ua"
+          },
+          "initiation_region": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Initiation Region",
+            "type": "array"
+          },
+          "is_target": {
+            "title": "Is Target",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cell_id",
+          "is_target",
+          "activated",
+          "initiation_region"
+        ],
+        "title": "ActivationCurve",
+        "type": "object"
+      },
+      "AmplitudeSweepResponse": {
+        "properties": {
+          "amplitudes_uA": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Amplitudes Ua",
+            "type": "array"
+          },
+          "curves": {
+            "items": {
+              "$ref": "#/components/schemas/ActivationCurve"
+            },
+            "title": "Curves",
+            "type": "array"
+          }
+        },
+        "required": [
+          "amplitudes_uA",
+          "curves"
+        ],
+        "title": "AmplitudeSweepResponse",
+        "type": "object"
+      },
       "CellMarker": {
         "description": "A soma position on the field plane; the target is drawn filled.",
         "properties": {
@@ -217,6 +299,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/StudyResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sweep": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AmplitudeSweepResponse"
               },
               {
                 "type": "null"
@@ -572,6 +664,98 @@
         "title": "StudyResult",
         "type": "object"
       },
+      "SweepControls": {
+        "description": "An amplitude sweep of the scene: who fires, at what current.",
+        "properties": {
+          "amp_max_uA": {
+            "default": 200.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Amp Max Ua",
+            "type": "number"
+          },
+          "amp_min_uA": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Amp Min Ua",
+            "type": "number"
+          },
+          "electrode_um": {
+            "default": 10.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Electrode Um",
+            "type": "number"
+          },
+          "extent_um": {
+            "default": 130.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Extent Um",
+            "type": "number"
+          },
+          "include_scorecard": {
+            "default": false,
+            "title": "Include Scorecard",
+            "type": "boolean"
+          },
+          "layout": {
+            "default": "single",
+            "enum": [
+              "single",
+              "bipolar"
+            ],
+            "title": "Layout",
+            "type": "string"
+          },
+          "n": {
+            "default": 61,
+            "maximum": 257.0,
+            "minimum": 9.0,
+            "title": "N",
+            "type": "integer"
+          },
+          "n_amplitudes": {
+            "default": 24,
+            "maximum": 60.0,
+            "minimum": 2.0,
+            "title": "N Amplitudes",
+            "type": "integer"
+          },
+          "neighbor_um": {
+            "default": 40.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Neighbor Um",
+            "type": "number"
+          },
+          "phase_width_us": {
+            "default": 200.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Phase Width Us",
+            "type": "number"
+          },
+          "pitch_um": {
+            "default": 60.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Pitch Um",
+            "type": "number"
+          },
+          "sigma_S_per_m": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Sigma S Per M",
+            "type": "number"
+          },
+          "spacing": {
+            "default": "linear",
+            "enum": [
+              "linear",
+              "log"
+            ],
+            "title": "Spacing",
+            "type": "string"
+          }
+        },
+        "title": "SweepControls",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -897,6 +1081,44 @@
           }
         },
         "summary": "Submit Study"
+      }
+    },
+    "/sweep": {
+      "post": {
+        "operationId": "submit_sweep_sweep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SweepControls"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Sweep"
       }
     },
     "/validation": {

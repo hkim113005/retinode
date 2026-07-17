@@ -55,6 +55,7 @@ def to_job_status(job: Job) -> JobStatus:
         field=result.get("field"),
         max_divergence_pct=result.get("max_divergence_pct"),
         study=result.get("study"),
+        sweep=result.get("sweep"),
         error=job.error,
     )
 

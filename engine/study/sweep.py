@@ -18,10 +18,11 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from engine.cable.morphology import RGCModel
 from engine.cable.multisite import multisite_threshold
 from engine.cable.placement import place_cell
 from engine.cable.population import PopulationThresholds, severed_segments
-from engine.cable.solved import solve_field
+from engine.cable.solved import SolvedField, solve_field
 from engine.eval import EVALUATOR_VERSION, OffTargetSet, evaluate
 from engine.eval.offtarget import select_off_targets
 from engine.eval.overlap import OverlapConflict, OverlapPolicy
@@ -95,9 +96,19 @@ class SweepResult:
         return len(self.results) - self.n_cached
 
 
-class _SolvedPopulation:
+class SolvedPopulation:
     """Places the target + off-targets once and solves each field once, so a whole
-    sweep of configurations reuses the transfer matrices (the P2 S1 payoff)."""
+    sweep of configurations reuses the transfer matrices (the P2 S1 payoff).
+
+    Public because the amplitude sweep (``engine.study.activation``) needs exactly
+    this placement — including the overlap severing — and a second copy of that logic
+    is how the two would drift apart on the question of where the metal is.
+
+    It lives here rather than in ``engine.cable.population`` (its more natural home)
+    because it needs ``select_off_targets`` from ``engine.eval``, and ``engine.eval``
+    already imports ``cable.population`` — moving it down would close an import
+    cycle. ``study`` sits above both, so it is the honest place for it.
+    """
 
     def __init__(
         self,
@@ -128,6 +139,15 @@ class _SolvedPopulation:
             (rgc.id, cell, *solve(cell))
             for rgc in select_off_targets(patch, array, off_target_set)
             for cell in (place_cell(rgc, optic_disc=patch.optic_disc_um),)
+        ]
+
+    def cells(self) -> list[tuple[str, bool, RGCModel, SolvedField, frozenset[int]]]:
+        """``(id, is_target, model, solved_field, severed)`` for the whole placed
+        population, target first — so a caller can drive each cell at an amplitude of
+        its choosing against the field that was already solved for it."""
+        return [
+            (self._target_id, True, self._target, self._target_solved, self._target_severed),
+            *((cid, False, cell, solved, sev) for cid, cell, solved, sev in self._offs),
         ]
 
     def thresholds(
@@ -194,7 +214,7 @@ def sweep(
 
     results: list[EvaluationResult] = []
     n_cached = 0
-    solved_pop: _SolvedPopulation | None = None
+    solved_pop: SolvedPopulation | None = None
 
     for config in configs:
         rkey = result_key(
@@ -216,7 +236,7 @@ def sweep(
         provider = thresholds_provider
         if provider is None:
             if solved_pop is None:  # lazy: place + solve once, on the first miss
-                solved_pop = _SolvedPopulation(
+                solved_pop = SolvedPopulation(
                     patch, array, conductivity, off_target_set, backend,
                     overlap_eps_um=overlap_eps_um,
                 )

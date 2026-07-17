@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Sweep */
+        post: operations["submit_sweep_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/validation": {
         parameters: {
             query?: never;
@@ -127,6 +144,40 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ActivationCurve
+         * @description One cell's response across the sweep's amplitude grid, aligned index-for-index
+         *     with ``AmplitudeSweepResponse.amplitudes_uA``.
+         *
+         *     Note there is deliberately no "activation fraction" here. The patch is a target
+         *     plus its bystanders — a handful of cells — so a fraction would be a two- or
+         *     three-level step function wearing the costume of a sigmoid. Per-cell traces are
+         *     what the engine actually knows.
+         */
+        ActivationCurve: {
+            /** Activated */
+            activated: boolean[];
+            /**
+             * Blocks
+             * @default false
+             */
+            blocks: boolean;
+            /** Cell Id */
+            cell_id: string;
+            /** Crossing Ua */
+            crossing_uA?: number | null;
+            /** Initiation Region */
+            initiation_region: (string | null)[];
+            /** Is Target */
+            is_target: boolean;
+        };
+        /** AmplitudeSweepResponse */
+        AmplitudeSweepResponse: {
+            /** Amplitudes Ua */
+            amplitudes_uA: number[];
+            /** Curves */
+            curves: components["schemas"]["ActivationCurve"][];
+        };
         /**
          * CellMarker
          * @description A soma position on the field plane; the target is drawn filled.
@@ -216,6 +267,7 @@ export interface components {
              */
             status: "running" | "done" | "error";
             study?: components["schemas"]["StudyResult"] | null;
+            sweep?: components["schemas"]["AmplitudeSweepResponse"] | null;
         };
         /**
          * SceneControls
@@ -371,6 +423,79 @@ export interface components {
             n_geometries: number;
             /** Points */
             points: components["schemas"]["StudyPoint"][];
+        };
+        /**
+         * SweepControls
+         * @description An amplitude sweep of the scene: who fires, at what current.
+         */
+        SweepControls: {
+            /**
+             * Amp Max Ua
+             * @default 200
+             */
+            amp_max_uA: number;
+            /**
+             * Amp Min Ua
+             * @default 1
+             */
+            amp_min_uA: number;
+            /**
+             * Electrode Um
+             * @default 10
+             */
+            electrode_um: number;
+            /**
+             * Extent Um
+             * @default 130
+             */
+            extent_um: number;
+            /**
+             * Include Scorecard
+             * @default false
+             */
+            include_scorecard: boolean;
+            /**
+             * Layout
+             * @default single
+             * @enum {string}
+             */
+            layout: "single" | "bipolar";
+            /**
+             * N
+             * @default 61
+             */
+            n: number;
+            /**
+             * N Amplitudes
+             * @default 24
+             */
+            n_amplitudes: number;
+            /**
+             * Neighbor Um
+             * @default 40
+             */
+            neighbor_um: number;
+            /**
+             * Phase Width Us
+             * @default 200
+             */
+            phase_width_us: number;
+            /**
+             * Pitch Um
+             * @default 60
+             */
+            pitch_um: number;
+            /**
+             * Sigma S Per M
+             * @default 1
+             */
+            sigma_S_per_m: number;
+            /**
+             * Spacing
+             * @default linear
+             * @enum {string}
+             */
+            spacing: "linear" | "log";
         };
         /** ValidationError */
         ValidationError: {
@@ -590,6 +715,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StudyControls"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_sweep_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SweepControls"];
             };
         };
         responses: {

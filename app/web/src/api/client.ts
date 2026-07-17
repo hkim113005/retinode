@@ -13,6 +13,9 @@ export type JobStatus = components["schemas"]["JobStatus"];
 export type StudyControls = components["schemas"]["StudyControls"];
 export type StudyPoint = components["schemas"]["StudyPoint"];
 export type StudyResult = components["schemas"]["StudyResult"];
+export type SweepControls = components["schemas"]["SweepControls"];
+export type AmplitudeSweep = components["schemas"]["AmplitudeSweepResponse"];
+export type ActivationCurve = components["schemas"]["ActivationCurve"];
 export type ValidationReport = components["schemas"]["ValidationReport"];
 export type ValidationReproduction = components["schemas"]["ValidationReproduction"];
 
@@ -78,5 +81,15 @@ export async function postAccurateField(controls: SceneControls): Promise<JobSta
     body: JSON.stringify(controls),
   });
   if (!res.ok) throw new Error(`accurate field failed (${res.status})`);
+  return (await res.json()) as JobStatus;
+}
+
+export async function postSweep(controls: SweepControls): Promise<JobStatus> {
+  const res = await fetch(`${BASE}/sweep`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(controls),
+  });
+  if (!res.ok) throw new Error(`amplitude sweep failed (${res.status})`);
   return (await res.json()) as JobStatus;
 }

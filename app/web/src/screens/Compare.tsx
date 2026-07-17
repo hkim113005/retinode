@@ -4,8 +4,14 @@
 // which no longer matches. The scorecard and the FEM field each run as a background
 // job (submit then poll), kept in their own state so nothing clobbers anything else.
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getJob, postAccurateField, postCompare, postScore } from "../api/client";
-import type { CompareResponse, Scorecard as ScorecardData, SceneControls } from "../api/client";
+import { getJob, postAccurateField, postCompare, postScore, postSweep } from "../api/client";
+import type {
+  AmplitudeSweep,
+  CompareResponse,
+  Scorecard as ScorecardData,
+  SceneControls,
+} from "../api/client";
+import { ActivationPlot } from "../components/ActivationPlot";
 import { useCommands } from "../components/Commands";
 import { ControlRail } from "../components/ControlRail";
 import type { Controls } from "../components/ControlRail";
@@ -38,6 +44,23 @@ const asRequest = (c: Controls, includeScorecard: boolean): SceneControls => ({
   include_scorecard: includeScorecard,
 });
 
+// The amplitude grid the sweep button uses. 24 points is ~24 × the population in
+// NEURON runs — the same order as the scorecard this screen already runs, so it
+// stays a seconds-long job.
+//
+// LOG, not linear, and that is not a style choice. Thresholds here land around
+// 5–30 µA, so a linear 1–200 grid spends most of its points on the flat top and
+// resolves the interesting end at ~8 µA per step — coarser than the gap between the
+// target and its bystander. Measured: on a 10 µm disk, linear put BOTH cells at the
+// same grid point (12.7 µA), reporting a zero-wide window; log separated them at
+// 8.9 and 16.5. The linear grid did not merely look worse, it was wrong.
+const SWEEP_GRID = {
+  amp_min_uA: 1,
+  amp_max_uA: 200,
+  n_amplitudes: 24,
+  spacing: "log",
+} as const;
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface Progress {
@@ -55,17 +78,24 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
   const [scoreProgress, setScoreProgress] = useState<Progress | null>(null);
   const [cached, setCached] = useState(false);
   const [runs, setRuns] = useState<Run[]>([]);
+  const [sweep, setSweep] = useState<AmplitudeSweep | null>(null);
+  const [sweepProgress, setSweepProgress] = useState<Progress | null>(null);
+  const [sweepCached, setSweepCached] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fieldTicket = useRef(0);
   const scoreTicket = useRef(0);
   const femTicket = useRef(0);
+  const sweepTicket = useRef(0);
 
   // live analytical field preview, debounced; resets stale FEM + scorecard results
   useEffect(() => {
     const ticket = ++fieldTicket.current;
     scoreTicket.current++;
     femTicket.current++;
+    sweepTicket.current++;
     setScorecard(null);
+    setSweep(null); // this grid was swept for a different scene
+    setSweepCached(false);
     setTier("analytical");
     setDivergence(null);
     const ctrl = new AbortController();
@@ -140,6 +170,28 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
       });
   }, [controls]);
 
+  const runSweep = useCallback(() => {
+    const ticket = ++sweepTicket.current;
+    setSweepProgress({ fraction: 0, message: "submitting" });
+    (async () => {
+      let job = await postSweep({ ...asRequest(controls, false), ...SWEEP_GRID });
+      while (job.status === "running") {
+        if (ticket !== sweepTicket.current) return;
+        setSweepProgress({ fraction: job.fraction, message: job.message });
+        await sleep(400);
+        job = await getJob(job.id);
+      }
+      if (ticket !== sweepTicket.current) return;
+      if (job.status === "error") throw new Error(job.error ?? "the sweep failed");
+      setSweep(job.sweep ?? null);
+      setSweepCached(job.cached);
+    })()
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : "the sweep failed"))
+      .finally(() => {
+        if (ticket === sweepTicket.current) setSweepProgress(null);
+      });
+  }, [controls]);
+
   const layoutName = controls.layout === "bipolar" ? "Bipolar · local return" : "Monopolar";
 
   useCommands(
@@ -170,6 +222,14 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
             setControls((c) => ({ ...c, layout: c.layout === "bipolar" ? "single" : "bipolar" })),
         },
         {
+          id: "run-sweep",
+          group: "Compare",
+          label: "Sweep amplitudes",
+          hint: sweepProgress ? "already running" : "NEURON · background job",
+          disabled: !!sweepProgress,
+          run: runSweep,
+        },
+        {
           id: "reset-controls",
           group: "Compare",
           label: "Reset the configuration",
@@ -177,7 +237,7 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
           run: () => setControls(DEFAULTS),
         },
       ],
-      [runScorecard, runAccurate, scoreProgress, femProgress, controls.layout],
+      [runScorecard, runAccurate, runSweep, scoreProgress, femProgress, sweepProgress, controls.layout],
     ),
   );
 
@@ -235,6 +295,15 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
         </div>
         <ErrorBoundary what="The threshold plot">
           <ThresholdPlot data={scorecard} />
+        </ErrorBoundary>
+        <ErrorBoundary what="The activation plot">
+          <ActivationPlot
+            data={sweep}
+            scorecard={scorecard}
+            progress={sweepProgress}
+            cached={sweepCached}
+            onRun={runSweep}
+          />
         </ErrorBoundary>
         <History runs={runs} current={runKey(controls)} onRestore={setControls} />
       </main>
