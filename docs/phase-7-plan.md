@@ -261,7 +261,18 @@ Pydantic models mirror.
     2160×2160 PNG; the Pareto exports a 3.4 KB vector with real `<text>` axes.
     *(Deferred: PDF is one Inkscape step from the SVG — a PDF writer would mean a new
     dependency for a format the SVG already reaches.)*
-  - **S7b — labeled isopotential contours + a hover readout on the field.**
+  - **S7b — labeled isopotential contours + a hover readout — done.** Marching
+    squares (`chart/contours.ts`) traces isopotentials at **round** mV levels and
+    stitches the raw segments into whole rings, so each contour is one stroked
+    object — smooth on screen, one `<path>` per ring in the figure rather than
+    hundreds of disjoint sticks. Saddle cells are resolved by the centre value, not a
+    coin flip. Every ring is **labelled with its own mV value** at its topmost point:
+    the levels stack outward, so the labels never collide. Hovering the field reads
+    the bilinearly-sampled `Ve` under the cursor into a fixed corner chip (a readout
+    that chases the mouse is harder to read than one that stays put). *Verified
+    live:* rings at −2/−4/−6 mV around a 10 µm disk; the probe reads −7.95 mV at the
+    centre (matching the ±7.96 colour limit) and −4.32 mV at 31 µm — exactly where
+    the −4 mV ring falls, so the two readings cross-check each other.
   - **S7c — Pareto hover tooltip + brush-to-select.**
 
 - **P7 S8 — Polish + parity cutover.** Keyboard- and mobile-respectful layout, empty

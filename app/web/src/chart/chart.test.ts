@@ -74,12 +74,24 @@ describe("fieldScene", () => {
     expect(s.items.filter((i) => i.kind === "rect")).toHaveLength(2);
   });
 
+  it("labels each isopotential ring with its own mV value", () => {
+    const s = fieldScene({ data: DATA, size: 300, palette: PAPER });
+    // the grid spans -2..0 mV, so the one round level inside it is -1
+    expect(texts(s).map((t) => t.text)).toContain("-1 mV");
+  });
+
+  it("can be drawn without contours", () => {
+    const bare = fieldScene({ data: DATA, size: 300, palette: PAPER, contours: false });
+    expect(texts(bare).some((t) => t.text.endsWith("mV"))).toBe(false);
+  });
+
   it("carries a round-numbered scale bar so the figure can be measured", () => {
     // extent is 100 µm, so half is 100 → the largest round length under it is 50
     const s = fieldScene({ data: DATA, size: 300, palette: PAPER });
     expect(texts(s).map((t) => t.text)).toContain("50 µm");
-    // and the bar is drawn to match the label: 50 of 200 µm across 300 px
-    const bar = s.items.find((i) => i.kind === "path");
+    // and the bar is drawn to match the label: 50 of 200 µm across 300 px.
+    // (lineWidth 2 distinguishes it from the hairline contours)
+    const bar = s.items.find((i) => i.kind === "path" && i.lineWidth === 2);
     expect(bar && bar.kind === "path" && bar.pts[1][0] - bar.pts[0][0]).toBeCloseTo(75);
   });
 

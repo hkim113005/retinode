@@ -2,6 +2,7 @@
 // on zero) with electrode footprints and soma markers overlaid. A pure Scene
 // builder — see chart/scene.ts for why the plots live outside the components.
 import type { CompareResponse } from "../../api/client";
+import { isoContours, niceLevels } from "../contours";
 import type { Item, Palette, Scene } from "../scene";
 import { withAlpha } from "../scene";
 
@@ -11,7 +12,13 @@ export type FieldOpts = {
   palette: Palette;
   inked?: boolean; // FEM results draw crisper (docs/phase-7-design.md)
   background?: boolean; // opaque paper — on for export, off on screen
+  contours?: boolean; // labeled isopotential rings (default on)
 };
+
+/** Drop trailing zeros: contour labels read "-4 mV", never "-4.00 mV". */
+function trim(v: number): string {
+  return String(Number(v.toFixed(2)));
+}
 
 /** The largest round number (1/2/5 × 10ⁿ) that fits in `max` — scale-bar lengths a
  *  reader can do arithmetic with, rather than "43 µm". */
@@ -21,7 +28,14 @@ function niceLength(max: number): number {
   return pow;
 }
 
-export function fieldScene({ data, size, palette, inked, background }: FieldOpts): Scene {
+export function fieldScene({
+  data,
+  size,
+  palette,
+  inked,
+  background,
+  contours = true,
+}: FieldOpts): Scene {
   const { xs_um, ys_um, ve_mV, vmax_mV } = data.field;
   const extent = xs_um[xs_um.length - 1] || 1;
   const toX = (x: number) => ((x + extent) / (2 * extent)) * size;
@@ -48,6 +62,47 @@ export function fieldScene({ data, size, palette, inked, background }: FieldOpts
         w: dx,
         h: dx,
         fill: withAlpha(t < 0 ? palette.field : palette.warm, a * (inked ? 1 : 0.85)),
+      });
+    }
+  }
+
+  // isopotential rings, each labelled with its own mV value at the ring's top. The
+  // levels are round numbers and stack outward, so the labels never collide and the
+  // reader can walk the gradient by number instead of by eye.
+  if (contours) {
+    let lo = Number.POSITIVE_INFINITY;
+    let hi = Number.NEGATIVE_INFINITY;
+    for (const row of ve_mV)
+      for (const v of row) {
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+    for (const level of niceLevels(lo, hi)) {
+      const rings = isoContours(xs_um, ys_um, ve_mV, level);
+      for (const ring of rings) {
+        items.push({
+          kind: "path",
+          pts: ring.map(([x, y]) => [toX(x), toY(y)] as [number, number]),
+          stroke: withAlpha(palette.ink, inked ? 0.45 : 0.3),
+          lineWidth: 1,
+        });
+      }
+      // label the biggest ring for this level, at its topmost point
+      const main = rings.reduce<typeof rings[number] | null>(
+        (best, r) => (best == null || r.length > best.length ? r : best),
+        null,
+      );
+      if (!main) continue;
+      const top = main.reduce((best, p) => (p[1] > best[1] ? p : best), main[0]);
+      items.push({
+        kind: "text",
+        x: toX(top[0]),
+        y: toY(top[1]) - 3,
+        text: `${trim(level)} mV`,
+        fill: withAlpha(palette.ink, 0.75),
+        size: 9.5,
+        family: palette.mono,
+        anchor: "middle",
       });
     }
   }

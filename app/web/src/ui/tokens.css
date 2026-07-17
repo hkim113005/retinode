@@ -91,6 +91,16 @@ button.step:hover { background: var(--accent-soft); color: var(--ink); }
 .canvas-wrap { padding: 8px; position: relative; }
 .canvas-wrap.inked { border-color: var(--accent-soft); box-shadow: var(--shadow), inset 0 0 0 1px var(--accent-soft); }
 
+/* the hover readout: the field's top-left corner (the loupe owns the right). It is
+   an instrument reading, so it is monospaced and does not move with the cursor —
+   a chip that chases the mouse is harder to read than one that stays put. */
+.probe { position: absolute; left: 18px; top: 18px; z-index: 3; pointer-events: none;
+  display: flex; align-items: baseline; gap: 5px; padding: 5px 10px; border-radius: 9px;
+  background: var(--glass-strong); border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.probe .v { font-size: 13px; font-weight: 600; color: var(--field); }
+.probe .at { color: var(--faint); }
+
 /* figure export: quiet until wanted. It rides at the end of the legend row — the
    figure-caption position — so it never competes with the data and never fights the
    3D loupe for the plot's top-right corner. The menu opens upward for the same
