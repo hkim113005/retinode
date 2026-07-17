@@ -2,10 +2,21 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "retinode-app",
+      "name": "api",
       "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "python", "-m", "app"],
-      "port": 8050
+      "runtimeArgs": [
+        "run",
+        "--extra",
+        "api",
+        "--extra",
+        "cable",
+        "uvicorn",
+        "api.main:create_app",
+        "--factory",
+        "--port",
+        "8000"
+      ],
+      "port": 8000
     },
     {
       "name": "web",
