@@ -119,6 +119,10 @@ the user**:
 
 ## Study: the Pareto frontier as a decision surface
 
+> **Interactive mockup:** [`docs/mockups/study-pareto-screen.html`](mockups/study-pareto-screen.html)
+> — hover a design to ghost its field, drag a box across the frontier to select a
+> family, and hit *Run study* to watch the frontier fill incrementally.
+
 The selectivity-versus-cost frontier is the hero of Study (master plan §15):
 
 - **Dominated points recede; the frontier is a lit curve.** Non-optimal designs draw
