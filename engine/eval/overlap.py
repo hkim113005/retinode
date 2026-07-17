@@ -34,7 +34,7 @@ from typing import Literal
 
 from engine.spec import ElectrodeArray
 from engine.spec.body import point_in_body, surface_distance_um
-from engine.spec.geometry import apply_placement
+from engine.spec.geometry import apply_matrix, apply_placement, placement_rotation, transpose3
 
 OverlapPolicy = Literal["reject", "displace"]
 
@@ -93,11 +93,16 @@ def check_overlap(
     applied first, so bodies are tested at their planted positions. Flat electrodes
     (no body) never conflict."""
     bodies = [e for e in apply_placement(array) if e.body is not None]
+    # The body primitives live in their own local frame (axis along +z). A tilted
+    # array rotates them by R, so map each world point into the body-local frame with
+    # R^T before testing — identity when the array is untilted.
+    r_t = transpose3(placement_rotation(array))
     flags: list[CompartmentFlag] = []
     for cell_id, compartments in cell_compartments.items():
         for i, (px, py, pz) in enumerate(compartments):
             for e in bodies:
-                dx, dy, dz = px - e.pos_um[0], py - e.pos_um[1], pz - e.pos_um[2]
+                world = (px - e.pos_um[0], py - e.pos_um[1], pz - e.pos_um[2])
+                dx, dy, dz = apply_matrix(r_t, world)
                 inside = point_in_body(e.body, dx, dy, dz)  # type: ignore[arg-type]
                 near = not inside and surface_distance_um(e.body, dx, dy, dz) <= near_contact_eps_um  # type: ignore[arg-type]
                 if inside or near:

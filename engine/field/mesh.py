@@ -266,16 +266,19 @@ def _build_electrode_surfaces(gmsh, occ, domain, boxes, electrodes, eps):  # noq
     the tissue and their cavity walls split conductive/insulated. One build handles
     any **mix** of the two. Returns (electrode_surf {id: [surf]}, insulating, ground).
     """
+    from engine.spec.geometry import placement_rotation
+
     from .mesh3d import add_body_solid, classify_cavity_surfaces
 
     w, depth = domain.half_width_um, domain.depth_um
+    rotation = placement_rotation(domain.array)  # the array tilt (identity if none)
     flats = [e for e in electrodes if e.body is None]
     bodies = [e for e in electrodes if e.body is not None]
 
     # Cut the 3D bodies from the tissue, then imprint the flat faces on the result.
     # OCC boolean ops work on OCC tags directly; synchronize pushes to the model.
     if bodies:
-        body_tags = {e.id: add_body_solid(occ, e) for e in bodies}
+        body_tags = {e.id: add_body_solid(occ, e, rotation) for e in bodies}
         occ.cut([(3, b) for b in boxes], [(3, body_tags[e.id]) for e in bodies], removeTool=True)
         occ.synchronize()
         vol_dimtags = gmsh.model.getEntities(3)  # the reshaped tissue volumes
@@ -337,7 +340,7 @@ def _build_electrode_surfaces(gmsh, occ, domain, boxes, electrodes, eps):  # noq
             nearest = min((math.dist((cx, cy), (e.pos_um[0], e.pos_um[1])), e.id) for e in bodies)
             walls[nearest[1]].append(surf)
         for e in bodies:
-            conductive, insulated = classify_cavity_surfaces(occ, e, walls[e.id])
+            conductive, insulated = classify_cavity_surfaces(occ, e, walls[e.id], rotation)
             if not conductive:
                 raise RuntimeError(f"electrode {e.id!r} has no conductive surface after the cut")
             electrode_surf[e.id] = conductive

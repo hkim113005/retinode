@@ -115,3 +115,60 @@ def test_placement_is_part_of_the_array_hash():
     a = ElectrodeArray(electrodes=els)
     b = ElectrodeArray(electrodes=els, placement=ArrayPlacement(offset_um=(5.0, 0.0, 0.0)))
     assert spec_hash(a) != spec_hash(b)  # a re-posed array keys distinctly (provenance)
+
+
+# --- ArrayPlacement rotation / tilt (P6 S7) ----------------------------------
+
+
+def test_rotation_matrix_is_identity_and_orthonormal():
+    from engine.spec.geometry import apply_matrix, rotation_matrix, transpose3
+
+    assert rotation_matrix((0.0, 0.0, 0.0)) == (
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
+    )
+    # 90 deg about z maps +x -> +y
+    rz = rotation_matrix((0.0, 0.0, 90.0))
+    x, y, z = apply_matrix(rz, (1.0, 0.0, 0.0))
+    assert (round(x, 9), round(y, 9), round(z, 9)) == (0.0, 1.0, 0.0)
+    # R @ R^T == I (orthonormal)
+    r = rotation_matrix((20.0, -35.0, 50.0))
+    rt = transpose3(r)
+    for i in range(3):
+        for j in range(3):
+            dot = sum(r[i][k] * rt[k][j] for k in range(3))
+            assert round(dot, 9) == (1.0 if i == j else 0.0)
+
+
+def test_placement_rotates_then_translates_positions_normals_and_outlines():
+    # 90 deg about z, then offset. A +x electrode swings to +y; its normal (default
+    # +z) is unchanged by a z-rotation; a body/outline follow the same map.
+    poly = _poly(((1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (1.0, 1.0, 0.0)))
+    e = Electrode(
+        id="e", pos_um=(10.0, 0.0, 0.0), shape="disk", size_um=8.0, normal=(1.0, 0.0, 0.0)
+    )
+    arr = ElectrodeArray(
+        electrodes=(e, poly),
+        placement=ArrayPlacement(offset_um=(0.0, 0.0, 5.0), rotation_deg=(0.0, 0.0, 90.0)),
+    )
+    placed = apply_placement(arr)
+    px, py, pz = placed[0].pos_um
+    assert (round(px, 6), round(py, 6), round(pz, 6)) == (0.0, 10.0, 5.0)  # +x -> +y, then +z
+    nx, ny, nz = placed[0].normal
+    assert (round(nx, 6), round(ny, 6), round(nz, 6)) == (0.0, 1.0, 0.0)  # +x normal -> +y
+    bx, by, bz = placed[1].boundary_um[0]  # (1,0,0) -> (0,1,0) + offset
+    assert (round(bx, 6), round(by, 6), round(bz, 6)) == (0.0, 1.0, 5.0)
+
+
+def test_rotation_is_part_of_the_array_hash_and_round_trips():
+    from engine.spec import from_json, to_json
+
+    els = (_disk(),)
+    flat = ElectrodeArray(electrodes=els, placement=ArrayPlacement(offset_um=(5.0, 0.0, 0.0)))
+    tilted = ElectrodeArray(
+        electrodes=els,
+        placement=ArrayPlacement(offset_um=(5.0, 0.0, 0.0), rotation_deg=(15.0, 0.0, 0.0)),
+    )
+    assert spec_hash(flat) != spec_hash(tilted)  # tilt keys distinctly
+    assert from_json(to_json(tilted)) == tilted  # the new field survives serialization

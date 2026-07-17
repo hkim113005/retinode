@@ -15,16 +15,20 @@ Vec3 = tuple[float, float, float]
 
 @dataclass(frozen=True)
 class ArrayPlacement:
-    """How a whole array is planted into the tissue: a rigid **translation** of
-    every electrode (position it laterally over the retina; a z offset shifts the
-    whole array plane deeper). Array *tilt/rotation* is deferred — it repositions
-    the substrate plane itself — so this is a translation only for now.
+    """How a whole array is planted into the tissue: a rigid pose of every
+    electrode. ``rotation_deg`` tilts/rotates the array about its own origin
+    (extrinsic rotations about x, then y, then z, in degrees), then ``offset_um``
+    translates it. A tilt makes penetrating electrodes enter the tissue at an angle;
+    the electrode normals rotate with it.
 
     Convention (Phase-6 D8): z = 0 is the array plane, +z is into the tissue (the
-    electrode normal direction); the tissue, the electrode bodies, and any
-    FEM-driven cell population all live at z >= 0."""
+    default electrode normal direction); the tissue and any FEM-driven cell
+    population live at z >= 0. Rotation is a **FEM-tier** concept — the field for a
+    tilted body must be FEM, since the analytical tier is an orientation-free point
+    source (it sees only ``pos_um``)."""
 
     offset_um: Vec3 = (0.0, 0.0, 0.0)
+    rotation_deg: Vec3 = (0.0, 0.0, 0.0)  # extrinsic x->y->z about the array origin
 
 
 @dataclass(frozen=True)
@@ -130,27 +134,81 @@ def electrode_area_um2(electrode: Electrode) -> float:
     return _polygon_area_um2(outline) if outline else 0.0
 
 
+Mat3 = tuple[Vec3, Vec3, Vec3]
+_IDENTITY3: Mat3 = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+
+
+def rotation_matrix(rotation_deg: Vec3) -> Mat3:
+    """The 3x3 rotation for ``rotation_deg`` — extrinsic rotations about x, then y,
+    then z (``R = Rz @ Ry @ Rx``), degrees. Pure Python (no numpy) so the spec layer
+    stays dependency-free; the field/overlap layers apply it to positions and, via
+    its transpose, map a world point into a body's local frame."""
+    ax, ay, az = (math.radians(a) for a in rotation_deg)
+    cx, sx, cy, sy, cz, sz = (
+        math.cos(ax), math.sin(ax), math.cos(ay), math.sin(ay), math.cos(az), math.sin(az),
+    )
+    # R = Rz @ Ry @ Rx, expanded.
+    return (
+        (cz * cy, cz * sy * sx - sz * cx, cz * sy * cx + sz * sx),
+        (sz * cy, sz * sy * sx + cz * cx, sz * sy * cx - cz * sx),
+        (-sy, cy * sx, cy * cx),
+    )
+
+
+def apply_matrix(m: Mat3, v: Vec3) -> Vec3:
+    """Multiply the 3x3 ``m`` by the 3-vector ``v``."""
+    return (
+        m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
+        m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
+        m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2],
+    )
+
+
+def transpose3(m: Mat3) -> Mat3:
+    """Transpose of a 3x3 (the inverse of a rotation) — maps world into local."""
+    return (
+        (m[0][0], m[1][0], m[2][0]),
+        (m[0][1], m[1][1], m[2][1]),
+        (m[0][2], m[1][2], m[2][2]),
+    )
+
+
+def placement_rotation(array: ElectrodeArray) -> Mat3:
+    """The array placement's rotation matrix (identity when unposed or untilted)."""
+    if array.placement is None:
+        return _IDENTITY3
+    return rotation_matrix(array.placement.rotation_deg)
+
+
 def apply_placement(array: ElectrodeArray) -> tuple[Electrode, ...]:
-    """The array's electrodes with its :class:`ArrayPlacement` applied — every
-    position (and any polygon outline) translated by the offset. No placement
-    returns the electrodes unchanged. This is the concrete positioned geometry the
-    FEM mesh builds; the placement is part of the array's hash, so a re-posed array
-    keys distinctly (provenance)."""
+    """The array's electrodes posed by its :class:`ArrayPlacement`: each position
+    (and any polygon outline) is rotated about the array origin then translated by
+    the offset, and each electrode ``normal`` is rotated (a tilt reorients the
+    faces). No placement returns the electrodes unchanged. This is the concrete
+    positioned geometry the FEM mesh builds; the placement is part of the array's
+    hash, so a re-posed array keys distinctly (provenance).
+
+    The electrode ``body`` is left as authored (its primitives are defined in the
+    body-local frame); the field mesh and the overlap check orient it with the same
+    rotation, read via :func:`placement_rotation`."""
     placement = array.placement
     if placement is None:
         return array.electrodes
     ox, oy, oz = placement.offset_um
+    r = rotation_matrix(placement.rotation_deg)
+
+    def pose(p: Vec3) -> Vec3:
+        rx, ry, rz = apply_matrix(r, p)
+        return (rx + ox, ry + oy, rz + oz)
+
     placed: list[Electrode] = []
     for e in array.electrodes:
-        boundary = (
-            None
-            if e.boundary_um is None
-            else tuple((b[0] + ox, b[1] + oy, b[2] + oz) for b in e.boundary_um)
-        )
+        boundary = None if e.boundary_um is None else tuple(pose(b) for b in e.boundary_um)
         placed.append(
             replace(
                 e,
-                pos_um=(e.pos_um[0] + ox, e.pos_um[1] + oy, e.pos_um[2] + oz),
+                pos_um=pose(e.pos_um),
+                normal=apply_matrix(r, e.normal),  # rotate only (a direction, not a point)
                 boundary_um=boundary,
             )
         )

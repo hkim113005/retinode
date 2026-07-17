@@ -87,22 +87,33 @@ solid first, or use a primitive.
 ## Planting an array into tissue
 
 An `ElectrodeArray` may mix flat and penetrating electrodes freely — one mesh cuts
-every body and imprints every face. An `ArrayPlacement` poses the whole array with
-a rigid **translation**:
+every body and imprints every face. An `ArrayPlacement` poses the whole array with a
+rigid **translation** and an optional **rotation/tilt**:
 
 ```python
 from engine.spec import ElectrodeArray, ArrayPlacement
 arr = ElectrodeArray(
     electrodes=(flat_disk, penetrating_pillar),
-    placement=ArrayPlacement(offset_um=(100, 0, 0)),   # position it over the tissue
+    placement=ArrayPlacement(
+        offset_um=(100, 0, 0),        # position it over the tissue
+        rotation_deg=(0, 15, 0),      # tilt 15° about y: pillars enter at an angle
+    ),
 )
 ```
 
-The placement is part of the array's content hash, so a re-posed array keys
-distinctly for provenance. **Array tilt/rotation is deferred** — it repositions the
-substrate plane itself. The realistic epiretinal case (array parallel to the
-surface, electrodes penetrating perpendicular) is covered by translation + each
-electrode's body.
+`rotation_deg` rotates the whole array about its own origin (extrinsic x→y→z,
+degrees) and then `offset_um` translates it — so a tilt makes penetrating electrodes
+enter the tissue at an angle, with the electrode normals rotating to match. The FEM
+mesh orients each body by the same rotation (built axis-aligned, then rotated and
+translated) and classifies its tip/side faces in the **body-local frame**, so a
+tilted pillar's tip is still its tip; the overlap check maps every query point
+through the rotation's transpose into that local frame. The placement (offset **and**
+rotation) is part of the array's content hash, so a re-posed array keys distinctly.
+
+**Rotation is a FEM-tier concept.** The analytical tier is an orientation-free point
+source (it sees only `pos_um`), so a tilted body must be solved with FEM. Flat 2D
+faces are imprinted on the `z = 0` substrate plane; tilt is meant for 3D bodies (a
+tilted flat disc is better modeled as a shallow body).
 
 ## Cell ↔ electrode overlap
 
@@ -170,9 +181,9 @@ The regime-aware backend selection routes these to FEM automatically.
   tip, a thin wall) need a fine mesh; check convergence, and keep the grounded shell
   a few electrode-spans away so truncation error stays below the feature you care
   about. Both matter *more* here than for a flat disk.
-- **Deferred, documented extensions:** array tilt/rotation (moves the substrate
-  plane); face-group selection on imported CAD (tip/sides on an arbitrary solid);
-  exact CAD overlap (currently a bounding-cylinder approximation).
+- **Array tilt/rotation** is supported (P6 S7): `ArrayPlacement.rotation_deg` poses
+  the array at an angle; bodies orient in the FEM mesh and the overlap check follows.
+  Analytical stays a point source, so tilt is FEM-only.
 - **The biophysics caveats are unchanged** — mouse RGC morphology, trend-not-magnitude
   validation (Phases 1/3). 3D geometry raises *field/placement* fidelity, not
   physiological fidelity: this is a hypothesis tester for electrode designs, not an

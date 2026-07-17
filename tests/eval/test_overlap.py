@@ -80,6 +80,26 @@ def test_a_flat_only_array_never_conflicts():
     assert rep.flags == () and not rep.has_conflict
 
 
+def test_overlap_follows_a_tilted_body():
+    # A cylinder (r=5, h=40) at the origin, tilted 90 deg about y so its axis lies
+    # along +x. A point deep along +x is now INSIDE the laid-over pillar, though it
+    # would be far outside the same pillar standing upright.
+    from engine.spec import Cylinder
+
+    body = Cylinder(radius_um=5.0, height_um=40.0)
+    els = (Electrode(id="P", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=0.0, body=body),)
+    tilted = ElectrodeArray(
+        electrodes=els,
+        placement=ArrayPlacement(rotation_deg=(0.0, 90.0, 0.0)),
+    )
+    p = (30.0, 0.0, 0.0)  # 30 um along +x, on the (now horizontal) axis
+    assert check_overlap(tilted, {"c": [p]}).has_conflict
+    # the SAME point is well outside the upright pillar (axis along +z)
+    assert check_overlap(ElectrodeArray(electrodes=els), {"c": [p]}).flags == ()
+    # and a point along +z (the old axis) is now OUTSIDE the tilted pillar
+    assert check_overlap(tilted, {"c": [(0.0, 0.0, 30.0)]}).flags == ()
+
+
 def test_check_overlap_respects_a_frustum_taper():
     # check_overlap is exercised end-to-end with Cylinder above; a Frustum narrows
     # with depth, so a point clear of the wall near the base is *inside* deeper down

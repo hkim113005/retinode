@@ -13,51 +13,92 @@ they are handed, so the module imports without gmsh.
 from __future__ import annotations
 
 import hashlib
+import math
 
 from engine.spec.body import CadBody, Cylinder, Frustum, Hemisphere
 
+Mat3 = tuple[tuple[float, float, float], ...]
+_IDENTITY3: Mat3 = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 
-def add_body_solid(occ, electrode):  # noqa: ANN001 - occ is the gmsh OCC kernel
-    """Create the electrode's 3D body as an OCC solid at ``pos_um``, protruding
-    into z > 0. Cutting the (z >= 0) tissue box by this solid leaves the cavity
-    whose walls inject current."""
+
+def _axis_angle(r: Mat3) -> tuple[tuple[float, float, float], float]:
+    """A single (axis, angle-radians) for the rotation matrix ``r`` (for occ.rotate).
+    Returns a null rotation for identity."""
+    trace = r[0][0] + r[1][1] + r[2][2]
+    angle = math.acos(max(-1.0, min(1.0, (trace - 1.0) / 2.0)))
+    if angle < 1e-12:
+        return (0.0, 0.0, 1.0), 0.0
+    if abs(angle - math.pi) < 1e-9:  # 180 deg: axis from the largest diagonal term
+        k = max(range(3), key=lambda i: r[i][i])
+        axis = [0.0, 0.0, 0.0]
+        axis[k] = math.sqrt(max(0.0, (r[k][k] + 1.0) / 2.0))
+        n = math.sqrt(sum(a * a for a in axis)) or 1.0
+        return (axis[0] / n, axis[1] / n, axis[2] / n), angle
+    s = 2.0 * math.sin(angle)
+    return (
+        ((r[2][1] - r[1][2]) / s, (r[0][2] - r[2][0]) / s, (r[1][0] - r[0][1]) / s),
+        angle,
+    )
+
+
+def _orient_and_place(occ, dimtags, electrode, rotation: Mat3) -> None:  # noqa: ANN001
+    """Rotate a body (built axis-aligned at the origin) into the array's pose, then
+    translate it to the electrode's placed base centre."""
+    if rotation is not None and rotation != _IDENTITY3:
+        (ax, ay, az), angle = _axis_angle(rotation)
+        occ.rotate(dimtags, 0.0, 0.0, 0.0, ax, ay, az, angle)
+    x, y, z = electrode.pos_um
+    occ.translate(dimtags, x, y, z)
+
+
+def add_body_solid(occ, electrode, rotation: Mat3 | None = None):  # noqa: ANN001
+    """Create the electrode's 3D body as an OCC solid, built axis-aligned at the
+    origin (protruding along +z), then oriented by ``rotation`` (the array's tilt)
+    and translated to ``pos_um``. Cutting the (z >= 0) tissue box by this solid
+    leaves the cavity whose walls inject current. ``rotation`` None/identity is the
+    untilted case (a pure translation)."""
     body = electrode.body
-    x, y, _ = electrode.pos_um
+    rotation = rotation or _IDENTITY3
     if isinstance(body, Hemisphere):
-        # A full sphere centred on the plane; its z<0 half is outside the tissue
-        # box, so the cut removes exactly the z>=0 hemisphere.
-        return occ.addSphere(x, y, 0.0, body.radius_um)
-    if isinstance(body, Cylinder):
-        return occ.addCylinder(x, y, 0.0, 0.0, 0.0, body.height_um, body.radius_um)
-    if isinstance(body, Frustum):
-        return occ.addCone(
-            x, y, 0.0, 0.0, 0.0, body.height_um, body.base_radius_um, body.top_radius_um
+        # A full sphere is rotation-invariant; centred on the plane, its z<0 half is
+        # outside the tissue box, so the cut removes exactly the z>=0 hemisphere.
+        solid = occ.addSphere(0.0, 0.0, 0.0, body.radius_um)
+    elif isinstance(body, Cylinder):
+        solid = occ.addCylinder(0.0, 0.0, 0.0, 0.0, 0.0, body.height_um, body.radius_um)
+    elif isinstance(body, Frustum):
+        solid = occ.addCone(
+            0.0, 0.0, 0.0, 0.0, 0.0, body.height_um, body.base_radius_um, body.top_radius_um
         )
-    if isinstance(body, CadBody):
-        # Import the CAD solid (its origin is the electrode base) and translate it
-        # to the electrode's position on the array plane.
-        dimtags = occ.importShapes(body.cad_path)
-        occ.translate(dimtags, x, y, 0.0)
-        return dimtags[0][1]
-    raise TypeError(f"unsupported electrode body: {type(body).__name__}")
+    elif isinstance(body, CadBody):
+        solid = occ.importShapes(body.cad_path)[0][1]  # its origin is the electrode base
+    else:
+        raise TypeError(f"unsupported electrode body: {type(body).__name__}")
+    _orient_and_place(occ, [(3, solid)], electrode, rotation)
+    return solid
 
 
-def classify_cavity_surfaces(occ, electrode, wall_surfs):  # noqa: ANN001
+def classify_cavity_surfaces(occ, electrode, wall_surfs, rotation: Mat3 | None = None):  # noqa: ANN001
     """Split an electrode's cavity-wall surfaces into ``(conductive, insulated)``
     per its body's ``conductive_faces``. A hemisphere and an imported CAD body are
     fully conductive (the whole exposed surface injects); for a cylinder/frustum the
-    deep **tip** cap (centroid near z=height) and the lateral **side** wall (centroid
-    mid-depth) are separated by centroid depth, and the selector picks which conduct."""
+    deep **tip** cap and the lateral **side** wall are separated by centroid depth in
+    the **body-local frame** (so a tilted body classifies the same as an upright one),
+    and the selector picks which conduct."""
     body = electrode.body
     if isinstance(body, Hemisphere | CadBody):
         return list(wall_surfs), []
 
+    rotation = rotation or _IDENTITY3
+    r_t = tuple(zip(*rotation, strict=True))  # transpose: world -> local
+    ex, ey, ez = electrode.pos_um
     height = body.height_um
     tip: list[int] = []
     sides: list[int] = []
     for surf in wall_surfs:
-        _cx, _cy, cz = occ.getCenterOfMass(2, surf)
-        (tip if cz >= 0.75 * height else sides).append(surf)
+        cx, cy, cz = occ.getCenterOfMass(2, surf)
+        wx, wy, wz = cx - ex, cy - ey, cz - ez
+        local_z = r_t[2][0] * wx + r_t[2][1] * wy + r_t[2][2] * wz
+        (tip if local_z >= 0.75 * height else sides).append(surf)
 
     which = body.conductive_faces
     if which == "tip":

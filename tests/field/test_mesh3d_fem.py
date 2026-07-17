@@ -139,6 +139,46 @@ def test_placement_offsets_the_field_rigidly():
     assert ve_placed == pytest.approx(ve_ref, rel=0.02)
 
 
+def test_tilted_hemisphere_field_is_rotation_invariant():
+    # P6 S7: a hemisphere is a full sphere cut by the z>=0 tissue box; a sphere is
+    # rotation-invariant, so the cut cavity — and the field — must be identical no
+    # matter how the array is tilted. A strong known-answer that tilt doesn't
+    # corrupt the field solve.
+    from engine.spec import ArrayPlacement
+
+    base = _hemisphere(10.0)
+    tilted = ElectrodeArray(
+        electrodes=base.electrodes, placement=ArrayPlacement(rotation_deg=(30.0, 20.0, 0.0))
+    )
+    q = np.array([[0.0, 0.0, 20.0], [0.0, 0.0, 40.0], [15.0, 0.0, 25.0]])
+    a_base = solve_transfer_matrix(M.FieldDomain(base, SIGMA, 500.0, 500.0, 2.0, 80.0), q, degree=1)
+    a_tilt = solve_transfer_matrix(
+        M.FieldDomain(tilted, SIGMA, 500.0, 500.0, 2.0, 80.0), q, degree=1
+    )
+    rel = np.abs(a_tilt - a_base) / np.abs(a_base)
+    assert np.max(rel) < 0.03, f"tilted hemisphere field drifted {np.max(rel):.4f}"
+
+
+def test_tilted_cylinder_orients_its_tip_in_the_mesh():
+    # P6 S7: a cylinder tilted 90 deg about y lays its axis along +x, so its deep
+    # conductive tip moves from +z to +x. The field just beyond the tilted tip (+x)
+    # must exceed the field at the old upright-tip location (+z) — proof the body is
+    # actually oriented in the mesh, not just translated.
+    from engine.spec import ArrayPlacement
+
+    cyl = Electrode(
+        id="C", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=0.0,
+        body=Cylinder(radius_um=5.0, height_um=30.0, conductive_faces="tip"),
+    )
+    tilted = ElectrodeArray(
+        electrodes=(cyl,), placement=ArrayPlacement(rotation_deg=(0.0, 90.0, 0.0))
+    )
+    dom = M.FieldDomain(tilted, SIGMA, 400.0, 400.0, 2.0, 120.0)
+    q = np.array([[35.0, 0.0, 0.0], [0.0, 0.0, 35.0]])  # beyond the tilted tip (+x) vs old tip (+z)
+    a = solve_transfer_matrix(dom, q, degree=1)
+    assert a[0, 0] > a[1, 0], "the tilted tip should dominate the field along +x, not +z"
+
+
 def _write_step_cylinder(path: str, radius_um: float, height_um: float) -> None:
     import gmsh
 

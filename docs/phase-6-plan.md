@@ -224,7 +224,24 @@ docs/
   **overlap policy**, sweeping 3D designs, the accepted CAD formats (STEP/BREP; STL
   out), and the honest caveats (FEM-only; near-contact leaves the passive-probe
   regime; 3D mesh resolution + truncation sensitivity; the deferred extensions).
-  **Phase 6 complete.**
+  **Phase 6 (core) complete.**
+
+### Extensions (formerly deferred)
+
+- **P6 S7 — Array tilt/rotation — done.** `ArrayPlacement` gains `rotation_deg`
+  (extrinsic x→y→z about the array origin, applied before `offset_um`). A pure
+  rotation matrix (`spec/geometry.py`) drives it everywhere: `apply_placement`
+  rotates each position, polygon outline, and electrode normal; the FEM mesh builds
+  each body axis-aligned at the origin then `occ.rotate`s it into the pose and
+  translates it (`mesh3d.add_body_solid`); cavity-wall tip/side classification is
+  done in the **body-local frame** (`R^T`·centroid) so a tilted pillar's tip is still
+  its tip; the overlap check maps every query point through `R^T` into the local
+  frame before the `point_in_body` test. Validated: unit tests (rotation math,
+  posed positions/normals/outlines, overlap under a 90° tilt); FEM — a **tilted
+  hemisphere is field-invariant** (a sphere cut by the z≥0 box is identical under
+  rotation, a tight known-answer) and a **tilted cylinder orients its tip in the
+  mesh** (the field dominates along the laid-over axis, not the old one). Rotation is
+  FEM-tier — the analytical point source is orientation-free (documented).
 
 ---
 
