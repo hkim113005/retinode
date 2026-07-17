@@ -103,7 +103,11 @@ jobs:
       - name: Types in sync with the contract
         run: |
           npm run gen:types
-          git diff --exit-status src/api/schema.d.ts
+          if [ -n "$(git status --porcelain -- src/api/schema.d.ts)" ]; then
+            echo "::error::src/api/schema.d.ts is stale — run 'npm run gen:types' and commit."
+            git --no-pager diff -- src/api/schema.d.ts
+            exit 1
+          fi
 
       - name: Type-check
         run: npm run typecheck
