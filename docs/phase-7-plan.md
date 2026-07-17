@@ -243,7 +243,26 @@ Pydantic models mirror.
   the threshold plot, and the Pareto scatter (hover for values, click to inspect,
   **brush to select** on Pareto). **Export every plot** at figure quality — SVG/PDF
   vector, high-DPI PNG (D8). *Done:* each workhorse plot renders and exports vector +
-  raster.
+  raster. Split into three slices:
+
+  - **S7a — the chart core — done.** The seam is a `Scene`: a plot is a *pure
+    function* from data to a flat list of resolved primitives, and two renderers
+    consume it — canvas for the screen, SVG for export. The exported figure is
+    therefore the same description the screen drew and **cannot drift** into a
+    second, lookalike implementation of the plot. Colours resolve at build time (a
+    `var(--…)` means nothing inside a standalone `.svg`). Export offers **SVG**
+    (vector, editable → PDF/EPS via Illustrator/Inkscape) and **3× PNG** (~300 dpi),
+    defaulting to a fixed **PAPER** palette rather than the live theme, because a
+    dark-mode figure is unusable in a manuscript. Both plots gained what a *chart*
+    needs over a picture: numeric **axis ticks** on the Pareto, a round-numbered
+    **scale bar** on the field. Making the plots pure also gave them their first real
+    test coverage — jsdom cannot exercise canvas drawing at all. *Verified live:* the
+    field exports a 720×720 SVG (3722 marks, no CSS vars, white paper) and a
+    2160×2160 PNG; the Pareto exports a 3.4 KB vector with real `<text>` axes.
+    *(Deferred: PDF is one Inkscape step from the SVG — a PDF writer would mean a new
+    dependency for a format the SVG already reaches.)*
+  - **S7b — labeled isopotential contours + a hover readout on the field.**
+  - **S7c — Pareto hover tooltip + brush-to-select.**
 
 - **P7 S8 — Polish + parity cutover.** Keyboard- and mobile-respectful layout, empty
   and error states (including the evaluator's **refusal to compare mismatched

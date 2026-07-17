@@ -90,6 +90,34 @@ button.step:hover { background: var(--accent-soft); color: var(--ink); }
 .stage-head .crumb { font-size: 12px; color: var(--muted); }
 .canvas-wrap { padding: 8px; position: relative; }
 .canvas-wrap.inked { border-color: var(--accent-soft); box-shadow: var(--shadow), inset 0 0 0 1px var(--accent-soft); }
+
+/* figure export: quiet until wanted. It rides at the end of the legend row — the
+   figure-caption position — so it never competes with the data and never fights the
+   3D loupe for the plot's top-right corner. The menu opens upward for the same
+   reason: there is nothing below it but the card edge. */
+.canvas-tools { margin-left: auto; position: relative; }
+.figexp > summary { list-style: none; cursor: pointer; font-size: 11px; font-family: var(--mono);
+  color: var(--muted); background: var(--glass); border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px 9px; opacity: 0.55; transition: opacity 0.15s ease; }
+.figexp > summary::-webkit-details-marker { display: none; }
+.figexp > summary:hover, .figexp[open] > summary { opacity: 1; color: var(--ink); }
+.figexp[open] > summary { background: var(--glass-strong); }
+.figexp-menu { position: absolute; right: 0; bottom: 26px; z-index: 4; width: 178px; padding: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); display: grid; gap: 6px; }
+.figexp-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px;
+  background: var(--inset); border-radius: 9px; }
+.figexp-seg button { font-size: 11px; font-family: var(--sans); color: var(--muted);
+  background: transparent; border: 0; border-radius: 7px; padding: 4px; cursor: pointer; }
+.figexp-seg button.on { background: var(--surface); color: var(--ink); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+.figexp-go { display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink);
+  background: transparent; border: 1px solid var(--border); border-radius: 9px;
+  padding: 6px 9px; cursor: pointer; text-align: left; }
+.figexp-go:hover { background: var(--accent-soft); border-color: transparent; }
+.figexp-go span { font-family: var(--sans); font-size: 10px; font-weight: 400; color: var(--muted); }
+.figexp-err { font-size: 11px; color: var(--alert); margin: 0; padding: 0 2px; }
 canvas.field { width: 100%; height: auto; display: block; border-radius: 12px; }
 .fieldbar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
 .fieldbar .spacer { flex: 1; }

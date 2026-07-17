@@ -4,6 +4,7 @@
 // the study's points, so the flow is: sweep on Study → hand this list to someone.
 import { useMemo } from "react";
 import type { StudyPoint } from "../api/client";
+import { downloadText as download } from "../chart/export";
 import { Rail } from "../components/Rail";
 import type { Screen } from "../nav";
 
@@ -19,15 +20,6 @@ function rationale(p: StudyPoint, all: StudyPoint[]): string {
   if (p.on_frontier)
     return "On the selectivity–cost frontier: no safe design beats it on both axes.";
   return "Beaten on both axes by a frontier design — listed for reference.";
-}
-
-function download(filename: string, mime: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: mime }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 export function Candidates({

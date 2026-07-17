@@ -67,7 +67,17 @@ const FEM_DONE: JobStatus = {
   fraction: 1,
   message: "done",
   cached: false,
-  field: { xs_um: [-1, 0, 1], ys_um: [-1, 0, 1], ve_mV: [[-2, -3, -2]], vmax_mV: 3 },
+  field: {
+    xs_um: [-1, 0, 1],
+    ys_um: [-1, 0, 1],
+    // (n, n) as the contract requires — a ragged grid is not a thing the API emits
+    ve_mV: [
+      [-1, -2, -1],
+      [-2, -3, -2],
+      [-1, -2, -1],
+    ],
+    vmax_mV: 3,
+  },
   max_divergence_pct: 21,
 };
 
