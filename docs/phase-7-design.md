@@ -103,6 +103,11 @@ automatically. Safety is never a tab you have to open (master plan §12).
 
 ## Compare is a difference, not two charts
 
+> **Interactive mockup:** [`docs/mockups/compare-screen.html`](mockups/compare-screen.html)
+> — switch A/B/Difference, watch the diverging field show where one config spares the
+> bystanders the other recruits, read the Δ column, and pick a mismatched pair to see
+> the "align the bystander sets" guard fire.
+
 Side-by-side is table stakes; the creative move is to **compute the comparison for
 the user**:
 

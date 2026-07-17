@@ -1,0 +1,401 @@
+<title>Retinode — Compare (design mockup)</title>
+<style>
+  :root{
+    --bg1:#eef2f8; --bg2:#e6ecf5;
+    --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14);
+    --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05);
+    --radius:18px; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg1:#0a0e16; --bg2:#0f1420;
+    --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+    --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+    --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+    --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+    --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+    --ok:#34c759; --ok-soft:rgba(48,209,88,0.18);
+    --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+    --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35);
+    --field:#0a84ff; --canvas-ink:#f5f5f7;
+  }}
+  :root[data-theme="light"]{
+    --bg1:#eef2f8; --bg2:#e6ecf5; --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14); --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05); --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  :root[data-theme="dark"]{
+    --bg1:#0a0e16; --bg2:#0f1420; --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+    --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+    --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+    --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+    --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+    --ok:#34c759; --ok-soft:rgba(48,209,88,0.18); --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+    --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35); --field:#0a84ff; --canvas-ink:#f5f5f7;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{font-family:var(--sans); color:var(--ink); background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    background-attachment:fixed; min-height:100vh; padding:18px; -webkit-font-smoothing:antialiased;
+    display:grid; grid-template-columns:210px minmax(0,1fr) 300px; gap:16px;}
+  @media (max-width:1080px){.app{grid-template-columns:1fr;} .rail,.inspect{position:static;}}
+  .card{background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow),inset 0 1px 0 var(--inset); backdrop-filter:blur(20px) saturate(1.2); -webkit-backdrop-filter:blur(20px) saturate(1.2);}
+
+  .rail{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .brand{padding:16px 16px 14px;} .wordmark{font-size:18px; font-weight:680; letter-spacing:-0.02em;}
+  .brand .sub{font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-top:3px;}
+  .nav{padding:8px;} .nav .grp{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); padding:10px 10px 6px;}
+  .step{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:11px; font-size:13.5px; color:var(--muted); cursor:pointer; border:1px solid transparent;}
+  .step:hover{background:var(--accent-soft); color:var(--ink);}
+  .step .dot{width:7px; height:7px; border-radius:50%; background:var(--faint); flex:none;}
+  .step.done .dot{background:var(--ok);}
+  .step.active{background:var(--glass-strong); color:var(--ink); border-color:var(--border); font-weight:600;}
+  .step.active .dot{background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  .rail .badges{padding:12px; display:flex; flex-direction:column; gap:8px;}
+  .badge{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 11px; border-radius:12px; font-size:12px; border:1px solid var(--border);}
+  .badge .k{color:var(--muted); font-size:11px;} .badge .v{font-family:var(--mono); font-weight:600;}
+  .badge.tier{background:var(--accent-soft);} .badge.tier .v{color:var(--accent-strong);}
+  .badge.safe{background:var(--ok-soft);} .badge.safe .v{color:var(--ok);}
+  .kbd{font-family:var(--mono); font-size:10.5px; color:var(--faint); text-align:center; padding:2px 0 6px;}
+
+  .stage{display:flex; flex-direction:column; gap:14px; min-width:0;}
+  .stage-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:2px 4px;}
+  .stage-head h1{font-size:17px; margin:0; letter-spacing:-0.01em; font-weight:640;}
+  .stage-head .crumb{font-size:12px; color:var(--muted);}
+  .chip{font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--glass-strong); border:1px solid var(--border); border-radius:999px; padding:4px 10px; cursor:pointer; white-space:nowrap;}
+  .chip:hover{color:var(--accent-strong); border-color:var(--accent-soft);}
+
+  /* mismatch warning */
+  .warn{display:none; align-items:center; gap:12px; padding:12px 16px; border-color:var(--warm-strong);
+    background:var(--warm-soft);}
+  .warn.show{display:flex;}
+  .warn .ico{font-size:15px;} .warn .t{font-size:12.5px; color:var(--ink); flex:1; line-height:1.45;}
+  .warn .t b{color:var(--warm-strong);}
+  .warn button{border:0; background:var(--warm-strong); color:#fff; font-family:var(--sans); font-size:12px; font-weight:640; padding:7px 13px; border-radius:10px; cursor:pointer;}
+
+  /* selector bar */
+  .selbar{display:flex; align-items:stretch; gap:10px; padding:12px;}
+  .cfg{flex:1; border:1px solid var(--border); border-radius:13px; padding:10px 12px; background:var(--inset); min-width:0;}
+  .cfg .lab{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; display:flex; justify-content:space-between;}
+  .cfg.a .lab{color:var(--warm-strong);} .cfg.b .lab{color:var(--accent-strong);}
+  .cfg .chips{display:flex; gap:5px; flex-wrap:wrap;}
+  .cfg .chips button{border:1px solid var(--border); background:var(--glass-strong); color:var(--muted); font-size:11.5px; padding:5px 9px; border-radius:8px; cursor:pointer; font-family:var(--sans);}
+  .cfg.a .chips button.on{background:var(--warm-soft); color:var(--warm-strong); border-color:transparent; font-weight:640;}
+  .cfg.b .chips button.on{background:var(--accent-soft); color:var(--accent-strong); border-color:transparent; font-weight:640;}
+  .vs{display:flex; align-items:center; font-family:var(--mono); font-size:12px; color:var(--faint); padding:0 2px;}
+
+  .hero{padding:8px;}
+  .viewseg{display:flex; gap:4px; background:var(--inset); border:1px solid var(--border); border-radius:11px; padding:3px; margin:6px 6px 10px; width:max-content;}
+  .viewseg button{border:0; background:transparent; color:var(--muted); font-family:var(--sans); font-size:12px; font-weight:600; padding:7px 14px; border-radius:8px; cursor:pointer;}
+  .viewseg button.on{background:var(--glass-strong); color:var(--ink); box-shadow:var(--shadow);}
+  canvas#cmp{width:100%; height:auto; display:block; border-radius:12px; touch-action:none;}
+  .caption{display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:10px 8px 4px; font-size:11.5px; color:var(--muted);}
+  .caption b{color:var(--ink);} .caption .sw{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:middle;}
+  .ampbar{display:flex; align-items:center; gap:12px; padding:6px 10px 12px;}
+  .ampbar input{flex:1; accent-color:var(--accent);} .ampbar .v{font-family:var(--mono); font-size:13px; font-weight:600; min-width:60px; text-align:right;}
+  .ampbar .lab{font-size:11px; color:var(--muted);}
+
+  .inspect{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .panel{padding:14px 16px;} .panel h2{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; font-weight:600;}
+  .verdict{font-size:14px; line-height:1.5;} .verdict b{color:var(--warm-strong);}
+  .verdict .w{font-family:var(--mono); font-weight:650;}
+  table.delta{width:100%; border-collapse:collapse; margin-top:6px; font-size:12.5px;}
+  table.delta th{font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:600; padding:6px 4px; text-align:right;}
+  table.delta th:first-child{text-align:left;}
+  table.delta td{padding:8px 4px; border-top:1px solid var(--border); font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right;}
+  table.delta td:first-child{font-family:var(--sans); color:var(--muted); text-align:left;}
+  table.delta .a{color:var(--warm-strong);} table.delta .b{color:var(--accent-strong);}
+  table.delta .d{font-weight:700;} .d.up{color:var(--ok);} .d.down{color:var(--alert);} .d.eq{color:var(--faint);}
+  .legend{display:flex; flex-direction:column; gap:9px; font-size:12px; color:var(--muted); margin-top:2px;}
+  .legend .r{display:flex; align-items:center; gap:9px;} .legend .d2{width:11px; height:11px; border-radius:3px; flex:none;}
+  .foot{font-size:11px; color:var(--faint); line-height:1.5; margin-top:10px;}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg1); font-size:12.5px; padding:9px 16px; border-radius:11px; opacity:0; pointer-events:none; transition:.28s; font-weight:500; z-index:9;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="card brand"><div class="wordmark">Retinode</div><div class="sub">Electrode studio</div></div>
+    <nav class="card nav">
+      <div class="grp">Design</div>
+      <div class="step done"><span class="dot"></span>Patch</div>
+      <div class="step done"><span class="dot"></span>Array</div>
+      <div class="step done"><span class="dot"></span>Tissue</div>
+      <div class="step done"><span class="dot"></span>Stimulus</div>
+      <div class="step done"><span class="dot"></span>Results</div>
+      <div class="grp">Analyse</div>
+      <div class="step active"><span class="dot"></span>Compare</div>
+      <div class="step done"><span class="dot"></span>Study</div>
+      <div class="step"><span class="dot"></span>Validation</div>
+      <div class="step"><span class="dot"></span>Candidates</div>
+    </nav>
+    <div class="card badges">
+      <div class="badge tier"><span class="k">Accuracy</span><span class="v">FEM · FEM</span></div>
+      <div class="badge safe"><span class="k">Safety</span><span class="v">both safe</span></div>
+      <div class="kbd">⌘K  ·  command palette</div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-head">
+      <div><h1>Compare · A vs B on one patch</h1>
+        <div class="crumb">same cells, same metric — the difference is computed for you</div></div>
+      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ cmp·7d4a</div>
+    </div>
+
+    <div class="card warn" id="warn">
+      <span class="ico">⚠</span>
+      <span class="t">These compare <b>different bystander sets</b> (standard vs. target-B). The scores aren't apples-to-apples until they match.</span>
+      <button id="alignBtn">Align sets</button>
+    </div>
+
+    <div class="card selbar">
+      <div class="cfg a">
+        <div class="lab"><span>Config A</span><span id="aOff">standard bystanders</span></div>
+        <div class="chips" data-side="a">
+          <button class="on" data-k="local">Local return</button>
+          <button data-k="bipolar">Bipolar</button>
+          <button data-k="steered">Steered→B</button>
+        </div>
+      </div>
+      <div class="vs">vs</div>
+      <div class="cfg b">
+        <div class="lab"><span>Config B</span><span id="bOff">standard bystanders</span></div>
+        <div class="chips" data-side="b">
+          <button class="on" data-k="mono">Monopolar</button>
+          <button data-k="local">Local return</button>
+          <button data-k="bipolar">Bipolar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hero">
+      <div class="viewseg" id="viewseg">
+        <button data-v="a">A field</button>
+        <button data-v="b">B field</button>
+        <button class="on" data-v="diff">Difference</button>
+      </div>
+      <canvas id="cmp" width="1120" height="720" aria-label="Signed difference between the two configurations' fields over the retinal patch"></canvas>
+      <div class="caption" id="caption"></div>
+      <div class="ampbar" id="ampbar">
+        <span class="lab">Amplitude</span>
+        <input id="amp" type="range" min="0" max="30" step="0.5" value="12">
+        <span class="v"><span id="ampV">12</span> µA</span>
+      </div>
+    </div>
+  </main>
+
+  <aside class="inspect">
+    <div class="card panel">
+      <h2>Verdict</h2>
+      <div class="verdict" id="verdict"></div>
+    </div>
+    <div class="card panel">
+      <h2>Aligned scorecard</h2>
+      <table class="delta" id="delta">
+        <thead><tr><th>Metric</th><th class="a">A</th><th class="b">B</th><th>Δ</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="foot">Δ is A − B, colored by which is better on that metric (lower threshold, wider window, bystanders pushed further out).</div>
+    </div>
+    <div class="card panel">
+      <h2>Difference map</h2>
+      <div class="legend">
+        <div class="r"><span class="d2" style="background:var(--warm)"></span><b style="color:var(--ink)">A stronger</b>&nbsp;— A recruits here, B doesn't</div>
+        <div class="r"><span class="d2" style="background:var(--accent)"></span><b style="color:var(--ink)">B stronger</b>&nbsp;— B's field spills to bystanders A spares</div>
+        <div class="r"><span class="d2" style="background:var(--faint)"></span>equal — the confinement boundary</div>
+      </div>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const cv=document.getElementById("cmp"), ctx=cv.getContext("2d");
+  let DIM={w:700,h:450};
+
+  // config presets — electrodes (µm, w<0 cathodic), off-target set, and scores
+  const CFG={
+    mono:   {name:"Monopolar",   off:"standard", els:[{x:0,y:0,w:-1}],
+             thr:7.9, byst:11.0, sel:3.1, cd:0.19, tier:"FEM"},
+    local:  {name:"Local return",off:"standard", els:ring(),
+             thr:8.4, byst:17.9, sel:9.5, cd:0.21, tier:"FEM"},
+    bipolar:{name:"Bipolar",     off:"standard", els:[{x:-20,y:0,w:-1},{x:20,y:0,w:1}],
+             thr:9.0, byst:19.2, sel:10.2, cd:0.24, tier:"analytical"},
+    steered:{name:"Steered→B",   off:"target-B", els:[{x:0,y:0,w:-0.6},{x:26,y:-8,w:-0.6},{x:40,y:0,w:0.5}],
+             thr:8.0, byst:16.0, sel:8.0, cd:0.20, tier:"analytical"},
+  };
+  function ring(){ const e=[{x:0,y:0,w:-1}]; for(let k=0;k<6;k++){const a=k/6*Math.PI*2; e.push({x:Math.cos(a)*30,y:Math.sin(a)*30,w:1/6});} return e; }
+
+  let A="local", B="mono", view="diff", amp=12;
+  const TARGET={x:22,y:-7};
+  // deterministic cells
+  const cells=[]; let s=7; const rnd=()=>(s=(s*1103515245+12345)&0x7fffffff, s/0x7fffffff-0.5);
+  for(let gy=-3;gy<=3;gy++)for(let gx=-4;gx<=4;gx++){const x=gx*28+(gy%2?14:0)+rnd()*7,y=gy*26+rnd()*7;
+    if(Math.hypot(x,y)>120)continue; cells.push({x,y});}
+  let tIdx=cells.reduce((b,c,i)=>Math.hypot(c.x-TARGET.x,c.y-TARGET.y)<Math.hypot(cells[b].x-TARGET.x,cells[b].y-TARGET.y)?i:b,0);
+  cells[tIdx].x=TARGET.x; cells[tIdx].y=TARGET.y;
+
+  // extracellular potential (depolarizing part) for a config at (x,y)
+  function ve(cfg,x,y){ let v=0; for(const e of cfg.els){ v+=e.w/(Math.hypot(x-e.x,y-e.y)+8); } return v; }
+  function act(cfg,x,y){ return Math.max(0,-ve(cfg,x,y)); }          // depolarization
+  function actN(cfg,x,y){ const t=act(cfg,TARGET.x,TARGET.y)||1e-6; return act(cfg,x,y)/t; } // =1 at target
+
+  function fit(){ const b=cv.getBoundingClientRect(); if(!b.width)return; const dpr=Math.min(devicePixelRatio||1,2);
+    cv.width=Math.round(b.width*dpr); cv.height=Math.round(b.width*0.64*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+    DIM={w:b.width,h:b.width*0.64}; }
+  function toS(x,y){ const s=DIM.w/300; return [DIM.w/2+x*s, DIM.h/2+y*s+4]; }
+
+  function draw(){
+    const w=DIM, s=w.w/300; ctx.clearRect(0,0,w.w,w.h);
+    const ink=css("--canvas-ink"), field=css("--field"), warm=css("--warm"), muted=css("--muted");
+    const cfgA=CFG[A], cfgB=CFG[B];
+    // patch boundary
+    const [cx,cy]=toS(0,0);
+    ctx.strokeStyle=withA(muted,0.16); ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(cx,cy,120*s,120*s,0,0,7); ctx.stroke();
+
+    if(view==="diff"){
+      // signed-difference heatmap on a coarse grid: actN(A)-actN(B)
+      const step=Math.max(7, Math.round(w.w/90));
+      for(let sx=0;sx<w.w;sx+=step)for(let sy=0;sy<w.h;sy+=step){
+        const x=(sx-w.w/2)/s, y=(sy-4-w.h/2)/s; if(Math.hypot(x,y)>124)continue;
+        const d=actN(cfgA,x,y)-actN(cfgB,x,y);
+        const mag=Math.min(1,Math.abs(d)*1.1);
+        if(mag<0.04)continue;
+        ctx.fillStyle=withA(d>0?warm:field, mag*0.5);
+        ctx.fillRect(sx-step/2,sy-step/2,step+1,step+1);
+      }
+      // zero-crossing hint ring (confinement boundary) — where |d| small along radius
+      ctx.strokeStyle=withA(muted,0.35); ctx.setLineDash([3,4]); ctx.lineWidth=1;
+      // sample the boundary radius on the +x axis
+      let rb=40; for(let r=6;r<120;r+=1){ if(actN(cfgA,r,0)-actN(cfgB,r,0)<0){rb=r;break;} }
+      ctx.beginPath(); ctx.ellipse(cx,cy,rb*s,rb*s,0,0,7); ctx.stroke(); ctx.setLineDash([]);
+    } else {
+      const cfg=view==="a"?cfgA:cfgB, col=field;
+      // field gestalt
+      for(let sx=0;sx<w.w;sx+=8)for(let sy=0;sy<w.h;sy+=8){
+        const x=(sx-w.w/2)/s, y=(sy-4-w.h/2)/s; if(Math.hypot(x,y)>124)continue;
+        const a=Math.min(1,actN(cfg,x,y)*0.5); if(a<0.05)continue;
+        ctx.fillStyle=withA(col,a*0.4); ctx.fillRect(sx-4,sy-4,9,9);
+      }
+    }
+
+    // electrodes for the shown config(s)
+    const showEls = view==="diff"? [[cfgA,warm],[cfgB,field]] : [[view==="a"?cfgA:cfgB, field]];
+    for(const [cfg,c] of showEls) for(const e of cfg.els){ const [ex,ey]=toS(e.x,e.y);
+      ctx.fillStyle=withA(e.w<0?ink:c,0.5); ctx.beginPath(); ctx.arc(ex,ey,e.w<0?5:3.2,0,7); ctx.fill();
+      if(e.w<0){ctx.strokeStyle=withA(c,0.8); ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(ex,ey,7,0,7); ctx.stroke();}
+    }
+
+    // cells
+    for(let i=0;i<cells.length;i++){ const c=cells[i], [sx,sy]=toS(c.x,c.y), isT=i===tIdx;
+      const fA=actN(cfgA,c.x,c.y)*amp/cfgA.thr>=1, fB=actN(cfgB,c.x,c.y)*amp/cfgB.thr>=1;
+      let color=withA(ink,isT?0.5:0.3), r=isT?6:4.4, ring2=null;
+      if(view==="diff"){
+        if(fB&&!fA){ color=field; ring2=field; }        // B recruits, A spares (the story)
+        else if(fA&&!fB){ color=warm; ring2=warm; }
+        else if(fA&&fB){ color=warm; }
+      } else {
+        const cfg=view==="a"?cfgA:cfgB, f=view==="a"?fA:fB;
+        if(f){ color=warm; }
+      }
+      if((view==="diff"&&(fA||fB))||(view!=="diff")){
+        const fired = view==="diff"? (fA||fB) : (view==="a"?fA:fB);
+        if(fired){ const gg=ctx.createRadialGradient(sx,sy,1,sx,sy,r*3); gg.addColorStop(0,withA(color,0.5)); gg.addColorStop(1,withA(color,0));
+          ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(sx,sy,r*3,0,7); ctx.fill(); }
+      }
+      ctx.fillStyle=color; ctx.beginPath(); ctx.arc(sx,sy,r,0,7); ctx.fill();
+      if(isT){ ctx.strokeStyle=warm; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(sx,sy,r+5,0,7); ctx.stroke(); }
+      else if(ring2){ ctx.strokeStyle=withA(ring2,0.9); ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(sx,sy,r+3,0,7); ctx.stroke(); }
+    }
+  }
+
+  function caption(){
+    const cap=document.getElementById("caption");
+    if(view==="diff") cap.innerHTML=`<span><span class="sw" style="background:var(--warm)"></span><b>${CFG[A].name}</b> stronger</span>`+
+      `<span><span class="sw" style="background:var(--accent)"></span><b>${CFG[B].name}</b> stronger</span>`+
+      `<span>dashed ring = confinement boundary · blue-ringed cells are bystanders <b>${CFG[B].name}</b> recruits that <b>${CFG[A].name}</b> spares</span>`;
+    else cap.innerHTML=`<span>${(view==="a"?CFG[A]:CFG[B]).name} field · firing cells light at <b>${amp.toFixed(1)} µA</b></span>`;
+    document.getElementById("ampbar").style.opacity = view==="diff"?0.4:1;
+  }
+
+  function scorecard(){
+    const a=CFG[A], b=CFG[B];
+    const rows=[
+      {k:"Target threshold", av:a.thr, bv:b.thr, unit:" µA", better:"low"},
+      {k:"First bystander",  av:a.byst,bv:b.byst,unit:" µA", better:"high"},
+      {k:"Selective window", av:a.sel, bv:b.sel, unit:" µA", better:"high"},
+      {k:"Charge density",   av:a.cd,  bv:b.cd,  unit:"", digits:2, better:"low"},
+    ];
+    const tb=document.querySelector("#delta tbody"); tb.innerHTML="";
+    for(const r of rows){ const d=r.av-r.bv, dig=r.digits||1;
+      const good = r.better==="low"? d<0 : d>0; const cls=Math.abs(d)<0.05?"eq":(good?"up":"down");
+      const arrow=Math.abs(d)<0.05?"=":(d>0?"▲":"▼");
+      tb.insertAdjacentHTML("beforeend",
+        `<tr><td>${r.k}</td><td class="a">${r.av.toFixed(dig)}${r.unit}</td><td class="b">${r.bv.toFixed(dig)}${r.unit}</td>`+
+        `<td class="d ${cls}">${d>0?"+":""}${d.toFixed(dig)} ${arrow}</td></tr>`);
+    }
+    // verdict
+    const dWin=a.sel-b.sel, ratio=(a.sel/b.sel);
+    const v=document.getElementById("verdict"); const winner=dWin>=0?a:b, loser=dWin>=0?b:a;
+    const mism=a.off!==b.off;
+    if(mism){ v.innerHTML=`<b>Can't rank yet.</b> Align the bystander sets to compare selectivity fairly.`; }
+    else v.innerHTML=`<b>${winner.name} wins.</b> A <span class="w">${(Math.max(ratio,1/ratio)).toFixed(1)}×</span> `+
+      `selective window (<span class="w">${a.sel.toFixed(1)}</span> vs <span class="w">${b.sel.toFixed(1)} µA</span>) `+
+      `for ${Math.abs(a.thr-b.thr)<0.6?"a comparable":(a.thr<b.thr?"a lower":"only +"+(a.thr-b.thr).toFixed(1)+" µA on")} target threshold.`;
+  }
+
+  function warnState(){
+    const mism=CFG[A].off!==CFG[B].off;
+    document.getElementById("warn").classList.toggle("show",mism);
+    document.getElementById("aOff").textContent=CFG[A].off==="standard"?"standard bystanders":"target-B set";
+    document.getElementById("bOff").textContent=CFG[B].off==="standard"?"standard bystanders":"target-B set";
+  }
+
+  // interaction
+  document.querySelectorAll(".cfg .chips").forEach(ch=>ch.addEventListener("click",e=>{
+    const btn=e.target.closest("button"); if(!btn)return; const side=ch.dataset.side;
+    [...ch.children].forEach(x=>x.classList.remove("on")); btn.classList.add("on");
+    if(side==="a")A=btn.dataset.k; else B=btn.dataset.k; refresh();
+  }));
+  const vs=document.getElementById("viewseg");
+  vs.addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return;
+    [...vs.children].forEach(x=>x.classList.remove("on")); b.classList.add("on"); view=b.dataset.v; refresh();});
+  const ampEl=document.getElementById("amp");
+  ampEl.addEventListener("input",e=>{amp=+e.target.value; document.getElementById("ampV").textContent=amp.toFixed(0); draw(); caption();});
+  document.getElementById("alignBtn").addEventListener("click",()=>{
+    // align B's off-target set to A by swapping the mismatched config to a standard one
+    if(CFG[A].off!=="standard"){A="local"; [...document.querySelector('.chips[data-side="a"]').children].forEach(x=>x.classList.toggle("on",x.dataset.k==="local"));}
+    if(CFG[B].off!=="standard"){B="mono"; [...document.querySelector('.chips[data-side="b"]').children].forEach(x=>x.classList.toggle("on",x.dataset.k==="mono"));}
+    toast("Bystander sets aligned — now comparing like for like"); refresh();
+  });
+  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied — reopens this comparison at its exact state (link = hash)"));
+
+  let toastT; function toast(m){const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2300);}
+  function withA(c,a){c=c.trim(); if(c.startsWith("#")){let h=c.slice(1); if(h.length===3)h=h.split("").map(x=>x+x).join(""); const n=parseInt(h,16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;} if(c.startsWith("rgb")){const p=c.match(/[\d.]+/g); return `rgba(${p[0]},${p[1]},${p[2]},${a})`;} return c;}
+
+  function refresh(){ fit(); warnState(); scorecard(); caption(); draw(); }
+  addEventListener("resize",refresh);
+  new MutationObserver(refresh).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",refresh);
+  refresh();
+})();
+</script>
