@@ -31,6 +31,7 @@ export function Study({
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selected, setSelected] = useState<StudyPoint | null>(null);
   const [brushed, setBrushed] = useState<StudyPoint[] | null>(null);
+  const [spread, setSpread] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ticket = useRef(0);
 
@@ -60,6 +61,10 @@ export function Study({
       phase_width_us: 200,
       neighbor_um: 40,
       sigma_S_per_m: 1,
+      // K axon trajectories per geometry for the threshold error bar. 1 = off, and
+      // off is the default: it costs K extra threshold searches per geometry.
+      trajectory_k: spread ? 3 : 1,
+      trajectory_jitter_deg: 15,
     };
     (async () => {
       let job = await postStudy(controls);
@@ -164,11 +169,28 @@ export function Study({
               ))}
             </div>
           </div>
+          <div className="ctl">
+            <label htmlFor="c-spread">
+              Axon-trajectory error bar<b>{spread ? "3 paths" : "off"}</b>
+            </label>
+            <div className="seg" role="group" aria-label="Axon-trajectory sampling">
+              <button className={spread ? "" : "on"} onClick={() => setSpread(false)}>
+                Off
+              </button>
+              <button className={spread ? "on" : ""} onClick={() => setSpread(true)}>
+                Sample 3
+              </button>
+            </div>
+            <p className="foot">
+              The true axon path is unknown, so a threshold has a band. Sampling
+              measures it — at roughly triple the sweep's cost.
+            </p>
+          </div>
           <div className="cost">
             <span className="n">{nCombos}</span>
             <span className="k">
               configurations
-              <br />≈ {Math.max(5, nCombos * 3)} s · analytical field
+              <br />≈ {Math.max(5, nCombos * (spread ? 3 + 3 * 2 : 3))} s · analytical field
             </span>
           </div>
           {progress ? (

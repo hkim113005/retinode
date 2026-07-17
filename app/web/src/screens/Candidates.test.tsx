@@ -10,6 +10,7 @@ const P = (
   sel: number,
   safe = true,
   front = true,
+  spread_uA: number | null = null,
 ): StudyPoint => ({
   diameter_um: d,
   pitch_um: pitch,
@@ -17,6 +18,7 @@ const P = (
   selectivity_uA: sel,
   safe,
   on_frontier: front,
+  spread_uA,
 });
 
 const POINTS = [
@@ -75,5 +77,45 @@ describe("Candidates", () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(click).toHaveBeenCalled();
     vi.restoreAllMocks();
+  });
+});
+
+describe("Candidates · the trajectory whisker", () => {
+  // the true axon path is unknown, so a threshold has an honest band
+  const MEASURED = [
+    P(12, 40, 9.0, 11.0, true, true, 2.4), // widest window, but a loose error bar
+    P(16, 40, 7.0, 6.0, true, true, 0.3), // tightest — the robust choice
+  ];
+
+  it("shows the error bar beside the threshold it qualifies", () => {
+    render(<Candidates points={MEASURED} onNavigate={vi.fn()} />);
+    expect(screen.getByText(/±2.4/)).toBeInTheDocument();
+    expect(screen.getByText(/±0.3/)).toBeInTheDocument();
+  });
+
+  it("shows no whisker at all when the spread was not measured", () => {
+    // absent, never a confident-looking ±0 on a design nobody measured
+    render(<Candidates points={[P(12, 40, 9, 11)]} onNavigate={vi.fn()} />);
+    expect(screen.queryByText(/±/)).not.toBeInTheDocument();
+  });
+
+  it("ranks by robustness when asked, tightest band first", () => {
+    render(<Candidates points={MEASURED} onNavigate={vi.fn()} />);
+    // by default the widest window leads
+    expect(screen.getAllByText(/d\d+ · pitch/)[0]).toHaveTextContent("d12");
+    fireEvent.click(screen.getByRole("button", { name: "robustness" }));
+    // now the tightest error bar leads, even though its window is narrower
+    expect(screen.getAllByText(/d\d+ · pitch/)[0]).toHaveTextContent("d16");
+  });
+
+  it("refuses to rank by a column the study never measured", () => {
+    render(<Candidates points={[P(12, 40, 9, 11), P(16, 40, 7, 6)]} onNavigate={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "robustness" })).toBeDisabled();
+  });
+
+  it("ranks by threshold, cheapest first", () => {
+    render(<Candidates points={MEASURED} onNavigate={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "threshold" }));
+    expect(screen.getAllByText(/d\d+ · pitch/)[0]).toHaveTextContent("d16"); // 7.0 µA
   });
 });

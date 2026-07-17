@@ -15,6 +15,7 @@ from app.scene import build_patch
 from engine.spec import HomogeneousConductivity
 from engine.study.geometry import geometry_grid
 from engine.study.geometry_sweep import GeometrySweepResult, geometry_sweep, monopolar_center
+from engine.study.spread import geometry_trajectory_spread
 
 from ..jobs import ProgressFn
 from ..models import JobStatus, StudyControls, StudyPoint, StudyResult
@@ -23,7 +24,10 @@ from .score import to_job_status
 router = APIRouter()
 
 
-def _points(sweep: GeometrySweepResult) -> StudyResult:
+def _points(
+    sweep: GeometrySweepResult,
+    spreads: dict[tuple[float, float], float | None] | None = None,
+) -> StudyResult:
     # Gather (cost = target threshold, selectivity = usable window) per activated
     # geometry, then mark the **selectivity-versus-cost** frontier: a safe point is
     # on it if no other safe point beats it on both axes (lower cost, higher
@@ -36,6 +40,7 @@ def _points(sweep: GeometrySweepResult) -> StudyResult:
             "cost_uA": r.window.target_uA,
             "selectivity_uA": r.window.usable_margin_uA,
             "safe": bool(r.safety_at_target and r.safety_at_target.safe),
+            "spread_uA": (spreads or {}).get((o.geometry.diameter_um, o.geometry.pitch_um)),
         }
         for o in sweep.outcomes
         for r in o.results
@@ -43,6 +48,8 @@ def _points(sweep: GeometrySweepResult) -> StudyResult:
     ]
 
     def dominated(p: dict) -> bool:
+        # the frontier is selectivity-vs-cost only; the spread is a reported error
+        # bar, not a third axis to be dominated on
         return any(
             q is not p
             and q["safe"]
@@ -86,7 +93,22 @@ def submit_study(controls: StudyControls, request: Request) -> JobStatus:
             thresholds_provider=provider,
             on_geometry=on_geometry,
         )
-        return {"study": _points(sweep)}
+
+        # The trajectory spread is opt-in (k=1 is off) because it costs k extra
+        # threshold searches per geometry. It runs after the sweep rather than inside
+        # it so a cancelled or failed spread cannot cost the frontier itself.
+        spreads = None
+        if controls.trajectory_k > 1:
+            report(0.9, f"sampling {controls.trajectory_k} axon trajectories per geometry")
+            spreads = geometry_trajectory_spread(
+                geometries,
+                patch,
+                config_factory,  # per-array: a config's keys are that array's ids
+                conductivity,
+                k=controls.trajectory_k,
+                jitter_deg=controls.trajectory_jitter_deg,
+            )
+        return {"study": _points(sweep, spreads)}
 
     job = request.app.state.jobs.submit(f"study:{controls.model_dump_json()}", task)
     return to_job_status(job)

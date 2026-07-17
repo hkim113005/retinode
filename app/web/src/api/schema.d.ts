@@ -395,6 +395,16 @@ export interface components {
              * @default 1
              */
             sigma_S_per_m: number;
+            /**
+             * Trajectory Jitter Deg
+             * @default 15
+             */
+            trajectory_jitter_deg: number;
+            /**
+             * Trajectory K
+             * @default 1
+             */
+            trajectory_k: number;
         };
         /**
          * StudyPoint
@@ -413,6 +423,8 @@ export interface components {
             safe: boolean;
             /** Selectivity Ua */
             selectivity_uA: number;
+            /** Spread Ua */
+            spread_uA?: number | null;
         };
         /**
          * StudyResult

@@ -2,13 +2,23 @@
 // designs worth testing in tissue — each with its threshold, selective window, charge
 // verdict, accuracy tier, and a one-line rationale — exportable for the lab. It reads
 // the study's points, so the flow is: sweep on Study → hand this list to someone.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { StudyPoint } from "../api/client";
 import { downloadText as download } from "../chart/export";
 import { Rail } from "../components/Rail";
 import type { Screen } from "../nav";
 
 const TOP_N = 8;
+
+// How to rank. "Robustness" is only offered when the study actually measured a
+// trajectory spread — sorting by an unmeasured column would be inventing an order.
+type Sort = "selectivity" | "threshold" | "robustness";
+
+const SORTS: Record<Sort, (p: StudyPoint) => number> = {
+  selectivity: (p) => -p.selectivity_uA, // widest window first
+  threshold: (p) => p.cost_uA, // cheapest first
+  robustness: (p) => p.spread_uA ?? Number.POSITIVE_INFINITY, // tightest error bar first
+};
 
 // Every superlative here is relative to what was ranked, so the scope has to be
 // named: "the widest window in this study" is a lie once the user brushed a corner
@@ -36,15 +46,21 @@ export function Candidates({
   brushed?: boolean; // these points are a brushed subset, not the whole sweep
   onClearBrush?: () => void;
 }) {
-  // safety-filtered by definition, then ranked by the selective window
+  const [sort, setSort] = useState<Sort>("selectivity");
+  // the spread is opt-in on the study, so the Robustness sort only exists when it
+  // was actually measured
+  const measured = points.some((p) => p.spread_uA != null);
+  const active: Sort = sort === "robustness" && !measured ? "selectivity" : sort;
+
+  // safety-filtered by definition, then ranked
   const ranked = useMemo(
     () =>
       points
         .filter((p) => p.safe)
         .slice()
-        .sort((a, b) => b.selectivity_uA - a.selectivity_uA)
+        .sort((a, b) => SORTS[active](a) - SORTS[active](b))
         .slice(0, TOP_N),
-    [points],
+    [points, active],
   );
   const best = ranked[0];
   const scope = brushed ? "your brushed selection" : "this study";
@@ -59,6 +75,8 @@ export function Candidates({
       charge_safe: p.safe,
       on_frontier: p.on_frontier,
       tier: "analytical",
+      // null, not 0: an unmeasured error bar is absent, never confidently zero
+      trajectory_spread_uA: p.spread_uA == null ? null : Number(p.spread_uA.toFixed(3)),
       rationale: rationale(p, ranked, scope),
     }));
 
@@ -89,6 +107,23 @@ export function Candidates({
                 ? `${ranked.length} charge-safe designs · ranked by selective window`
                 : "the payoff — a ranked shortlist to hand to the lab"}
             </div>
+          </div>
+          <div className="sorts" role="group" aria-label="Rank by">
+            {(["selectivity", "threshold", "robustness"] as const).map((k) => (
+              <button
+                key={k}
+                className={active === k ? "on" : ""}
+                disabled={k === "robustness" && !measured}
+                title={
+                  k === "robustness" && !measured
+                    ? "Run the study with axon-trajectory sampling to measure this"
+                    : undefined
+                }
+                onClick={() => setSort(k)}
+              >
+                {k}
+              </button>
+            ))}
           </div>
           {/* the ranking is only honest if it says what it ranked over: a brushed
               subset is not "the best designs", it is the best of what you picked */}
@@ -146,7 +181,17 @@ export function Candidates({
                     </div>
                     <div className="m">
                       <span className="k">target threshold</span>
-                      <span className="v">{p.cost_uA.toFixed(1)} µA</span>
+                      <span className="v">
+                        {p.cost_uA.toFixed(1)} µA
+                        {/* the axon path is unknown, so the threshold has an honest
+                            band. Absent when unmeasured — never a fake ±0. */}
+                        {p.spread_uA != null && (
+                          <span className="pm" title="spread across sampled axon trajectories">
+                            {" ±"}
+                            {p.spread_uA.toFixed(1)}
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
                   <div className="tags">

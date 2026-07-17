@@ -598,6 +598,20 @@
             "exclusiveMinimum": 0.0,
             "title": "Sigma S Per M",
             "type": "number"
+          },
+          "trajectory_jitter_deg": {
+            "default": 15.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 90.0,
+            "title": "Trajectory Jitter Deg",
+            "type": "number"
+          },
+          "trajectory_k": {
+            "default": 1,
+            "maximum": 7.0,
+            "minimum": 1.0,
+            "title": "Trajectory K",
+            "type": "integer"
           }
         },
         "title": "StudyControls",
@@ -629,6 +643,17 @@
           "selectivity_uA": {
             "title": "Selectivity Ua",
             "type": "number"
+          },
+          "spread_uA": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spread Ua"
           }
         },
         "required": [

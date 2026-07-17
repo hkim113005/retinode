@@ -75,3 +75,35 @@ def test_map_is_symmetric_in_log_contrast():
     # incur equal error under the fake field
     rm = _map([0.5, 2.0], tol=1.0)
     assert rm.points[0].rel_error == pytest.approx(rm.points[1].rel_error)
+
+
+def test_the_analytical_tier_is_blind_to_electrode_diameter():
+    """A KNOWN LIMIT, pinned so it cannot be forgotten again.
+
+    `AnalyticalBackend` is a point source: it reads an electrode's position, never its
+    extent. So two disks of different diameter produce a byte-identical transfer
+    matrix, and any sweep over diameter is degenerate on this tier — every geometry
+    yields the same Ve, hence the same threshold and the same selective window. Only
+    the *safety* ceiling varies with diameter (via charge density over area).
+
+    Electrode geometry is FEM-only (docs/electrode-geometry.md). `resolve_field_tier`
+    does NOT know this — it chooses a tier from the conductivity alone — so a caller
+    sweeping geometry on the analytical tier gets a frontier that is flat by
+    construction. See docs/phase-8 for the consequence.
+    """
+    import numpy as np
+
+    from engine.field import AnalyticalBackend
+    from engine.spec import HomogeneousConductivity
+    from engine.study.geometry import ArrayGeometry, build_array
+
+    sigma = HomogeneousConductivity(sigma_S_per_m=1.0)
+    pts = np.array([[0.0, 0.0, 20.0], [40.0, 0.0, 20.0]])
+
+    def A(diameter_um: float):
+        g = ArrayGeometry(
+            diameter_um=diameter_um, pitch_um=40.0, arrangement="hex", aperture_um=0.0
+        )
+        return AnalyticalBackend().transfer_matrix(build_array(g), sigma, pts)
+
+    assert np.array_equal(A(8.0), A(24.0)), "if this ever fails, the analytical tier grew geometry"

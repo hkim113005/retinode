@@ -153,6 +153,12 @@ class StudyControls(BaseModel):
     diameters_um: list[float] = Field(default_factory=lambda: [8.0, 12.0, 16.0, 20.0])
     pitches_um: list[float] = Field(default_factory=lambda: [30.0, 40.0, 55.0, 70.0])
     arrangement: Literal["grid", "hex"] = "hex"
+    # How many axon trajectories to sample per geometry for the threshold spread.
+    # 1 = OFF, and off is the default: the spread costs K extra threshold searches
+    # per geometry, so nobody pays for a whisker they did not ask for. A std needs
+    # >= 2 samples, so k=1 yields `spread_uA=None` by construction.
+    trajectory_k: int = Field(1, ge=1, le=7)
+    trajectory_jitter_deg: float = Field(15.0, gt=0.0, le=90.0)
     aperture_um: float = Field(120.0, ge=0)
     phase_width_us: float = Field(200.0, gt=0)
     neighbor_um: float = Field(40.0, gt=0)
@@ -168,6 +174,11 @@ class StudyPoint(BaseModel):
     selectivity_uA: float  # the selective window above threshold
     safe: bool
     on_frontier: bool  # not beaten on both axes by another safe geometry
+    # Std of the target threshold across sampled axon trajectories — the honest error
+    # bar, since the true axon path is unknown (engine.study.spread). None means "not
+    # measured" (trajectory_k=1, or the target did not fire on enough paths); it must
+    # render as ABSENT, never as +/-0.
+    spread_uA: float | None = None
 
 
 class StudyResult(BaseModel):
