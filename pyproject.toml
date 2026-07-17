@@ -43,6 +43,7 @@ store = [
 api = [
     "fastapi",
     "uvicorn[standard]",
+    "httpx",             # FastAPI's TestClient (starlette) needs it; also the API tests
 ]
 dev = [
     "pytest",

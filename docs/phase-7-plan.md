@@ -136,13 +136,18 @@ Pydantic models mirror.
 
 ## Ordered steps
 
-- **P7 S1 — API skeleton + the typed contract + the boundary lint.** Stand up
-  FastAPI over the engine. Port `field_grid` / `scorecard_data` /
-  `load_validation_report` into **Pydantic response models** and a synchronous
-  **Compare** endpoint (analytical field grid + scorecard for a posed array + config
-  + patch). Add the CI rule **`engine/` must not import `api/` or `app/`** (a grep or
-  import-linter check). *Done:* `GET/POST /compare` returns the same numbers the Dash
-  view does, typed; the boundary lint is green.
+- **P7 S1 — API skeleton + the typed contract + the boundary lint — done.** FastAPI
+  over the engine (`api/`: `models.py` Pydantic contract, `service.py` engine→payload,
+  `routes/compare.py`, `main.py` app factory + CORS + `/health`). `POST /compare`
+  builds the scene from the controls (`app.scene.build_scene`), returns the analytical
+  **field grid synchronously and NEURON-free**, and computes the operating-window
+  **scorecard only when asked** (`include_scorecard`) through an **injectable threshold
+  provider** — a fast fake in tests, the real population solve in production (which S3
+  moves to a job). A **parity test** locks the endpoint's field and scorecard to the
+  exact numbers `app.views` produces; the **boundary lint** (`engine/` imports nothing
+  from `api`/`app`) is a test in CI. The OpenAPI schema exposes `CompareResponse` for
+  S2's generated TS types. `--extra api` (fastapi/httpx) added to the fast + neuron CI
+  jobs. 331 fast pass, ruff clean.
 
 - **P7 S2 — React scaffold + the Compare screen (parity with Dash).** Vite + TS
   client; **generate TS types from the OpenAPI schema**; build the control rail →
