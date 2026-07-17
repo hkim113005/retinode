@@ -1,6 +1,8 @@
-// The operating-window scorecard. It needs a threshold search (NEURON), so it's not
-// live — the user runs it. S3 turns that into a streamed job; for now it's a request.
+// The operating-window scorecard. It needs a threshold search (NEURON), so it runs
+// as a background job: while `progress` is set, the panel shows the job's progress;
+// when done, the operating window renders (with a "cached" note if it was reused).
 import type { Scorecard as ScorecardData } from "../api/client";
+import type { Progress } from "../screens/Compare";
 
 function uA(x: number | null | undefined): string {
   return x == null ? "—" : `${x.toFixed(1)} µA`;
@@ -8,24 +10,35 @@ function uA(x: number | null | undefined): string {
 
 export function Scorecard({
   data,
-  loading,
+  progress,
+  cached,
   onRun,
 }: {
   data: ScorecardData | null | undefined;
-  loading: boolean;
+  progress: Progress | null;
+  cached: boolean;
   onRun: () => void;
 }) {
+  const running = progress != null;
   return (
     <div className="card panel">
       <h2>Scorecard</h2>
-      {data == null ? (
+
+      {running ? (
+        <>
+          <p className="empty">{progress.message}…</p>
+          <div className="progress" aria-label="scoring progress">
+            <span style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
+          </div>
+        </>
+      ) : data == null ? (
         <>
           <p className="empty">
             The operating window comes from a threshold search on the cell population.
             Run it to score this configuration.
           </p>
-          <button className="btn" onClick={onRun} disabled={loading}>
-            {loading ? "Scoring…" : "Run scorecard"}
+          <button className="btn" onClick={onRun}>
+            Run scorecard
           </button>
         </>
       ) : !data.activated ? (
@@ -37,6 +50,7 @@ export function Scorecard({
             <span className={`pill ${data.usable ? "win" : "lost"}`}>
               {data.usable ? "usable" : "tight"}
             </span>
+            {cached && <span className="pill cached">cached</span>}
           </div>
           <div className="sub">selective window above the target threshold</div>
           <div className="rows">
@@ -61,6 +75,9 @@ export function Scorecard({
               </span>
             </div>
           </div>
+          <button className="btn ghost" onClick={onRun}>
+            Re-run
+          </button>
         </>
       )}
     </div>

@@ -13,5 +13,6 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    clearMocks: true, // reset mock call history before each test (beforeEach re-sets impls)
   },
 });

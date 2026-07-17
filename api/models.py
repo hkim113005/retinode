@@ -73,6 +73,20 @@ class ScorecardResponse(BaseModel):
     safe_at_target: bool | None = None
 
 
+class JobStatus(BaseModel):
+    """A background job's state, polled by the client. ``scorecard`` is present once
+    ``status`` is ``"done"``; ``cached`` means it was served from a prior identical
+    run without recomputing (P7 S3)."""
+
+    id: str
+    status: Literal["running", "done", "error"]
+    fraction: float  # 0..1 progress
+    message: str
+    cached: bool = False
+    scorecard: ScorecardResponse | None = None
+    error: str | None = None
+
+
 class CompareResponse(BaseModel):
     """One configuration scored for the Compare screen: the field and its scene
     overlays always, the scorecard only when requested (it costs a threshold

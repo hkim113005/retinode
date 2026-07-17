@@ -1,10 +1,10 @@
 // The Compare screen: control rail → live analytical field, plus an on-demand
-// scorecard. Editing a control refetches the field (debounced); the field is fast
-// and NEURON-free, so the preview updates as you drag. The scorecard is separate
-// state — a field refetch never clobbers a computed operating window, and changing
-// a control clears the (now-stale) scorecard.
+// scorecard. Editing a control refetches the field (debounced, NEURON-free). The
+// scorecard runs as a background job (a NEURON threshold search) — submit, then poll
+// to completion — kept in separate state so a field refetch never clobbers it, and
+// cleared when a control changes (the window no longer matches).
 import { useCallback, useEffect, useRef, useState } from "react";
-import { postCompare } from "../api/client";
+import { getJob, postCompare, postScore } from "../api/client";
 import type { CompareResponse, Scorecard as ScorecardData, SceneControls } from "../api/client";
 import { ControlRail } from "../components/ControlRail";
 import type { Controls } from "../components/ControlRail";
@@ -28,29 +28,39 @@ const asRequest = (c: Controls, includeScorecard: boolean): SceneControls => ({
   include_scorecard: includeScorecard,
 });
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export interface Progress {
+  fraction: number;
+  message: string;
+}
+
 export function Compare() {
   const [controls, setControls] = useState<Controls>(DEFAULTS);
   const [scene, setScene] = useState<CompareResponse | null>(null);
   const [scorecard, setScorecard] = useState<ScorecardData | null>(null);
-  const [scoring, setScoring] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [cached, setCached] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const latest = useRef(0);
+  const fieldTicket = useRef(0);
+  const scoreTicket = useRef(0);
 
   // live field preview, debounced; the scorecard is not requested here
   useEffect(() => {
-    const ticket = ++latest.current;
-    const ctrl = new AbortController();
+    const ticket = ++fieldTicket.current;
+    scoreTicket.current++; // a control change invalidates any in-flight scoring
     setScorecard(null); // the operating window no longer matches these controls
+    const ctrl = new AbortController();
     const timer = setTimeout(() => {
       postCompare(asRequest(controls, false), ctrl.signal)
         .then((res) => {
-          if (ticket === latest.current) {
+          if (ticket === fieldTicket.current) {
             setScene(res);
             setError(null);
           }
         })
         .catch((e: unknown) => {
-          if (ticket === latest.current && !ctrl.signal.aborted) {
+          if (ticket === fieldTicket.current && !ctrl.signal.aborted) {
             setError(e instanceof Error ? e.message : "request failed");
           }
         });
@@ -62,11 +72,25 @@ export function Compare() {
   }, [controls]);
 
   const runScorecard = useCallback(() => {
-    setScoring(true);
-    postCompare(asRequest(controls, true))
-      .then((res) => setScorecard(res.scorecard ?? { activated: false }))
+    const ticket = ++scoreTicket.current;
+    setProgress({ fraction: 0, message: "submitting" });
+    (async () => {
+      let job = await postScore(asRequest(controls, false));
+      while (job.status === "running") {
+        if (ticket !== scoreTicket.current) return; // controls changed — abandon
+        setProgress({ fraction: job.fraction, message: job.message });
+        await sleep(400);
+        job = await getJob(job.id);
+      }
+      if (ticket !== scoreTicket.current) return;
+      if (job.status === "error") throw new Error(job.error ?? "scoring failed");
+      setScorecard(job.scorecard ?? { activated: false });
+      setCached(job.cached);
+    })()
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "scoring failed"))
-      .finally(() => setScoring(false));
+      .finally(() => {
+        if (ticket === scoreTicket.current) setProgress(null);
+      });
   }, [controls]);
 
   const layoutName = controls.layout === "bipolar" ? "Bipolar · local return" : "Monopolar";
@@ -96,7 +120,12 @@ export function Compare() {
       </main>
       <aside className="inspect">
         <ControlRail controls={controls} onChange={setControls} />
-        <Scorecard data={scorecard} loading={scoring} onRun={runScorecard} />
+        <Scorecard
+          data={scorecard}
+          progress={progress}
+          cached={cached}
+          onRun={runScorecard}
+        />
       </aside>
     </div>
   );

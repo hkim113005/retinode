@@ -14,7 +14,8 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routes import compare
+from .jobs import JobRegistry
+from .routes import compare, score
 
 
 def _default_provider() -> Callable[..., Any]:
@@ -30,6 +31,7 @@ def create_app(*, thresholds_provider: Callable[..., Any] | None = None) -> Fast
     threshold source (tests inject a fast fake; None → the real population solve)."""
     app = FastAPI(title="Retinode API", version="0.1.0")
     app.state.thresholds_provider = thresholds_provider or _default_provider()
+    app.state.jobs = JobRegistry()
 
     # Dev CORS: the Vite client runs on a different origin (S2). Tightened later.
     app.add_middleware(
@@ -44,4 +46,5 @@ def create_app(*, thresholds_provider: Callable[..., Any] | None = None) -> Fast
         return {"status": "ok"}
 
     app.include_router(compare.router)
+    app.include_router(score.router)
     return app

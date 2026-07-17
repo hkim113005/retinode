@@ -118,5 +118,10 @@ canvas.field { width: 100%; height: auto; display: block; border-radius: 12px; }
 .btn { border: 0; border-radius: 12px; padding: 10px; font-family: var(--sans); font-size: 13px; font-weight: 640; color: #fff; background: var(--accent); cursor: pointer; width: 100%; box-shadow: var(--shadow); }
 .btn:hover { background: var(--accent-strong); }
 .btn:disabled { background: var(--inset); color: var(--faint); cursor: default; box-shadow: none; }
+.btn.ghost { background: transparent; color: var(--accent-strong); box-shadow: none; border: 1px solid var(--border); margin-top: 12px; }
+.btn.ghost:hover { background: var(--accent-soft); }
+.progress { height: 8px; border-radius: 6px; background: var(--inset); border: 1px solid var(--border); overflow: hidden; margin-top: 10px; }
+.progress span { display: block; height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.3s; }
+.pill.cached { background: var(--inset); color: var(--muted); margin-left: 6px; }
 .foot { font-size: 11px; color: var(--faint); line-height: 1.5; margin-top: 8px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }

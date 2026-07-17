@@ -163,13 +163,24 @@ Pydantic models mirror.
   test + build. Verified live end-to-end in the browser: the field renders and
   updates on control edits (monopolar → bipolar dipole). 7 web tests, 333 fast.
 
-- **P7 S3 — The async job model (FEM/NEURON, streamed).** A job layer over
-  `engine.study.runner` (resumable) + the project store: submit an **evaluate**
-  (real NEURON thresholds) or an **FEM field** as a background job, stream P5
-  progress, cache by `result_key`, dispatch FEM to the conda interpreter (D5).
-  Wire the **"Run accurately"** flow: results re-render **badged FEM** with a
-  **divergence note** vs analytical. *Done:* a config runs to a real
-  threshold/FEM result without blocking, and a re-submit is served from cache.
+- **P7 S3 — The async job model (NEURON scorecard) — done (FEM dispatch: follow-up).**
+  A dependency-free in-process job model (`api/jobs.py`: a thread pool + a lock +
+  a result cache): `submit(key, task)` runs a task on a background thread, tracks
+  progress, and **caches by key** so a re-submit is served instantly. The scorecard
+  now runs through it — `POST /score` submits a job that runs `evaluate` (the real
+  NEURON population solve in production, an injectable fake in tests); `GET /jobs/{id}`
+  polls progress. The React Compare screen **submits then polls**, showing a progress
+  bar while the job runs and a **cached** badge when reused; the scorecard is separate
+  state, so a field refetch never clobbers it. Verified live in the browser (submit →
+  progress → operating window; a control change invalidates the cache and the safety
+  ceiling re-computes) and over HTTP (running → done → cached). Tests: the registry
+  (run/cache/error), the endpoints with a fast fake, a `neuron`-marked real-threshold
+  job, and web tests for the poll + cache paths. *Done:* a config runs to a real
+  threshold result without blocking, and a re-submit is served from cache.
+  **Remaining S3 slice:** the **FEM "Run accurately"** field flow — dispatch an FEM
+  solve to the `retinode-fem` conda interpreter (D5) and re-render the field
+  **badged FEM** with a divergence note. The generic job model above is the seam it
+  plugs into; the two-env subprocess dispatch is its own increment.
 
 - **P7 S4 — Study & Pareto screen.** Build a sweep by choosing parameters + ranges
   (electrode size, pitch, return radius, steering weights — **and** 3D pillar

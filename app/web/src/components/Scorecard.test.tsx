@@ -19,18 +19,32 @@ const USABLE: ScorecardData = {
 
 describe("Scorecard", () => {
   it("prompts to run when unscored", () => {
-    render(<Scorecard data={null} loading={false} onRun={vi.fn()} />);
+    render(<Scorecard data={null} progress={null} cached={false} onRun={vi.fn()} />);
     expect(screen.getByRole("button", { name: /Run scorecard/ })).toBeInTheDocument();
   });
 
-  it("renders the operating window when activated", () => {
-    render(<Scorecard data={USABLE} loading={false} onRun={vi.fn()} />);
+  it("shows the job's progress while running", () => {
+    render(
+      <Scorecard
+        data={null}
+        progress={{ fraction: 0.4, message: "solving thresholds" }}
+        cached={false}
+        onRun={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/solving thresholds/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Run scorecard/ })).not.toBeInTheDocument();
+  });
+
+  it("renders the operating window when activated, with a cached badge", () => {
+    render(<Scorecard data={USABLE} progress={null} cached onRun={vi.fn()} />);
     expect(screen.getByText("8.0 µA")).toBeInTheDocument(); // target threshold
     expect(screen.getByText("usable")).toBeInTheDocument();
+    expect(screen.getByText("cached")).toBeInTheDocument();
   });
 
   it("explains a non-activation cleanly", () => {
-    render(<Scorecard data={{ activated: false }} loading={false} onRun={vi.fn()} />);
+    render(<Scorecard data={{ activated: false }} progress={null} cached={false} onRun={vi.fn()} />);
     expect(screen.getByText(/never fired/)).toBeInTheDocument();
   });
 });
