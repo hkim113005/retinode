@@ -186,3 +186,58 @@ def test_real_geometry_sweep_runs_and_resumes(neuron_h, tmp_path):
     # a resumed run recomputes nothing (the "without manual bookkeeping" clause)
     again = geometry_sweep(_E2E_GEOMS, _E2E_PATCH, COND, monopolar_center, store=store)
     assert again.n_cached == len(again.all_results)
+
+
+def test_geometry_field_tier_is_always_fem():
+    """Comparing geometry means FEM, whatever the conductivity: only a field solve
+    that resolves the electrode surface can tell one diameter from another."""
+    from engine.field import FenicsxBackend
+    from engine.study.geometry_sweep import geometry_field_tier
+
+    backend, cond = geometry_field_tier(COND)
+    assert isinstance(backend, FenicsxBackend)
+    assert cond is COND  # geometry, not conductivity, forced the choice
+
+
+def test_geometry_varies_keys_on_diameter():
+    from engine.study.geometry import ArrayGeometry
+    from engine.study.geometry_sweep import geometry_varies
+
+    def g(d, p):
+        return ArrayGeometry(diameter_um=d, pitch_um=p, arrangement="hex", aperture_um=60.0)
+
+    assert geometry_varies([g(8, 40), g(20, 40)]) is True  # different diameter
+    assert geometry_varies([g(10, 30), g(10, 70)]) is False  # only pitch moves
+    assert geometry_varies([g(10, 40)]) is False  # a single geometry compares nothing
+
+
+def test_a_diameter_sweep_on_the_analytical_tier_is_a_loud_error():
+    """The silent-flat-frontier bug, now a raised error at the engine boundary."""
+    from engine.field import AnalyticalBackend
+    from engine.study.geometry import ArrayGeometry
+    from engine.study.geometry_sweep import (
+        GeometryTierError,
+        require_geometry_distinguishable,
+    )
+
+    def g(d):
+        return ArrayGeometry(diameter_um=d, pitch_um=40.0, arrangement="hex", aperture_um=60.0)
+
+    with pytest.raises(GeometryTierError, match="point source"):
+        require_geometry_distinguishable([g(8), g(24)], AnalyticalBackend())
+
+    # a single geometry, or a pitch-only sweep, has nothing the analytical tier
+    # provably cannot see — no error
+    require_geometry_distinguishable([g(10)], AnalyticalBackend())
+
+
+def test_the_fem_tier_is_never_guarded_out():
+    """FEM sees geometry, so a diameter sweep on it is exactly right — no error."""
+    from engine.field import FenicsxBackend
+    from engine.study.geometry import ArrayGeometry
+    from engine.study.geometry_sweep import require_geometry_distinguishable
+
+    def g(d):
+        return ArrayGeometry(diameter_um=d, pitch_um=40.0, arrangement="hex", aperture_um=60.0)
+
+    require_geometry_distinguishable([g(8), g(24)], FenicsxBackend())  # no raise

@@ -191,17 +191,21 @@ def _resolve_backend(
 def resolve_field_tier(
     conductivity: ConductivityModel, *, contrast_tol: float = 0.1
 ) -> BackendChoice:
-    """Pick the cheapest field tier that is trustworthy for this conductivity (D2).
+    """Pick the cheapest field tier trustworthy for this conductivity (D2).
 
-    - **Homogeneous** → the analytical backend (exact for a half-space).
-    - **Layered, mild contrast** (max σ ratio ≤ ``1 + contrast_tol``) → the
-      analytical backend on the homogeneous-σ₁ approximation the P4 S5 regime map
-      shows is trustworthy at low contrast.
+    **Conductivity-only, and blind to electrode geometry.** The analytical backend is
+    a *point source*: exact for a point in a half-space, but it reads an electrode's
+    position and never its extent — two disks of different diameter give a
+    byte-identical field (``docs/electrode-geometry.md``; pinned in
+    ``tests/field/test_regime.py``). So this function answers "which tier for this
+    conductivity", NOT "which tier for this geometry". A sweep that compares geometry
+    must use :func:`geometry_field_tier` / :func:`require_geometry_distinguishable`,
+    or its frontier is flat by construction (``docs/phase-8-findings.md``).
+
+    - **Homogeneous** → analytical.
+    - **Layered, mild contrast** (max σ ratio ≤ ``1 + contrast_tol``) → analytical on
+      the homogeneous-σ₁ approximation the P4 S5 regime map shows is trustworthy.
     - **Layered, stronger contrast** → the DOLFINx FEM backend (needs the FEM env).
-
-    Returns the backend *and* the conductivity to solve with (the mild-contrast
-    case substitutes a homogeneous σ₁). Pass an explicit ``backend`` to
-    ``geometry_sweep`` to override this entirely.
     """
     if isinstance(conductivity, HomogeneousConductivity):
         return AnalyticalBackend(), conductivity
@@ -211,6 +215,53 @@ def resolve_field_tier(
             return AnalyticalBackend(), HomogeneousConductivity(sigma1)
         return FenicsxBackend(), conductivity
     raise TypeError(f"unsupported conductivity model: {type(conductivity).__name__}")
+
+
+class GeometryTierError(RuntimeError):
+    """A geometry comparison was handed a geometry-blind field tier."""
+
+
+def geometry_field_tier(conductivity: ConductivityModel) -> BackendChoice:
+    """The tier for *comparing electrode geometry*: always FEM.
+
+    Only a field solve that resolves the electrode surface (FEM) distinguishes
+    diameter or shape — the analytical point source cannot (see
+    :func:`resolve_field_tier`). This constructs a ``FenicsxBackend``, which is lazy:
+    it imports DOLFINx only when it actually solves, so callers in the uv env can
+    build it and hand it across to the FEM env to run.
+    """
+    return FenicsxBackend(), conductivity
+
+
+def geometry_varies(geometries: Iterable[ArrayGeometry]) -> bool:
+    """Whether these geometries differ in a way the analytical tier cannot see.
+
+    Keyed on **diameter**, the airtight case: diameter never changes an electrode's
+    position, so the point-source field is provably identical across it. (Pitch also
+    reads as inert on a monopolar-centre protocol, because the moved electrodes carry
+    no current — but that is a murkier, protocol-dependent story; diameter is the one
+    that is wrong for *any* protocol, so the guard stands on it.)
+    """
+    return len({round(g.diameter_um, 6) for g in geometries}) > 1
+
+
+def require_geometry_distinguishable(
+    geometries: Iterable[ArrayGeometry], backend: FieldBackend
+) -> None:
+    """Raise if a geometry-varying sweep would run on a geometry-blind tier.
+
+    Turns the silent-flat-frontier bug (``docs/phase-8-findings.md``) into a loud
+    error at the engine boundary: a diameter sweep on the analytical point source
+    yields one identical field for every diameter, so the frontier it feeds is
+    meaningless. Only fire on the analytical tier — the FEM backends see geometry.
+    """
+    geoms = list(geometries)
+    if isinstance(backend, AnalyticalBackend) and geometry_varies(geoms):
+        raise GeometryTierError(
+            "this sweep varies electrode diameter, which the analytical tier cannot "
+            "see (it is a point source): every diameter would yield the same field "
+            "and a flat frontier. Use the FEM tier — engine.study.geometry_field_tier."
+        )
 
 
 def _layer_contrast(conductivity: LayeredConductivity) -> float:
