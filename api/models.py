@@ -78,6 +78,13 @@ class ScorecardResponse(BaseModel):
     limiting: str | None = None
     safety_ceiling_uA: float | None = None
     safe_at_target: bool | None = None
+    # The per-cell off-target thresholds behind ``off_min_uA``, and which cell set it.
+    # The evaluator computes the whole vector (``PopulationThresholds``) and the
+    # scorecard used to collapse it to its minimum — but "how far is the SECOND
+    # bystander?" is a different design question from "how far is the nearest?", and
+    # the answer was already paid for. ``limiting_off_id`` names the binding cell.
+    off_target_thresholds_uA: dict[str, float] | None = None
+    limiting_off_id: str | None = None
 
 
 class ValidationReproduction(BaseModel):

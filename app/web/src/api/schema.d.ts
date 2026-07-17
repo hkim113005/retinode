@@ -280,8 +280,14 @@ export interface components {
             activated: boolean;
             /** Limiting */
             limiting?: string | null;
+            /** Limiting Off Id */
+            limiting_off_id?: string | null;
             /** Off Min Ua */
             off_min_uA?: number | null;
+            /** Off Target Thresholds Ua */
+            off_target_thresholds_uA?: {
+                [key: string]: number;
+            } | null;
             /** Offtarget Hash */
             offtarget_hash?: string | null;
             /** Ratio */

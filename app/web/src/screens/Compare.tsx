@@ -15,6 +15,7 @@ import { History, remember, runKey } from "../components/History";
 import type { Run } from "../components/History";
 import { Rail } from "../components/Rail";
 import { Scorecard } from "../components/Scorecard";
+import { ThresholdPlot } from "../components/ThresholdPlot";
 import type { Screen } from "../nav";
 
 // three.js is heavy and only needed for the 3D loupe — lazy-load it so it stays off
@@ -232,6 +233,9 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
             </Suspense>
           </ErrorBoundary>
         </div>
+        <ErrorBoundary what="The threshold plot">
+          <ThresholdPlot data={scorecard} />
+        </ErrorBoundary>
         <History runs={runs} current={runKey(controls)} onRestore={setControls} />
       </main>
       <aside className="inspect">

@@ -100,4 +100,6 @@ def scorecard_payload(result) -> ScorecardResponse:  # noqa: ANN001 - an Evaluat
         limiting=w.limiting,
         safety_ceiling_uA=w.safety_ceiling_uA,
         safe_at_target=bool(result.safety_at_target and result.safety_at_target.safe),
+        off_target_thresholds_uA=dict(result.thresholds.off_target_thresholds_uA),
+        limiting_off_id=sow.limiting_off_id,
     )

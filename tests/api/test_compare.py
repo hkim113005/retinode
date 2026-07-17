@@ -99,6 +99,9 @@ def test_compare_reports_no_activation_cleanly():
         "activated": False, "target_uA": None, "off_min_uA": None, "ratio": None,
         "window_lo_uA": None, "window_hi_uA": None, "usable_margin_uA": None,
         "usable": None, "limiting": None, "safety_ceiling_uA": None, "safe_at_target": None,
+        # the per-cell vector is absent too: with no target threshold there is no
+        # window for it to explain
+        "off_target_thresholds_uA": None, "limiting_off_id": None,
     }
 
 
@@ -143,3 +146,19 @@ def test_offtarget_hash_tracks_the_policy_not_the_scene():
     assert spec_hash(base) == spec_hash(OffTargetSet())
     assert spec_hash(base) != spec_hash(OffTargetSet(soma_radius_um=60.0))
     assert spec_hash(base) != spec_hash(OffTargetSet(axon_proximity_um=None))
+
+
+def test_scorecard_reports_the_per_cell_off_target_thresholds():
+    """`off_min_uA` is a min() over a vector the evaluator already computed. Which
+    bystander binds the window, and how far behind the next one sits, are different
+    design questions from "how close is the nearest" — and both were already paid
+    for by the threshold search."""
+    provider = _fake_provider(8.0, {"near": 12.0, "far": 30.0})
+    client = TestClient(create_app(thresholds_provider=provider))
+    card = client.post(
+        "/compare", json={**_CONTROLS, "n": 21, "include_scorecard": True}
+    ).json()["scorecard"]
+
+    assert card["off_target_thresholds_uA"] == {"near": 12.0, "far": 30.0}
+    assert card["limiting_off_id"] == "near"  # the nearest bystander binds it
+    assert card["off_min_uA"] == 12.0  # and off_min is that cell's threshold

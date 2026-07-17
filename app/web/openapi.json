@@ -315,6 +315,17 @@
             ],
             "title": "Limiting"
           },
+          "limiting_off_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limiting Off Id"
+          },
           "off_min_uA": {
             "anyOf": [
               {
@@ -325,6 +336,20 @@
               }
             ],
             "title": "Off Min Ua"
+          },
+          "off_target_thresholds_uA": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Off Target Thresholds Ua"
           },
           "offtarget_hash": {
             "anyOf": [
