@@ -193,13 +193,21 @@ Pydantic models mirror.
   Verified live end-to-end: uv React → uv API → subprocess → conda DOLFINx →
   re-render (21% divergence on a 10 µm disk, ~18 s). **S3 complete.**
 
-- **P7 S4 — Study & Pareto screen.** Build a sweep by choosing parameters + ranges
-  (electrode size, pitch, return radius, steering weights — **and** 3D pillar
-  diameter/pitch/height from P6). Show the **cost estimate**, launch, watch an
-  incrementally-filling table and the **selectivity-versus-cost Pareto frontier**
-  (P5 `geometry_sweep` + `pareto_selectivity_safety`). Click a point → inspect its
-  field + scorecard. *Done:* a geometry sweep fills a frontier in the browser, each
-  point inspectable.
+- **P7 S4 — Study & Pareto screen — done (core).** `POST /study` submits a geometry
+  sweep (P5 `geometry_grid` × `monopolar_center`) as a job on the shared registry,
+  streaming per-geometry progress; each activated geometry becomes a point
+  (`cost_uA` = target threshold, `selectivity_uA` = usable window, `safe`), and the
+  endpoint marks the **selectivity-versus-cost frontier** (a safe point beaten on
+  neither axis — the master-plan §15 frontier, distinct from the engine's
+  selectivity-vs-safety `pareto`). The React **Study** screen: a sweep builder
+  (diameter × pitch chips) with a live **cost estimate**, **Run study** → poll → a
+  **Pareto plot** (`ParetoPlot` canvas: frontier as a lit curve, dominated receding,
+  unsafe hollow-red, click a point to inspect its geometry + metrics). The rail now
+  **navigates** (Compare ↔ Study). Tests: the sweep endpoint with a geometry-varying
+  fake provider + a `neuron`-marked real sweep; web tests (cost estimate, run→frontier,
+  nav). Verified live: 16 geometries → a 3-point frontier, click-to-inspect (d16·p40,
+  9.6 µA / 10.1 µA window). **Trimmed to follow-ups:** brush-select → Candidates,
+  ghost-field-on-hover, small multiples, incremental fill, and the 3D pillar sweep.
 
 - **P7 S5 — The 3D scene (react-three-fiber).** Render the posed array — flat faces,
   3D bodies, **tilt**, imported CAD — plus the tissue slab, the cell population, and

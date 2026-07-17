@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/study": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Study */
+        post: operations["submit_study_study_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -181,6 +198,7 @@ export interface components {
              * @enum {string}
              */
             status: "running" | "done" | "error";
+            study?: components["schemas"]["StudyResult"] | null;
         };
         /**
          * SceneControls
@@ -263,6 +281,71 @@ export interface components {
             window_hi_uA?: number | null;
             /** Window Lo Ua */
             window_lo_uA?: number | null;
+        };
+        /**
+         * StudyControls
+         * @description A geometry sweep: the diameter × pitch grid to explore, plus the patch it is
+         *     scored on. Combos with ``pitch < diameter`` (which would overlap) are dropped.
+         */
+        StudyControls: {
+            /**
+             * Aperture Um
+             * @default 120
+             */
+            aperture_um: number;
+            /**
+             * Arrangement
+             * @default hex
+             * @enum {string}
+             */
+            arrangement: "grid" | "hex";
+            /** Diameters Um */
+            diameters_um?: number[];
+            /**
+             * Neighbor Um
+             * @default 40
+             */
+            neighbor_um: number;
+            /**
+             * Phase Width Us
+             * @default 200
+             */
+            phase_width_us: number;
+            /** Pitches Um */
+            pitches_um?: number[];
+            /**
+             * Sigma S Per M
+             * @default 1
+             */
+            sigma_S_per_m: number;
+        };
+        /**
+         * StudyPoint
+         * @description One evaluated geometry on the selectivity-versus-cost plane.
+         */
+        StudyPoint: {
+            /** Cost Ua */
+            cost_uA: number;
+            /** Diameter Um */
+            diameter_um: number;
+            /** On Frontier */
+            on_frontier: boolean;
+            /** Pitch Um */
+            pitch_um: number;
+            /** Safe */
+            safe: boolean;
+            /** Selectivity Ua */
+            selectivity_uA: number;
+        };
+        /**
+         * StudyResult
+         * @description A completed sweep: every activated geometry, and how many were swept.
+         */
+        StudyResult: {
+            /** N Geometries */
+            n_geometries: number;
+            /** Points */
+            points: components["schemas"]["StudyPoint"][];
         };
         /** ValidationError */
         ValidationError: {
@@ -415,6 +498,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SceneControls"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_study_study_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudyControls"];
             };
         };
         responses: {

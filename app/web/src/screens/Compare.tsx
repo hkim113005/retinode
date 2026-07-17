@@ -11,6 +11,7 @@ import type { Controls } from "../components/ControlRail";
 import { FieldCanvas } from "../components/FieldCanvas";
 import { Rail } from "../components/Rail";
 import { Scorecard } from "../components/Scorecard";
+import type { Screen } from "../nav";
 
 const DEFAULTS: Controls = {
   layout: "single",
@@ -35,7 +36,7 @@ export interface Progress {
   message: string;
 }
 
-export function Compare() {
+export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
   const [controls, setControls] = useState<Controls>(DEFAULTS);
   const [scene, setScene] = useState<CompareResponse | null>(null);
   const [tier, setTier] = useState<"analytical" | "fem">("analytical");
@@ -129,7 +130,12 @@ export function Compare() {
 
   return (
     <div className="app">
-      <Rail active="Compare" tier={tier === "fem" ? "FEM" : "Analytical"} safe="field only" />
+      <Rail
+        active="Compare"
+        tier={tier === "fem" ? "FEM" : "Analytical"}
+        safe="field only"
+        onNavigate={onNavigate}
+      />
       <main className="stage">
         <div className="stage-head">
           <div>

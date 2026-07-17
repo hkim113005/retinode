@@ -10,6 +10,9 @@ export type Scorecard = components["schemas"]["ScorecardResponse"];
 export type ElectrodeMarker = components["schemas"]["ElectrodeMarker"];
 export type CellMarker = components["schemas"]["CellMarker"];
 export type JobStatus = components["schemas"]["JobStatus"];
+export type StudyControls = components["schemas"]["StudyControls"];
+export type StudyPoint = components["schemas"]["StudyPoint"];
+export type StudyResult = components["schemas"]["StudyResult"];
 
 // Dev: Vite proxies /api → the FastAPI server on :8000 (see vite.config.ts).
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
@@ -43,6 +46,17 @@ export async function postScore(controls: SceneControls): Promise<JobStatus> {
 export async function getJob(id: string): Promise<JobStatus> {
   const res = await fetch(`${BASE}/jobs/${id}`);
   if (!res.ok) throw new Error(`job poll failed (${res.status})`);
+  return (await res.json()) as JobStatus;
+}
+
+// Submit a geometry sweep (a job): returns points + Pareto frontier when done.
+export async function postStudy(controls: StudyControls): Promise<JobStatus> {
+  const res = await fetch(`${BASE}/study`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(controls),
+  });
+  if (!res.ok) throw new Error(`study failed (${res.status})`);
   return (await res.json()) as JobStatus;
 }
 

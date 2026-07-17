@@ -73,6 +73,37 @@ class ScorecardResponse(BaseModel):
     safe_at_target: bool | None = None
 
 
+class StudyControls(BaseModel):
+    """A geometry sweep: the diameter × pitch grid to explore, plus the patch it is
+    scored on. Combos with ``pitch < diameter`` (which would overlap) are dropped."""
+
+    diameters_um: list[float] = Field(default_factory=lambda: [8.0, 12.0, 16.0, 20.0])
+    pitches_um: list[float] = Field(default_factory=lambda: [30.0, 40.0, 55.0, 70.0])
+    arrangement: Literal["grid", "hex"] = "hex"
+    aperture_um: float = Field(120.0, ge=0)
+    phase_width_us: float = Field(200.0, gt=0)
+    neighbor_um: float = Field(40.0, gt=0)
+    sigma_S_per_m: float = Field(1.0, gt=0)
+
+
+class StudyPoint(BaseModel):
+    """One evaluated geometry on the selectivity-versus-cost plane."""
+
+    diameter_um: float
+    pitch_um: float
+    cost_uA: float  # current to fire the target (its threshold)
+    selectivity_uA: float  # the selective window above threshold
+    safe: bool
+    on_frontier: bool  # not beaten on both axes by another safe geometry
+
+
+class StudyResult(BaseModel):
+    """A completed sweep: every activated geometry, and how many were swept."""
+
+    points: list[StudyPoint]
+    n_geometries: int
+
+
 class JobStatus(BaseModel):
     """A background job's state, polled by the client. When ``status`` is ``"done"``,
     the matching result is present — ``scorecard`` for a score job, ``field`` (+
@@ -87,6 +118,7 @@ class JobStatus(BaseModel):
     scorecard: ScorecardResponse | None = None
     field: FieldGridResponse | None = None
     max_divergence_pct: float | None = None
+    study: StudyResult | None = None
     error: str | None = None
 
 

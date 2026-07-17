@@ -212,6 +212,16 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "study": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StudyResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -409,6 +419,121 @@
           "activated"
         ],
         "title": "ScorecardResponse",
+        "type": "object"
+      },
+      "StudyControls": {
+        "description": "A geometry sweep: the diameter \u00d7 pitch grid to explore, plus the patch it is\nscored on. Combos with ``pitch < diameter`` (which would overlap) are dropped.",
+        "properties": {
+          "aperture_um": {
+            "default": 120.0,
+            "minimum": 0.0,
+            "title": "Aperture Um",
+            "type": "number"
+          },
+          "arrangement": {
+            "default": "hex",
+            "enum": [
+              "grid",
+              "hex"
+            ],
+            "title": "Arrangement",
+            "type": "string"
+          },
+          "diameters_um": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Diameters Um",
+            "type": "array"
+          },
+          "neighbor_um": {
+            "default": 40.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Neighbor Um",
+            "type": "number"
+          },
+          "phase_width_us": {
+            "default": 200.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Phase Width Us",
+            "type": "number"
+          },
+          "pitches_um": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Pitches Um",
+            "type": "array"
+          },
+          "sigma_S_per_m": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Sigma S Per M",
+            "type": "number"
+          }
+        },
+        "title": "StudyControls",
+        "type": "object"
+      },
+      "StudyPoint": {
+        "description": "One evaluated geometry on the selectivity-versus-cost plane.",
+        "properties": {
+          "cost_uA": {
+            "title": "Cost Ua",
+            "type": "number"
+          },
+          "diameter_um": {
+            "title": "Diameter Um",
+            "type": "number"
+          },
+          "on_frontier": {
+            "title": "On Frontier",
+            "type": "boolean"
+          },
+          "pitch_um": {
+            "title": "Pitch Um",
+            "type": "number"
+          },
+          "safe": {
+            "title": "Safe",
+            "type": "boolean"
+          },
+          "selectivity_uA": {
+            "title": "Selectivity Ua",
+            "type": "number"
+          }
+        },
+        "required": [
+          "diameter_um",
+          "pitch_um",
+          "cost_uA",
+          "selectivity_uA",
+          "safe",
+          "on_frontier"
+        ],
+        "title": "StudyPoint",
+        "type": "object"
+      },
+      "StudyResult": {
+        "description": "A completed sweep: every activated geometry, and how many were swept.",
+        "properties": {
+          "n_geometries": {
+            "title": "N Geometries",
+            "type": "integer"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/StudyPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points",
+          "n_geometries"
+        ],
+        "title": "StudyResult",
         "type": "object"
       },
       "ValidationError": {
@@ -632,6 +757,44 @@
           }
         },
         "summary": "Submit Score"
+      }
+    },
+    "/study": {
+      "post": {
+        "operationId": "submit_study_study_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyControls"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Study"
       }
     }
   }
