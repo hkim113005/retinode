@@ -143,7 +143,7 @@
         "type": "object"
       },
       "JobStatus": {
-        "description": "A background job's state, polled by the client. ``scorecard`` is present once\n``status`` is ``\"done\"``; ``cached`` means it was served from a prior identical\nrun without recomputing (P7 S3).",
+        "description": "A background job's state, polled by the client. When ``status`` is ``\"done\"``,\nthe matching result is present \u2014 ``scorecard`` for a score job, ``field`` (+\n``max_divergence_pct`` vs the analytical preview) for an accurate-field job.\n``cached`` means it was served from a prior identical run (P7 S3).",
         "properties": {
           "cached": {
             "default": false,
@@ -161,6 +161,16 @@
             ],
             "title": "Error"
           },
+          "field": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FieldGridResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "fraction": {
             "title": "Fraction",
             "type": "number"
@@ -168,6 +178,17 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "max_divergence_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Divergence Pct"
           },
           "message": {
             "title": "Message",
@@ -474,6 +495,44 @@
           }
         },
         "summary": "Compare"
+      }
+    },
+    "/field/accurate": {
+      "post": {
+        "operationId": "submit_accurate_field_field_accurate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SceneControls"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Accurate Field"
       }
     },
     "/health": {

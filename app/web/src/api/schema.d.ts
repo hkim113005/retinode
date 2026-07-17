@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/field/accurate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Accurate Field */
+        post: operations["submit_accurate_field_field_accurate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -136,9 +153,10 @@ export interface components {
         };
         /**
          * JobStatus
-         * @description A background job's state, polled by the client. ``scorecard`` is present once
-         *     ``status`` is ``"done"``; ``cached`` means it was served from a prior identical
-         *     run without recomputing (P7 S3).
+         * @description A background job's state, polled by the client. When ``status`` is ``"done"``,
+         *     the matching result is present — ``scorecard`` for a score job, ``field`` (+
+         *     ``max_divergence_pct`` vs the analytical preview) for an accurate-field job.
+         *     ``cached`` means it was served from a prior identical run (P7 S3).
          */
         JobStatus: {
             /**
@@ -148,10 +166,13 @@ export interface components {
             cached: boolean;
             /** Error */
             error?: string | null;
+            field?: components["schemas"]["FieldGridResponse"] | null;
             /** Fraction */
             fraction: number;
             /** Id */
             id: string;
+            /** Max Divergence Pct */
+            max_divergence_pct?: number | null;
             /** Message */
             message: string;
             scorecard?: components["schemas"]["ScorecardResponse"] | null;
@@ -285,6 +306,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompareResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_accurate_field_field_accurate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SceneControls"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatus"];
                 };
             };
             /** @description Validation Error */

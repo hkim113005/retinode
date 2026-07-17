@@ -177,10 +177,21 @@ Pydantic models mirror.
   (run/cache/error), the endpoints with a fast fake, a `neuron`-marked real-threshold
   job, and web tests for the poll + cache paths. *Done:* a config runs to a real
   threshold result without blocking, and a re-submit is served from cache.
-  **Remaining S3 slice:** the **FEM "Run accurately"** field flow — dispatch an FEM
-  solve to the `retinode-fem` conda interpreter (D5) and re-render the field
-  **badged FEM** with a divergence note. The generic job model above is the seam it
-  plugs into; the two-env subprocess dispatch is its own increment.
+
+- **P7 S3b — FEM "Run accurately" dispatch (D5) — done.** The exact field crosses the
+  two-env boundary: `api/fem_job.py` (the conda-side solver — reads a scene on stdin,
+  meshes tissue-minus-electrode, solves the DOLFINx field, writes the grid to a temp
+  file so gmsh/PETSc stdout noise can't corrupt it) is invoked by `api/fem_worker.py`
+  as a subprocess in the `retinode-fem` interpreter (`$RETINODE_FEM_PYTHON`), which
+  then computes the field's **divergence from the analytical preview**. `api/__init__`
+  is now lazy so `api.fem_job` imports in the FEM env (no FastAPI there).
+  `POST /field/accurate` submits it as a job on the same registry; the React
+  **"Run accurately (FEM)"** flow polls it and re-renders the field **badged FEM**
+  (tier draft→inked, the rail Accuracy badge flips) with the divergence note. Tests:
+  `fem_worker` with a mocked subprocess + the endpoint via the job (fast job);
+  `tests/field/test_fem_dispatch.py` runs the real conda-side solver (`fem` job).
+  Verified live end-to-end: uv React → uv API → subprocess → conda DOLFINx →
+  re-render (21% divergence on a 10 µm disk, ~18 s). **S3 complete.**
 
 - **P7 S4 — Study & Pareto screen.** Build a sweep by choosing parameters + ranges
   (electrode size, pitch, return radius, steering weights — **and** 3D pillar

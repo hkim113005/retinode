@@ -45,3 +45,15 @@ export async function getJob(id: string): Promise<JobStatus> {
   if (!res.ok) throw new Error(`job poll failed (${res.status})`);
   return (await res.json()) as JobStatus;
 }
+
+// "Run accurately": solve the exact FEM field (dispatched to the conda env) as a
+// job; the result carries the FEM field grid and its divergence from analytical.
+export async function postAccurateField(controls: SceneControls): Promise<JobStatus> {
+  const res = await fetch(`${BASE}/field/accurate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(controls),
+  });
+  if (!res.ok) throw new Error(`accurate field failed (${res.status})`);
+  return (await res.json()) as JobStatus;
+}

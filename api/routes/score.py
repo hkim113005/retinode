@@ -40,14 +40,20 @@ def _cache_key(c: SceneControls) -> str:
     )
 
 
-def _as_status(job: Job) -> JobStatus:
+def to_job_status(job: Job) -> JobStatus:
+    """Map a registry Job to the API status. A job's result is a keyed dict so one
+    status shape carries both kinds (a score job's ``scorecard``, an accurate-field
+    job's ``field`` + ``max_divergence_pct``)."""
+    result = job.result or {}
     return JobStatus(
         id=job.id,
         status=job.status,  # type: ignore[arg-type]
         fraction=job.fraction,
         message=job.message,
         cached=job.cached,
-        scorecard=job.result,
+        scorecard=result.get("scorecard"),
+        field=result.get("field"),
+        max_divergence_pct=result.get("max_divergence_pct"),
         error=job.error,
     )
 
@@ -64,10 +70,10 @@ def submit_score(controls: SceneControls, request: Request) -> JobStatus:
             thresholds_provider=provider,
         )
         report(0.95, "scoring the operating window")
-        return scorecard_payload(result)
+        return {"scorecard": scorecard_payload(result)}
 
     job = request.app.state.jobs.submit(_cache_key(controls), task)
-    return _as_status(job)
+    return to_job_status(job)
 
 
 @router.get("/jobs/{job_id}", response_model=JobStatus)
@@ -75,7 +81,7 @@ def get_job(job_id: str, request: Request) -> JobStatus:
     job = request.app.state.jobs.get(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="no such job")
-    return _as_status(job)
+    return to_job_status(job)
 
 
 def build_scene_specs(controls: SceneControls):

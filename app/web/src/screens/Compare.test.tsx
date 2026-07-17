@@ -6,7 +6,13 @@ import { Compare } from "./Compare";
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
-  return { ...actual, postCompare: vi.fn(), postScore: vi.fn(), getJob: vi.fn() };
+  return {
+    ...actual,
+    postCompare: vi.fn(),
+    postScore: vi.fn(),
+    postAccurateField: vi.fn(),
+    getJob: vi.fn(),
+  };
 });
 
 const FIELD_ONLY: CompareResponse = {
@@ -55,10 +61,21 @@ const DONE: JobStatus = {
   scorecard: SCORE,
 };
 
+const FEM_DONE: JobStatus = {
+  id: "f1",
+  status: "done",
+  fraction: 1,
+  message: "done",
+  cached: false,
+  field: { xs_um: [-1, 0, 1], ys_um: [-1, 0, 1], ve_mV: [[-2, -3, -2]], vmax_mV: 3 },
+  max_divergence_pct: 21,
+};
+
 describe("Compare", () => {
   beforeEach(() => {
     vi.mocked(client.postCompare).mockResolvedValue(FIELD_ONLY);
     vi.mocked(client.postScore).mockResolvedValue(RUNNING);
+    vi.mocked(client.postAccurateField).mockResolvedValue(RUNNING);
     vi.mocked(client.getJob).mockResolvedValue(DONE);
   });
 
@@ -86,5 +103,16 @@ describe("Compare", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Run scorecard/ }));
     expect(await screen.findByText("cached")).toBeInTheDocument();
     expect(client.getJob).not.toHaveBeenCalled();
+  });
+
+  it("runs the FEM field accurately and badges the tier with a divergence note", async () => {
+    vi.mocked(client.getJob).mockResolvedValue(FEM_DONE);
+    render(<Compare />);
+    fireEvent.click(await screen.findByRole("button", { name: /Run accurately/ }));
+    expect(await screen.findByText(/FEM ✓ inked/)).toBeInTheDocument();
+    expect(screen.getByText(/differs from the analytical preview by up to 21%/)).toBeInTheDocument();
+    expect(client.postAccurateField).toHaveBeenCalledWith(
+      expect.objectContaining({ layout: "single" }),
+    );
   });
 });

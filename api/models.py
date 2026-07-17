@@ -74,9 +74,10 @@ class ScorecardResponse(BaseModel):
 
 
 class JobStatus(BaseModel):
-    """A background job's state, polled by the client. ``scorecard`` is present once
-    ``status`` is ``"done"``; ``cached`` means it was served from a prior identical
-    run without recomputing (P7 S3)."""
+    """A background job's state, polled by the client. When ``status`` is ``"done"``,
+    the matching result is present — ``scorecard`` for a score job, ``field`` (+
+    ``max_divergence_pct`` vs the analytical preview) for an accurate-field job.
+    ``cached`` means it was served from a prior identical run (P7 S3)."""
 
     id: str
     status: Literal["running", "done", "error"]
@@ -84,6 +85,8 @@ class JobStatus(BaseModel):
     message: str
     cached: bool = False
     scorecard: ScorecardResponse | None = None
+    field: FieldGridResponse | None = None
+    max_divergence_pct: float | None = None
     error: str | None = None
 
 

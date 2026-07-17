@@ -15,8 +15,15 @@ function withAlpha(hex: string, a: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
 
-export function FieldCanvas({ data }: { data: CompareResponse | null }) {
+export function FieldCanvas({
+  data,
+  tier = "analytical",
+}: {
+  data: CompareResponse | null;
+  tier?: "analytical" | "fem";
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const inked = tier === "fem"; // FEM results draw crisper (docs/phase-7-design.md)
 
   useEffect(() => {
     const canvas = ref.current;
@@ -53,7 +60,7 @@ export function FieldCanvas({ data }: { data: CompareResponse | null }) {
         const t = ve_mV[i][j] / (vmax_mV || 1);
         const a = Math.min(1, Math.abs(t));
         if (a < 0.02) continue;
-        ctx.fillStyle = withAlpha(t < 0 ? field : warm, a * 0.85);
+        ctx.fillStyle = withAlpha(t < 0 ? field : warm, a * (inked ? 1 : 0.85));
         ctx.fillRect(toX(xs_um[j]) - dx / 2, toY(ys_um[i]) - dx / 2, dx, dx);
       }
     }
@@ -91,7 +98,7 @@ export function FieldCanvas({ data }: { data: CompareResponse | null }) {
   }, [data]);
 
   return (
-    <div className="card canvas-wrap">
+    <div className={`card canvas-wrap${inked ? " inked" : ""}`}>
       <canvas
         ref={ref}
         className="field"
