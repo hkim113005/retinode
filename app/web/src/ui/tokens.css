@@ -91,6 +91,52 @@ button.step:hover { background: var(--accent-soft); color: var(--ink); }
 .canvas-wrap { padding: 8px; position: relative; }
 .canvas-wrap.inked { border-color: var(--accent-soft); box-shadow: var(--shadow), inset 0 0 0 1px var(--accent-soft); }
 
+/* Keyboard: a visible focus ring on anything focusable. Using :focus-visible (not
+   :focus) means mouse users never see it, so keyboard support costs the pointer
+   user nothing. */
+:where(button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px;
+}
+
+/* Respect the OS setting. The auto-rotating 3D loupe and the palette's entrance are
+   the only motion here; both stop dead rather than degrade. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+  }
+}
+
+/* the command palette */
+.cmdhint { position: fixed; right: 18px; bottom: 16px; z-index: 5; display: flex; gap: 7px;
+  align-items: center; padding: 6px 11px; border-radius: 999px; background: var(--glass);
+  border: 1px solid var(--border); color: var(--faint); font-size: 11px;
+  font-family: var(--sans); cursor: pointer; opacity: 0.7; }
+.cmdhint:hover { opacity: 1; color: var(--ink); }
+.cmdhint kbd { font-family: var(--mono); font-size: 10px; padding: 1px 5px; border-radius: 5px;
+  background: var(--inset); border: 1px solid var(--border); color: var(--muted); }
+
+.scrim { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(2px); display: flex; justify-content: center;
+  align-items: flex-start; padding-top: 14vh; }
+.palette { width: min(560px, 92vw); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28); overflow: hidden;
+  animation: pop 0.12s ease-out; }
+@keyframes pop { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+.palette input { width: 100%; box-sizing: border-box; padding: 15px 18px; border: 0;
+  border-bottom: 1px solid var(--border); background: transparent; color: var(--ink);
+  font-family: var(--sans); font-size: 14.5px; outline: none; }
+.cmdlist { list-style: none; margin: 0; padding: 6px; max-height: 46vh; overflow-y: auto; }
+.cmdlist li { display: flex; align-items: baseline; gap: 10px; padding: 8px 12px;
+  border-radius: 9px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.cmdlist li.on { background: var(--accent-soft); }
+.cmdlist li.off { opacity: 0.4; cursor: default; }
+.cmdlist li .g { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); min-width: 62px; }
+.cmdlist li .l { flex: 1; }
+.cmdlist li .h { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.cmdlist li.none { color: var(--muted); cursor: default; justify-content: center; padding: 18px; }
+
 /* the Pareto hover tooltip: this one DOES follow the cursor, because it is bound to
    a specific mark rather than to the plot as a whole */
 .tip { position: absolute; z-index: 4; pointer-events: none; display: grid; gap: 1px;

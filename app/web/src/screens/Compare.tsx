@@ -3,9 +3,10 @@
 // refetches the analytical field (debounced) and resets any FEM/scorecard result,
 // which no longer matches. The scorecard and the FEM field each run as a background
 // job (submit then poll), kept in their own state so nothing clobbers anything else.
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getJob, postAccurateField, postCompare, postScore } from "../api/client";
 import type { CompareResponse, Scorecard as ScorecardData, SceneControls } from "../api/client";
+import { useCommands } from "../components/Commands";
 import { ControlRail } from "../components/ControlRail";
 import type { Controls } from "../components/ControlRail";
 import { FieldCanvas } from "../components/FieldCanvas";
@@ -131,6 +132,45 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
   }, [controls]);
 
   const layoutName = controls.layout === "bipolar" ? "Bipolar · local return" : "Monopolar";
+
+  useCommands(
+    "compare",
+    useMemo(
+      () => [
+        {
+          id: "run-scorecard",
+          group: "Compare",
+          label: "Run scorecard",
+          hint: scoreProgress ? "already running" : "NEURON · background job",
+          disabled: !!scoreProgress,
+          run: runScorecard,
+        },
+        {
+          id: "run-fem",
+          group: "Compare",
+          label: "Run accurately (FEM)",
+          hint: femProgress ? "already running" : "conda env · background job",
+          disabled: !!femProgress,
+          run: runAccurate,
+        },
+        {
+          id: "toggle-return",
+          group: "Compare",
+          label: controls.layout === "bipolar" ? "Switch to monopolar" : "Switch to bipolar return",
+          run: () =>
+            setControls((c) => ({ ...c, layout: c.layout === "bipolar" ? "single" : "bipolar" })),
+        },
+        {
+          id: "reset-controls",
+          group: "Compare",
+          label: "Reset the configuration",
+          hint: "back to defaults",
+          run: () => setControls(DEFAULTS),
+        },
+      ],
+      [runScorecard, runAccurate, scoreProgress, femProgress, controls.layout],
+    ),
+  );
 
   return (
     <div className="app">

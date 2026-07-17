@@ -1,11 +1,12 @@
 // The left rail: the pipeline is the navigation, doubling as a progress indicator,
 // with always-on tier + safety badges (docs/phase-7-design.md). The Analyse screens
 // that are built (Compare, Study) are clickable; the rest are shown but inert.
+import { SCREENS } from "../nav";
 import type { Screen } from "../nav";
 
 const DESIGN = ["Patch", "Array", "Tissue", "Stimulus", "Results"];
-const ANALYSE = ["Compare", "Study", "Validation", "Candidates"];
-const NAVIGABLE = new Set<string>(["Compare", "Study", "Validation", "Candidates"]);
+const ANALYSE: readonly string[] = SCREENS;
+const NAVIGABLE = new Set<string>(SCREENS);
 
 export function Rail({
   active,

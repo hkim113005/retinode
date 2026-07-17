@@ -4,6 +4,7 @@
 import { useMemo, useRef, useState } from "react";
 import { getJob, postStudy } from "../api/client";
 import type { StudyControls, StudyPoint } from "../api/client";
+import { useCommands } from "../components/Commands";
 import { ParetoPlot } from "../components/ParetoPlot";
 import { Rail } from "../components/Rail";
 import type { Screen } from "../nav";
@@ -81,6 +82,30 @@ export function Study({
   };
 
   const nFrontier = points.filter((p) => p.on_frontier && p.safe).length;
+
+  useCommands(
+    "study",
+    useMemo(
+      () => [
+        {
+          id: "run-study",
+          group: "Study",
+          label: `Run the sweep (${nCombos} configurations)`,
+          hint: progress ? "already running" : "background job",
+          disabled: !!progress || nCombos === 0,
+          run: runStudy,
+        },
+        {
+          id: "clear-brush",
+          group: "Study",
+          label: "Clear the brushed selection",
+          disabled: !brushed,
+          run: () => setBrushed(null),
+        },
+      ],
+      [runStudy, progress, nCombos, brushed],
+    ),
+  );
 
   return (
     <div className="app">

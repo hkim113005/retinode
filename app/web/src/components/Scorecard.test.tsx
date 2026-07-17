@@ -47,4 +47,46 @@ describe("Scorecard", () => {
     render(<Scorecard data={{ activated: false }} progress={null} cached={false} onRun={vi.fn()} />);
     expect(screen.getByText(/never fired/)).toBeInTheDocument();
   });
+
+  it("reports the selectivity ratio and what closed the window", () => {
+    render(<Scorecard data={USABLE} progress={null} cached={false} onRun={vi.fn()} />);
+    expect(screen.getByText("1.50×")).toBeInTheDocument();
+    // "limited by a bystander" vs "limited by the charge limit" is the design decision
+    expect(screen.getByText("a bystander fires")).toBeInTheDocument();
+  });
+
+  it("names the charge limit when that is what bounds the window", () => {
+    render(
+      <Scorecard
+        data={{ ...USABLE, limiting: "safety" }}
+        progress={null}
+        cached={false}
+        onRun={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("the charge limit")).toBeInTheDocument();
+  });
+
+  it("renders an unbounded window as ∞ rather than the word Infinity", () => {
+    // a real evaluator state: nothing off-target ever fires in the searched range
+    render(
+      <Scorecard
+        data={{
+          ...USABLE,
+          off_min_uA: Number.POSITIVE_INFINITY,
+          window_hi_uA: Number.POSITIVE_INFINITY,
+          usable_margin_uA: Number.POSITIVE_INFINITY,
+          ratio: Number.POSITIVE_INFINITY,
+          limiting: "none",
+        }}
+        progress={null}
+        cached={false}
+        onRun={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Infinity/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("∞").length).toBeGreaterThan(0);
+    expect(screen.getByText("∞×")).toBeInTheDocument();
+    expect(screen.getByText("nothing — unbounded")).toBeInTheDocument();
+  });
 });

@@ -4,9 +4,25 @@
 import type { Scorecard as ScorecardData } from "../api/client";
 import type { Progress } from "../screens/Compare";
 
+// An unbounded window is a real evaluator state (limiting: "none"), so infinities
+// have to read as ∞ — `toFixed` would print the literal "Infinity µA".
 function uA(x: number | null | undefined): string {
-  return x == null ? "—" : `${x.toFixed(1)} µA`;
+  if (x == null) return "—";
+  return Number.isFinite(x) ? `${x.toFixed(1)} µA` : "∞";
 }
+
+function ratio(x: number | null | undefined): string {
+  if (x == null) return "—";
+  return Number.isFinite(x) ? `${x.toFixed(2)}×` : "∞×";
+}
+
+// What closed the window — the difference between "a bystander fires" and "the
+// charge limit bites" is the whole design decision, so it is spelled out.
+const LIMITING: Record<string, string> = {
+  off_target: "a bystander fires",
+  safety: "the charge limit",
+  none: "nothing — unbounded",
+};
 
 export function Scorecard({
   data,
@@ -52,7 +68,15 @@ export function Scorecard({
             </span>
             {cached && <span className="pill cached">cached</span>}
           </div>
-          <div className="sub">selective window above the target threshold</div>
+          <div className="sub">
+            selective window above the target threshold
+            {data.limiting && (
+              <>
+                {" · limited by "}
+                <b>{LIMITING[data.limiting] ?? data.limiting}</b>
+              </>
+            )}
+          </div>
           <div className="rows">
             <div className="row">
               <span className="k">Target threshold</span>
@@ -61,6 +85,10 @@ export function Scorecard({
             <div className="row">
               <span className="k">First off-target</span>
               <span className="v">{uA(data.off_min_uA)}</span>
+            </div>
+            <div className="row">
+              <span className="k">Selectivity</span>
+              <span className="v ok">{ratio(data.ratio)}</span>
             </div>
             <div className="row">
               <span className="k">Selective window</span>
