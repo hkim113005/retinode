@@ -5,7 +5,7 @@ import type { Screen } from "../nav";
 
 const DESIGN = ["Patch", "Array", "Tissue", "Stimulus", "Results"];
 const ANALYSE = ["Compare", "Study", "Validation", "Candidates"];
-const NAVIGABLE = new Set<string>(["Compare", "Study"]);
+const NAVIGABLE = new Set<string>(["Compare", "Study", "Validation", "Candidates"]);
 
 export function Rail({
   active,

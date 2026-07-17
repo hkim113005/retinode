@@ -575,6 +575,72 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "ValidationReport": {
+        "description": "The trust panel: which reproductions currently pass (master plan \u00a715). This is\nthe committed report CI regenerates \u2014 the app renders it, never recomputes it.",
+        "properties": {
+          "n_pass": {
+            "title": "N Pass",
+            "type": "integer"
+          },
+          "n_total": {
+            "title": "N Total",
+            "type": "integer"
+          },
+          "reproductions": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationReproduction"
+            },
+            "title": "Reproductions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "n_pass",
+          "n_total",
+          "reproductions"
+        ],
+        "title": "ValidationReport",
+        "type": "object"
+      },
+      "ValidationReproduction": {
+        "description": "One published/physics check the engine reproduces, and how it was measured.",
+        "properties": {
+          "criterion": {
+            "title": "Criterion",
+            "type": "string"
+          },
+          "measured": {
+            "title": "Measured",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "source",
+          "passed",
+          "measured",
+          "criterion"
+        ],
+        "title": "ValidationReproduction",
+        "type": "object"
       }
     }
   },
@@ -795,6 +861,24 @@
           }
         },
         "summary": "Submit Study"
+      }
+    },
+    "/validation": {
+      "get": {
+        "operationId": "get_validation_validation_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Validation"
       }
     }
   }

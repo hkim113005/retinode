@@ -1,2 +1,2 @@
-// The screens the rail can navigate between (the rest are built in later slices).
-export type Screen = "Compare" | "Study";
+// The analysis screens the rail navigates between (the Design steps are later slices).
+export type Screen = "Compare" | "Study" | "Validation" | "Candidates";

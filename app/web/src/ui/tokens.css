@@ -98,6 +98,40 @@ canvas.field { width: 100%; height: auto; display: block; border-radius: 12px; }
 .fieldbar .diverge { font-size: 12px; color: var(--warm-strong); }
 .fieldbar .running { font-size: 12px; color: var(--muted); font-family: var(--mono); }
 .btn.small { width: auto; padding: 8px 14px; font-size: 12.5px; }
+/* Validation + Candidates lists (P7 S6) */
+.listcard { padding: 6px; }
+.rep { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 12px; padding: 12px; border-radius: 12px; align-items: start; }
+.rep + .rep { border-top: 1px solid var(--border); }
+.rep:hover { background: var(--glass-strong); }
+.rep-name { font-size: 13.5px; font-weight: 600; }
+.rep-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.rep-measured { font-family: var(--mono); font-size: 11.5px; color: var(--accent-strong); margin-top: 6px; }
+.rep-note { font-size: 11.5px; color: var(--faint); margin-top: 4px; font-style: italic; }
+.tag { font-size: 10.5px; font-weight: 640; padding: 3px 8px; border-radius: 999px; white-space: nowrap; text-align: center; }
+.tag.ok { background: var(--ok-soft); color: var(--ok); }
+.tag.bad { background: var(--alert-soft); color: var(--alert); }
+.tag.ana { background: var(--inset); color: var(--muted); border: 1px solid var(--border); }
+.tag.front { background: var(--accent-soft); color: var(--accent-strong); }
+.reco { padding: 16px 18px; display: flex; gap: 16px; align-items: center; }
+.reco .rank { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-strong); font-weight: 700; white-space: nowrap; }
+.reco .name { font-family: var(--mono); font-size: 15px; font-weight: 650; }
+.reco .say { font-size: 13px; color: var(--ink); margin-top: 4px; max-width: 62ch; line-height: 1.5; }
+.reco .say b { color: var(--warm-strong); }
+.cand { display: grid; grid-template-columns: 28px minmax(0, 1fr) 160px 92px; gap: 14px; padding: 13px 12px; border-radius: 12px; align-items: center; }
+.cand + .cand { border-top: 1px solid var(--border); }
+.cand:hover { background: var(--glass-strong); }
+.cand .rk { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--muted); text-align: center; }
+.cand .rk.top { color: var(--warm-strong); }
+.cand .name { font-family: var(--mono); font-size: 13.5px; font-weight: 640; }
+.cand .say { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.cand .metrics { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.cand .metrics .m { display: flex; justify-content: space-between; gap: 8px; }
+.cand .metrics .m .k { color: var(--muted); }
+.cand .metrics .m .v { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cand .tags { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+.exp { display: flex; flex-direction: column; gap: 9px; }
+@media (max-width: 720px) { .cand { grid-template-columns: 26px 1fr; } .cand .metrics, .cand .tags { grid-column: 2; } }
+
 .field-stack { position: relative; }
 .loupe { position: absolute; right: 18px; top: 18px; width: 138px; height: 112px; padding: 0; overflow: hidden; }
 .loupe .lab { position: absolute; left: 9px; top: 7px; z-index: 1; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); pointer-events: none; }

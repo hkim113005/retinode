@@ -13,10 +13,18 @@ const DIAMETERS = [8, 12, 16, 20];
 const PITCHES = [30, 40, 55, 70];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function Study({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
+export function Study({
+  onNavigate,
+  onPoints,
+  points: initialPoints = [],
+}: {
+  onNavigate?: (s: Screen) => void;
+  onPoints?: (p: StudyPoint[]) => void; // lift the sweep so it carries to Candidates
+  points?: StudyPoint[];
+}) {
   const [diameters, setDiameters] = useState<Set<number>>(new Set(DIAMETERS));
   const [pitches, setPitches] = useState<Set<number>>(new Set(PITCHES));
-  const [points, setPoints] = useState<StudyPoint[]>([]);
+  const [points, setPoints] = useState<StudyPoint[]>(initialPoints);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [selected, setSelected] = useState<StudyPoint | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +66,9 @@ export function Study({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
       }
       if (id !== ticket.current) return;
       if (job.status === "error") throw new Error(job.error ?? "study failed");
-      setPoints(job.study?.points ?? []);
+      const found = job.study?.points ?? [];
+      setPoints(found);
+      onPoints?.(found); // carries to Candidates
     })()
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "study failed"))
       .finally(() => {

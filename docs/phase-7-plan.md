@@ -223,12 +223,20 @@ Pydantic models mirror.
   *(3D bodies / tilt / CAD / overlap flags render when the geometry carries them — the
   flat Compare scene shows flat disks; a body-editing surface is a later slice.)*
 
-- **P7 S6 — Validation & Candidates screens.** Port the **reproductions panel** (the
-  committed validation report + solver agreement). Build **Candidates** — the payoff
-  screen: a ranked, **safety-filtered shortlist** with predicted selectivity,
-  threshold, charge verdict, **accuracy tier**, trajectory sensitivity, and a
-  one-line rationale, **exportable** as a report and a machine-readable list. *Done:*
-  Validation shows 13/13 (or current), Candidates ranks and exports.
+- **P7 S6 — Validation & Candidates screens — done.** `GET /validation` serves the
+  **committed** report (`app/validation_report.json`) — the API renders it, never
+  recomputes it; a test asserts the response is byte-equal to the file, so the screen
+  cannot drift from what CI regenerates. **Validation** shows the pass count and one
+  row per claim (source, criterion, measurement, and the honest note where a
+  reproduction is partial or deferred). **Candidates** ranks the study's sweep:
+  charge-unsafe designs are filtered out entirely, the rest are ordered by the
+  selective window, each with a generated one-line rationale, the accuracy tier, and
+  the frontier flag; the top design headlines a recommendation. Exports as JSON and
+  CSV. `App` lifts the study points so a sweep on Study carries to Candidates without
+  a re-run. *Verified live:* Validation renders 13/13; a 16-geometry sweep produced 3
+  frontier points and 8 ranked charge-safe candidates. *(Deferred: trajectory
+  sensitivity per candidate needs the placement sweep; the figure-quality report
+  export lands with the charting layer in S7.)*
 
 - **P7 S7 — The charting layer + figure-quality export.** A real 2D charting layer
   for the field heatmap + isopotential contours, the activation-vs-amplitude curve,

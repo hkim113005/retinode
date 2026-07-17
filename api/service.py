@@ -8,6 +8,9 @@ no plotly/dash, so the API server stays light and NEURON-free on the field path.
 
 from __future__ import annotations
 
+import json
+import pathlib
+
 import numpy as np
 
 from app.scene import cell_depth_um
@@ -15,7 +18,24 @@ from engine.field import AnalyticalBackend, FieldBackend, current_vector
 from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimConfig
 from engine.spec.geometry import radius_um
 
-from .models import CellMarker, ElectrodeMarker, FieldGridResponse, ScorecardResponse
+from .models import (
+    CellMarker,
+    ElectrodeMarker,
+    FieldGridResponse,
+    ScorecardResponse,
+    ValidationReport,
+)
+
+# The committed report the app renders (the same file the Dash view reads). Read here
+# rather than importing app.views, which pulls plotly into the API process.
+_VALIDATION_REPORT = pathlib.Path(__file__).resolve().parents[1] / "app" / "validation_report.json"
+
+
+def validation_report() -> ValidationReport:
+    """The committed reproductions report (an empty shell if it is absent)."""
+    if not _VALIDATION_REPORT.exists():
+        return ValidationReport(n_pass=0, n_total=0, reproductions=[])
+    return ValidationReport(**json.loads(_VALIDATION_REPORT.read_text()))
 
 
 def field_grid_payload(

@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .jobs import JobRegistry
-from .routes import compare, field, score, study
+from .routes import compare, field, score, study, validation
 
 
 def _default_provider() -> Callable[..., Any]:
@@ -49,4 +49,5 @@ def create_app(*, thresholds_provider: Callable[..., Any] | None = None) -> Fast
     app.include_router(score.router)
     app.include_router(field.router)
     app.include_router(study.router)
+    app.include_router(validation.router)
     return app

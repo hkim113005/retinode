@@ -73,6 +73,26 @@ class ScorecardResponse(BaseModel):
     safe_at_target: bool | None = None
 
 
+class ValidationReproduction(BaseModel):
+    """One published/physics check the engine reproduces, and how it was measured."""
+
+    name: str
+    source: str
+    passed: bool
+    measured: str
+    criterion: str
+    note: str = ""
+
+
+class ValidationReport(BaseModel):
+    """The trust panel: which reproductions currently pass (master plan §15). This is
+    the committed report CI regenerates — the app renders it, never recomputes it."""
+
+    n_pass: int
+    n_total: int
+    reproductions: list[ValidationReproduction]
+
+
 class StudyControls(BaseModel):
     """A geometry sweep: the diameter × pitch grid to explore, plus the patch it is
     scored on. Combos with ``pitch < diameter`` (which would overlap) are dropped."""

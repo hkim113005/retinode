@@ -13,6 +13,8 @@ export type JobStatus = components["schemas"]["JobStatus"];
 export type StudyControls = components["schemas"]["StudyControls"];
 export type StudyPoint = components["schemas"]["StudyPoint"];
 export type StudyResult = components["schemas"]["StudyResult"];
+export type ValidationReport = components["schemas"]["ValidationReport"];
+export type ValidationReproduction = components["schemas"]["ValidationReproduction"];
 
 // Dev: Vite proxies /api → the FastAPI server on :8000 (see vite.config.ts).
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
@@ -47,6 +49,13 @@ export async function getJob(id: string): Promise<JobStatus> {
   const res = await fetch(`${BASE}/jobs/${id}`);
   if (!res.ok) throw new Error(`job poll failed (${res.status})`);
   return (await res.json()) as JobStatus;
+}
+
+// The trust panel: the committed reproductions report (served, never recomputed).
+export async function getValidation(): Promise<ValidationReport> {
+  const res = await fetch(`${BASE}/validation`);
+  if (!res.ok) throw new Error(`validation failed (${res.status})`);
+  return (await res.json()) as ValidationReport;
 }
 
 // Submit a geometry sweep (a job): returns points + Pareto frontier when done.
