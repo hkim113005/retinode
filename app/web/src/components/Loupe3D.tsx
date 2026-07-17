@@ -2,8 +2,14 @@
 // the array's true 3D form — the tissue slab, the electrodes on the array plane, and
 // the cell population at depth — orbitable, secondary to the 2D field. Click to
 // expand full-bleed. Rendered with react-three-fiber; lazy-loaded so three.js stays
-// off the main chunk. (3D bodies / tilt / CAD render when the geometry carries them;
-// the flat Compare scene shows flat disks.)
+// off the main chunk.
+//
+// Scope, precisely: this draws FLAT DISKS ONLY. Phase 6 gave the engine 3D bodies,
+// array tilt, CAD import and overlap flags — none of which can reach here, because
+// the view contract is flat (ElectrodeMarker is x/y/radius; no z, no rotation, no
+// body). That is a contract gap, not a dormant code path: there is no body-rendering
+// code below, and none could be triggered if there were. Drawing them needs the
+// contract to carry them and an authoring surface to set them (see docs/phase-8).
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useState } from "react";

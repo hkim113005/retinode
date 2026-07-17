@@ -35,7 +35,7 @@ def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
     )
     extent = float(params.get("extent_um", 130.0))
     n = int(params.get("n", 41))
-    z = abs(cell_depth_um())  # sample in the z>=0 tissue at the cell plane's depth
+    z = cell_depth_um()  # the cell plane, in the z>=0 tissue the FEM domain meshes
 
     xs = np.linspace(-extent, extent, n)
     ys = np.linspace(-extent, extent, n)

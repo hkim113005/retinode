@@ -95,8 +95,11 @@ The clean split it already has is the asset P7 builds on:
   whole tool reads as one thing. The existing Dash palette (`#1f2933` ink, `#0a84ff`
   accent) is the starting point.
 - **D8 — Figure-quality export is a first-class feature.** Every plot exports as
-  **SVG/PDF (vector)** and **high-DPI PNG (raster)** — because the deliverable is
-  figures in front of the lab.
+  **vector (SVG)** and **high-DPI raster (PNG)** — because the deliverable is
+  figures in front of the lab. *(Amended in P8: this said "SVG/PDF". PDF was
+  assessed and deliberately dropped rather than left as an unmet promise — the
+  reasoning is under S7a's deferral note below. `docs/phase-7-design.md`, which is
+  the acceptance bar for this plan, always said "vector/raster" and is met.)*
 - **D9 — No regression during the cutover.** The Dash app keeps working until the
   React app reaches parity; both share the engine and the view contract, so they
   can coexist. Retiring Dash is the *last* step, only once parity is proven.
@@ -220,8 +223,15 @@ Pydantic models mirror.
   51 KB main bundle and out of the sync test path; jsdom's missing WebGL is handled
   by stubbing the r3f `Canvas` globally in the test setup. Secondary to the 2D field
   (D6). Verified live: the tissue/plane/electrode/cells scene renders and orbits.
-  *(3D bodies / tilt / CAD / overlap flags render when the geometry carries them — the
-  flat Compare scene shows flat disks; a body-editing surface is a later slice.)*
+  > **Correction (P8).** This entry originally claimed "3D bodies / tilt / CAD /
+  > overlap flags render when the geometry carries them — the flat Compare scene
+  > shows flat disks". **The first half was false.** The view contract is flat —
+  > `ElectrodeMarker` is `{x_um, y_um, radius_um}`, with no z, no rotation and no
+  > body — so no geometry can carry them, and `Loupe3D` contains no body-rendering
+  > code that such data could trigger. It was not a dormant path waiting on a
+  > payload; it did not exist. The loupe draws flat disks, full stop. Unstranding
+  > Phase 6's 3D work needs a contract that *carries* a body **and** a surface that
+  > *authors* one — see the P8 assessment below.
 
 - **P7 S6 — Validation & Candidates screens — done.** `GET /validation` serves the
   **committed** report (`app/validation_report.json`) — the API renders it, never
@@ -235,7 +245,9 @@ Pydantic models mirror.
   CSV. `App` lifts the study points so a sweep on Study carries to Candidates without
   a re-run. *Verified live:* Validation renders 13/13; a 16-geometry sweep produced 3
   frontier points and 8 ranked charge-safe candidates. *(Deferred: trajectory
-  sensitivity per candidate needs the placement sweep; the figure-quality report
+  sensitivity per candidate — **see the P8 correction: this is the axon-trajectory
+  distribution (`engine/cable/trajectories.py`), not array placement**; the
+  figure-quality report
   export lands with the charting layer in S7.)*
 
 - **P7 S7 — The charting layer + figure-quality export.** A real 2D charting layer
@@ -259,8 +271,33 @@ Pydantic models mirror.
     test coverage — jsdom cannot exercise canvas drawing at all. *Verified live:* the
     field exports a 720×720 SVG (3722 marks, no CSS vars, white paper) and a
     2160×2160 PNG; the Pareto exports a 3.4 KB vector with real `<text>` axes.
-    *(Deferred: PDF is one Inkscape step from the SVG — a PDF writer would mean a new
-    dependency for a format the SVG already reaches.)*
+    **PDF: assessed in P8 and deliberately dropped, not deferred.** The original
+    note here — "PDF is one Inkscape step from the SVG, a format the SVG already
+    reaches" — was **wrong on its facts**: SVG is *not* a journal submission format
+    (Nature, Science, IEEE, PLOS and eLife want EPS/PDF/TIFF/AI). The decision
+    survives on better reasons:
+
+    1. *It cannot be built honestly at this scope.* The Pareto draws `→` and `◤`
+       (`chart/plots/pareto.ts`), which are outside PDF's base-14 glyph coverage.
+       Drawing them faithfully means TrueType subsetting (~1000 LOC of font-format
+       work); the shippable alternative substitutes glyphs — which would make PDF
+       the **first renderer here that does not draw what the screen drew**, breaking
+       the one invariant S7a exists to hold. A convenience click is not worth the
+       architecture's central guarantee.
+    2. *It buys nothing.* Nobody submits a single-panel tool export as a figure;
+       panels get composited and lettered in Illustrator/Inkscape regardless, and
+       the SVG→PDF conversion is absorbed into that step rather than added to it.
+    3. *A dependency is worse*: +110–150 KB gzip on a 60 KB app, a sixth runtime
+       dependency — and `pdf-lib`/`jspdf` are base-14 too, so it does not even solve
+       (1).
+    4. *No test oracle.* `chart.test.ts` asserts on the SVG string; a PDF's
+       correctness cannot be asserted in jsdom, leaving a permanent unautomatable
+       hole in an otherwise fully-covered layer.
+
+    The remaining real gap is `\includegraphics`, which wants PDF — served by a
+    one-time `inkscape --export-type=pdf`, or by the 3× PNG for talks. D8's wording
+    was amended to match what is actually delivered rather than left as an unmet
+    promise.
   - **S7b — labeled isopotential contours + a hover readout — done.** Marching
     squares (`chart/contours.ts`) traces isopotentials at **round** mV levels and
     stitches the raw segments into whole rings, so each contour is one stroked

@@ -11,8 +11,15 @@ from dataclasses import dataclass
 
 from engine import spec
 
-# Cells sit in tissue below the array (z<0); the array is on the boundary at z=0.
-_DEPTH_UM = -20.0
+# The array plane is z=0 and +z runs INTO the tissue, so cells sit at z>0 (D8; see
+# docs/phase-6-plan.md and engine/spec/geometry.py). This used to be -20.0, which the
+# analytical tier tolerated — its field is exactly mirror-symmetric about z=0, so the
+# sign changed no number anywhere. It was still a landmine: every Phase-6 3D predicate
+# assumes the +z convention (`point_in_body` tests `0 <= dz <= height_um`), so the
+# moment an electrode carried a body, the overlap check would have silently matched
+# nothing rather than failing loudly. `api/fem_job` was already papering over the sign
+# with abs(). Fixed at the source instead.
+_DEPTH_UM = 20.0
 _OPTIC_DISC_UM = (2000.0, 0.0, _DEPTH_UM)
 
 
