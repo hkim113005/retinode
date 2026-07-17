@@ -47,8 +47,12 @@ def test_runs_in_process_with_a_fake_provider_and_marks_the_frontier():
 
 
 def test_reports_progress_monotonically():
-    fracs = []
-    run_study(_CONTROLS, thresholds_provider=_fake_provider(), on_progress=lambda f, _m: fracs.append(f))
+    fracs: list[float] = []
+    run_study(
+        _CONTROLS,
+        thresholds_provider=_fake_provider(),
+        on_progress=lambda f, _m: fracs.append(f),
+    )
     assert fracs == sorted(fracs)
     assert fracs[-1] <= 1.0 and fracs[0] >= 0.0
 
