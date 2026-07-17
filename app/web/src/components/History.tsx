@@ -40,6 +40,24 @@ const ratio = (s: ScorecardData): string => {
   return Number.isFinite(s.ratio) ? `${s.ratio.toFixed(2)}×` : "∞×";
 };
 
+/**
+ * Runs scored against a different off-target *definition* than the newest one. The
+ * engine refuses such a comparison outright (`require_same_offtarget`): a selective
+ * window only means something against a fixed set of bystanders.
+ *
+ * Today this is always empty — the off-target policy (soma radius, axon proximity)
+ * has no control in the UI, so every run shares one. It is enforced anyway, because
+ * the day that policy becomes editable the strip is already honest instead of
+ * quietly showing an apples-to-oranges difference.
+ */
+function incomparable(runs: Run[]): Set<string> {
+  const newest = runs[0]?.scorecard.offtarget_hash;
+  if (!newest) return new Set();
+  return new Set(
+    runs.filter((r) => r.scorecard.offtarget_hash !== newest).map((r) => r.id),
+  );
+}
+
 export function History({
   runs,
   current,
@@ -49,21 +67,31 @@ export function History({
   current: string;
   onRestore: (c: Controls) => void;
 }) {
+  const odd = incomparable(runs);
   if (!runs.length) return null;
   return (
     <div className="card runs">
       <div className="runs-head">
         <h2>Recent runs</h2>
         <span className="foot">click to restore that configuration</span>
+        {odd.size > 0 && (
+          <span className="warn" role="alert">
+            ⚠ {odd.size} run{odd.size > 1 ? "s were" : " was"} scored against a different
+            off-target set — not comparable with the latest
+          </span>
+        )}
       </div>
       <div className="runs-strip">
         {runs.map((r) => (
           <button
             key={r.id}
-            className={`run${r.id === current ? " on" : ""}`}
+            className={`run${r.id === current ? " on" : ""}${odd.has(r.id) ? " odd" : ""}`}
             onClick={() => onRestore(r.controls)}
-            aria-label={`Restore ${r.controls.electrode_um} µm ${r.controls.layout} run`}
+            aria-label={`Restore ${r.controls.electrode_um} µm ${r.controls.layout} run${
+              odd.has(r.id) ? " (different off-target set)" : ""
+            }`}
           >
+            {odd.has(r.id) && <span className="oddtag">different off-target set</span>}
             <span className="w">{win(r.scorecard)}</span>
             <span className="r">{ratio(r.scorecard)}</span>
             <span className="c">

@@ -282,6 +282,8 @@ export interface components {
             limiting?: string | null;
             /** Off Min Ua */
             off_min_uA?: number | null;
+            /** Offtarget Hash */
+            offtarget_hash?: string | null;
             /** Ratio */
             ratio?: number | null;
             /** Safe At Target */

@@ -122,6 +122,12 @@ button.step:hover { background: var(--accent-soft); color: var(--ink); }
   background: var(--inset); cursor: pointer; font-family: var(--sans); }
 .run:hover { border-color: var(--accent-soft); background: var(--accent-soft); }
 .run.on { border-color: var(--accent); background: var(--accent-soft); }
+.runs-head .warn { font-size: 11px; color: var(--warm-strong); font-family: var(--mono); }
+/* a run the engine would refuse to compare: dashed, so it reads as "not in this
+   comparison" rather than "worse" */
+.run.odd { border-style: dashed; border-color: var(--warm); }
+.run .oddtag { font-size: 9.5px; color: var(--warm-strong); text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 3px; }
 .run .w { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--ink); }
 .run .r { font-family: var(--mono); font-size: 11px; color: var(--ok); margin-bottom: 4px; }
 .run .c { font-size: 10.5px; color: var(--muted); }

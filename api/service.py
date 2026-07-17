@@ -83,11 +83,13 @@ def cell_markers(patch: RetinalPatch) -> list[CellMarker]:
 def scorecard_payload(result) -> ScorecardResponse:  # noqa: ANN001 - an EvaluationResult
     """Map an evaluation result to the scorecard payload (mirrors
     ``app.views.scorecard_data``)."""
+    offtarget = getattr(result, "offtarget_hash", None)
     if not result.activated or result.window is None or result.sow is None:
-        return ScorecardResponse(activated=False)
+        return ScorecardResponse(activated=False, offtarget_hash=offtarget)
     w, sow = result.window, result.sow
     return ScorecardResponse(
         activated=True,
+        offtarget_hash=offtarget,
         target_uA=w.target_uA,
         off_min_uA=sow.off_min_uA,
         ratio=sow.ratio,

@@ -61,6 +61,13 @@ class ScorecardResponse(BaseModel):
     target never fired in the searched range and every other field is absent."""
 
     activated: bool
+    # The off-target set this was scored against (``EvaluationResult.offtarget_hash``).
+    # The engine REFUSES to compare two results across differing off-target sets --
+    # see ``engine.eval.result.require_same_offtarget``; the selective window is only
+    # comparable when both were measured against the same bystanders. The client
+    # shows runs side by side, so it needs this to tell the user when two runs are
+    # not comparable rather than let them read a difference that is a category error.
+    offtarget_hash: str | None = None
     target_uA: float | None = None
     off_min_uA: float | None = None
     ratio: float | None = None

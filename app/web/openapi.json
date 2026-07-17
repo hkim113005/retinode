@@ -326,6 +326,17 @@
             ],
             "title": "Off Min Ua"
           },
+          "offtarget_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offtarget Hash"
+          },
           "ratio": {
             "anyOf": [
               {

@@ -91,7 +91,11 @@ def test_compare_reports_no_activation_cleanly():
     provider = _fake_provider(None, {"neighbor": 12.0})
     client = TestClient(create_app(thresholds_provider=provider))
     r = client.post("/compare", json={**_CONTROLS, "n": 21, "include_scorecard": True})
-    assert r.json()["scorecard"] == {
+    card = r.json()["scorecard"]
+    # the off-target set exists whether or not the target fired, so the hash stands
+    # even here — it is a property of the scene, not of the outcome
+    assert card.pop("offtarget_hash")
+    assert card == {
         "activated": False, "target_uA": None, "off_min_uA": None, "ratio": None,
         "window_lo_uA": None, "window_hi_uA": None, "usable_margin_uA": None,
         "usable": None, "limiting": None, "safety_ceiling_uA": None, "safe_at_target": None,
@@ -101,3 +105,41 @@ def test_compare_reports_no_activation_cleanly():
 def test_compare_rejects_invalid_controls():
     r = TestClient(create_app()).post("/compare", json={**_CONTROLS, "electrode_um": -1.0})
     assert r.status_code == 422  # pydantic validation, not a 500
+
+
+def test_scorecard_carries_the_offtarget_policy_it_was_scored_against():
+    """The engine refuses to compare results scored against different off-target sets
+    (engine.eval.result.require_same_offtarget), so the contract exposes which one
+    each run used — the client shows runs side by side and must not present a
+    category error as a difference.
+
+    Note what the hash actually covers: ``OffTargetSet`` is the *policy* (soma radius,
+    axon proximity), not the cells it selects. Moving a bystander changes the patch,
+    not the rule, so those runs stay comparable — which is the whole point of the
+    neighbour-distance slider.
+    """
+    provider = _fake_provider(8.0, {"neighbor": 12.0})
+    client = TestClient(create_app(thresholds_provider=provider))
+
+    def hash_at(neighbor_um):
+        r = client.post(
+            "/compare",
+            json={**_CONTROLS, "neighbor_um": neighbor_um, "n": 21, "include_scorecard": True},
+        )
+        return r.json()["scorecard"]["offtarget_hash"]
+
+    assert hash_at(40.0)  # present, so a client can check comparability at all
+    # same rule either side -> the two runs ARE comparable, and the UI must say so
+    assert hash_at(40.0) == hash_at(80.0) == hash_at(40.0)
+
+
+def test_offtarget_hash_tracks_the_policy_not_the_scene():
+    """Pins the semantics the client's comparability check depends on: the hash moves
+    when the off-target *definition* moves, and only then."""
+    from engine.eval.offtarget import OffTargetSet
+    from engine.spec import spec_hash
+
+    base = OffTargetSet()
+    assert spec_hash(base) == spec_hash(OffTargetSet())
+    assert spec_hash(base) != spec_hash(OffTargetSet(soma_radius_um=60.0))
+    assert spec_hash(base) != spec_hash(OffTargetSet(axon_proximity_um=None))

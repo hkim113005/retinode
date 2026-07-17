@@ -81,6 +81,26 @@ describe("History", () => {
     expect(screen.getByRole("button", { name: /Restore 20 µm/ })).not.toHaveClass("on");
   });
 
+  it("flags a run the engine would refuse to compare, rather than showing a difference", () => {
+    // the engine's require_same_offtarget: a window scored against different
+    // bystanders is not comparable. Unreachable from the UI today (the off-target
+    // policy has no control), but the strip must never present it as a difference.
+    const newest: Run = { ...run(10), scorecard: { ...CARD, offtarget_hash: "aaa" } };
+    const older: Run = { ...run(20), scorecard: { ...CARD, offtarget_hash: "bbb" } };
+    render(<History runs={[newest, older]} current="" onRestore={vi.fn()} />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/not comparable with the latest/);
+    expect(screen.getByRole("button", { name: /Restore 20 µm.*different off-target set/ })).toHaveClass("odd");
+    expect(screen.getByRole("button", { name: /Restore 10 µm/ })).not.toHaveClass("odd");
+  });
+
+  it("says nothing when every run shares an off-target set — the normal case", () => {
+    const a: Run = { ...run(10), scorecard: { ...CARD, offtarget_hash: "aaa" } };
+    const b: Run = { ...run(20), scorecard: { ...CARD, offtarget_hash: "aaa" } };
+    render(<History runs={[a, b]} current="" onRestore={vi.fn()} />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Restore 20 µm/ })).not.toHaveClass("odd");
+  });
+
   it("shows an unbounded window as ∞ and a dead configuration honestly", () => {
     const inf: Run = { ...run(10), scorecard: { ...CARD, usable_margin_uA: Number.POSITIVE_INFINITY } };
     const dead: Run = { ...run(20), scorecard: { activated: false } };
