@@ -243,6 +243,18 @@ docs/
   mesh** (the field dominates along the laid-over axis, not the old one). Rotation is
   FEM-tier — the analytical point source is orientation-free (documented).
 
+- **P6 S8 — CAD face-group selection — done.** An imported solid is no longer forced
+  to `conductive_faces="all"`. `load_cad_body` splits the exposed surface (z=0 base
+  excluded) into a deep **tip** and lateral **sides** by centroid depth — the same
+  0.75·height threshold `classify_cavity_surfaces` uses on the cavity walls, so the
+  load-time group areas match the meshed conductive surfaces — and stores
+  `tip_area_um2` / `sides_area_um2` on `CadBody`. `body_conductive_area_um2` and the
+  mesh classifier both honour the selector. Validated: unit (per-group conductive
+  area by selector); FEM — a cylinder STEP splits into `π r²` tip + `2π r h` sides,
+  and a **sides-only** CAD electrode drives a measurably weaker field beyond the tip
+  than the fully-conductive **all**. The split is a depth heuristic (documented), not
+  semantic face-tagging.
+
 ---
 
 ## Spec additions (concrete shape)

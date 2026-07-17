@@ -223,6 +223,35 @@ def test_imported_cad_cylinder_reproduces_the_primitive_field(tmp_path):
     assert np.max(np.abs(a_cad - a_prim) / np.abs(a_prim)) < 0.03
 
 
+def test_cad_face_groups_split_and_shape_the_field(tmp_path):
+    # P6 S8: the loader splits an imported solid's exposed area into a deep tip and
+    # lateral sides, and conductive_faces selects which inject — so a "sides"-only
+    # CAD electrode drives a different field than the fully-conductive "all".
+    from engine.field.mesh3d import load_cad_body
+
+    step = str(tmp_path / "cyl.step")
+    _write_step_cylinder(step, 5.0, 30.0)
+
+    cad_all = load_cad_body(step, conductive_faces="all")
+    # the split matches the cylinder's analytic caps/walls
+    assert cad_all.tip_area_um2 == pytest.approx(math.pi * 25, rel=1e-3)  # tip cap pi r^2
+    assert cad_all.sides_area_um2 == pytest.approx(2 * math.pi * 5 * 30, rel=1e-3)  # wall
+    assert cad_all.tip_area_um2 + cad_all.sides_area_um2 == pytest.approx(cad_all.surface_area_um2)
+
+    cad_sides = load_cad_body(step, conductive_faces="sides")
+    q = np.array([[0.0, 0.0, 45.0], [12.0, 0.0, 15.0]])  # beyond the tip vs beside the wall
+    dom = lambda body: M.FieldDomain(  # noqa: E731
+        ElectrodeArray((Electrode(id="C", pos_um=(0.0, 0.0, 0.0), shape="disk",
+                                  size_um=0.0, body=body),)),
+        SIGMA, 1000.0, 1000.0, 2.0, 150.0,
+    )
+    a_all = solve_transfer_matrix(dom(cad_all), q)[:, 0]
+    a_sides = solve_transfer_matrix(dom(cad_sides), q)[:, 0]
+    # dropping the tip cap must weaken the field just beyond the tip, measurably
+    assert a_sides[0] < a_all[0]
+    assert np.max(np.abs(a_all - a_sides) / np.abs(a_all)) > 0.02
+
+
 def test_dolfinx_and_ngsolve_agree_on_a_placed_mixed_3d_array(tmp_path):
     # P6 S6: the second-solver cross-check on a representative planted array —
     # a flat disk + a penetrating cylinder, translated into the tissue.

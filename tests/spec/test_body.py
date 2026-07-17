@@ -137,3 +137,18 @@ def test_cad_content_hash_is_the_geometric_identity():
 def test_cad_body_round_trips():
     e = _with_body(_cad())
     assert from_json(to_json(e)) == e
+
+
+def test_cad_conductive_area_honors_the_face_group():
+    from engine.spec import CadBody
+
+    def cad(faces):
+        return CadBody(
+            cad_path="/tmp/x.step", content_hash="h", bounding_radius_um=5.0,
+            bounding_height_um=30.0, surface_area_um2=1021.0,
+            conductive_faces=faces, tip_area_um2=78.5, sides_area_um2=942.5,
+        )
+
+    assert body_conductive_area_um2(cad("all")) == pytest.approx(1021.0)  # total
+    assert body_conductive_area_um2(cad("tip")) == pytest.approx(78.5)  # deep cap only
+    assert body_conductive_area_um2(cad("sides")) == pytest.approx(942.5)  # lateral only

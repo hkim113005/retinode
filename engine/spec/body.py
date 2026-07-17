@@ -57,9 +57,14 @@ class CadBody:
     summaries the loader derives from the CAD once (``engine.field.mesh3d.load_cad_body``)
     so the pure-spec helpers here need no gmsh: ``bounding_radius_um`` /
     ``bounding_height_um`` bound it (mesh sizing + a conservative overlap test), and
-    ``surface_area_um2`` is the conductive area for the safety check. The whole
-    exposed surface conducts (``conductive_faces`` is ``"all"``; face-group
-    selection on imported CAD is a future extension)."""
+    ``surface_area_um2`` is the total exposed area.
+
+    Face groups (P6 S8): the loader also splits the exposed surface by depth into a
+    deep **tip** (``tip_area_um2``) and the lateral **sides** (``sides_area_um2``),
+    so ``conductive_faces`` can pick ``"tip"`` / ``"sides"`` / ``"all"`` on an
+    imported solid — not only ``"all"``. The two group areas sum to
+    ``surface_area_um2`` (both default 0.0 for a body loaded before S8, for which
+    only ``"all"`` is meaningful)."""
 
     cad_path: str
     content_hash: str
@@ -67,6 +72,8 @@ class CadBody:
     bounding_height_um: float
     surface_area_um2: float
     conductive_faces: ConductiveFaces = "all"
+    tip_area_um2: float = 0.0
+    sides_area_um2: float = 0.0
 
 
 ElectrodeBody = Hemisphere | Cylinder | Frustum | CadBody
@@ -92,7 +99,11 @@ def body_conductive_area_um2(body: ElectrodeBody) -> float:
     if isinstance(body, Hemisphere):
         return 2.0 * math.pi * body.radius_um**2
     if isinstance(body, CadBody):
-        return body.surface_area_um2  # measured from the CAD at load time
+        # "all" is the total measured area (robust even if the tip/side split was
+        # not computed); "tip"/"sides" use the per-group areas from the loader.
+        if body.conductive_faces == "all":
+            return body.surface_area_um2
+        return body.tip_area_um2 if body.conductive_faces == "tip" else body.sides_area_um2
     if isinstance(body, Cylinder):
         r, h = body.radius_um, body.height_um
         return _select_faces_area(math.pi * r * r, 2.0 * math.pi * r * h, body.conductive_faces)

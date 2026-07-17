@@ -85,13 +85,14 @@ def classify_cavity_surfaces(occ, electrode, wall_surfs, rotation: Mat3 | None =
     the **body-local frame** (so a tilted body classifies the same as an upright one),
     and the selector picks which conduct."""
     body = electrode.body
-    if isinstance(body, Hemisphere | CadBody):
-        return list(wall_surfs), []
+    if isinstance(body, Hemisphere):
+        return list(wall_surfs), []  # a hemisphere is always fully conductive
 
     rotation = rotation or _IDENTITY3
     r_t = tuple(zip(*rotation, strict=True))  # transpose: world -> local
     ex, ey, ez = electrode.pos_um
-    height = body.height_um
+    # the depth at which a face counts as "tip": near the deepest local extent
+    height = body.bounding_height_um if isinstance(body, CadBody) else body.height_um
     tip: list[int] = []
     sides: list[int] = []
     for surf in wall_surfs:
@@ -129,10 +130,21 @@ def load_cad_body(cad_path: str, *, conductive_faces: str = "all") -> CadBody:
         xmin, ymin, zmin, xmax, ymax, zmax = occ.getBoundingBox(*solid)
         bounding_radius = 0.5 * max(xmax - xmin, ymax - ymin)
         bounding_height = zmax - zmin
-        faces = gmsh.model.getBoundary([solid], combined=True, oriented=False)
-        surface_area = sum(
-            occ.getMass(2, s) for (_dim, s) in faces if abs(occ.getCenterOfMass(2, s)[2]) > 1e-6
-        )
+        # Sum the exposed area, and split it into a deep "tip" and lateral "sides"
+        # by centroid depth (the same 0.75*height threshold the mesh uses to classify
+        # cavity walls, so the load-time areas match the meshed conductive surfaces).
+        # The z=0 base face is the substrate opening, not a conductive surface.
+        tip_area = 0.0
+        sides_area = 0.0
+        for _dim, s in gmsh.model.getBoundary([solid], combined=True, oriented=False):
+            cz = occ.getCenterOfMass(2, s)[2]
+            if abs(cz) <= 1e-6:
+                continue  # the z=0 base
+            area = occ.getMass(2, s)
+            if cz >= 0.75 * bounding_height:
+                tip_area += area
+            else:
+                sides_area += area
     finally:
         gmsh.finalize()
 
@@ -141,6 +153,8 @@ def load_cad_body(cad_path: str, *, conductive_faces: str = "all") -> CadBody:
         content_hash=content_hash,
         bounding_radius_um=bounding_radius,
         bounding_height_um=bounding_height,
-        surface_area_um2=surface_area,
+        surface_area_um2=tip_area + sides_area,
         conductive_faces=conductive_faces,  # type: ignore[arg-type]
+        tip_area_um2=tip_area,
+        sides_area_um2=sides_area,
     )

@@ -71,12 +71,17 @@ reproduces to a few percent — the anchor that makes the 3D field trustworthy.
 For a genuinely custom shape, load a STEP or BREP solid. `load_cad_body` reads it
 once (gmsh), hashing its **content** (the geometric identity, for provenance) and
 measuring the bounding box and exposed surface area. The CAD's origin is the
-electrode's base on the array plane; the whole exposed surface conducts.
+electrode's base on the array plane.
+
+Like the primitives, an imported solid takes a `conductive_faces` selector (P6 S8):
+the loader splits the exposed surface by depth into a deep **tip** and the lateral
+**sides** (same 0.75·height threshold the mesh uses), so `"tip"` / `"sides"` /
+`"all"` all work — not only the whole surface:
 
 ```python
 from engine.field.mesh3d import load_cad_body   # needs the FEM env
 from engine.spec import Electrode
-body = load_cad_body("my_electrode.step")
+body = load_cad_body("my_electrode.step", conductive_faces="sides")  # or "tip" / "all"
 Electrode(id="cad", pos_um=(0, 0, 0), shape="disk", size_um=0, body=body)
 ```
 
@@ -184,6 +189,13 @@ The regime-aware backend selection routes these to FEM automatically.
 - **Array tilt/rotation** is supported (P6 S7): `ArrayPlacement.rotation_deg` poses
   the array at an angle; bodies orient in the FEM mesh and the overlap check follows.
   Analytical stays a point source, so tilt is FEM-only.
+- **CAD face groups** are supported (P6 S8): an imported solid's `conductive_faces`
+  selects tip / sides / all, split by centroid depth at load time. The split is a
+  depth heuristic, not a semantic face-tagging — a genuinely branched electrode may
+  need its groups defined in the CAD tool.
+- **CAD overlap is still a bounding-cylinder approximation** for the near-contact /
+  displace check — conservative (over-flags, never misses); an exact CAD overlap
+  test is the remaining extension (P6 S9).
 - **The biophysics caveats are unchanged** — mouse RGC morphology, trend-not-magnitude
   validation (Phases 1/3). 3D geometry raises *field/placement* fidelity, not
   physiological fidelity: this is a hypothesis tester for electrode designs, not an
