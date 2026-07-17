@@ -88,6 +88,15 @@ export function Study({
 
   const nFrontier = points.filter((p) => p.on_frontier && p.safe).length;
 
+  // A FEM solve + NEURON thresholds is ~28s per geometry (measured on a 2-geometry
+  // run: 55s). Trajectory sampling reruns the field per axon path, so it multiplies
+  // per-geometry cost by roughly (1 + k). Rounded up, shown honestly as minutes.
+  const estimate = useMemo(() => {
+    const perGeom = 28 * (spread ? 4 : 1);
+    const secs = 20 + nCombos * perGeom;
+    return secs < 90 ? `${Math.round(secs)} s` : `${Math.ceil(secs / 60)} min`;
+  }, [nCombos, spread]);
+
   useCommands(
     "study",
     useMemo(
@@ -114,7 +123,7 @@ export function Study({
 
   return (
     <div className="app">
-      <Rail active="Study" tier="Analytical" safe="filtered" onNavigate={onNavigate} />
+      <Rail active="Study" tier="FEM" safe="filtered" onNavigate={onNavigate} />
       <main className="stage">
         <div className="stage-head">
           <div>
@@ -128,7 +137,7 @@ export function Study({
         </div>
         {error && (
           <div className="card panel" role="alert">
-            <p className="empty">Couldn’t run the study ({error}). Is the API running on :8000?</p>
+            <p className="empty">Couldn’t run the study: {error}</p>
           </div>
         )}
         <ParetoPlot
@@ -183,16 +192,22 @@ export function Study({
             </div>
             <p className="foot">
               The true axon path is unknown, so a threshold has a band. Sampling
-              measures it — at roughly triple the sweep's cost.
+              measures it — but reruns the FEM field per path, so it multiplies the
+              already-minutes sweep cost several-fold.
             </p>
           </div>
           <div className="cost">
             <span className="n">{nCombos}</span>
             <span className="k">
               configurations
-              <br />≈ {Math.max(5, nCombos * (spread ? 3 + 3 * 2 : 3))} s · analytical field
+              <br />≈ {estimate} · FEM (accurate)
             </span>
           </div>
+          <p className="foot">
+            Comparing electrode geometry needs the FEM field — the analytical tier is a
+            point source and cannot tell one diameter from another. So this runs
+            accurately, in the FEM env, in minutes rather than seconds.
+          </p>
           {progress ? (
             <>
               <p className="empty">{progress.message}…</p>

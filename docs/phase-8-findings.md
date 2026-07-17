@@ -40,21 +40,25 @@ entire geometry-sweep premise FEM-only too.** `resolve_field_tier`
 homogeneous → analytical, "exact for a half-space". Exact for a *point source* in a
 half-space. It has no notion that the electrode's own geometry might demand FEM.
 
-**Options, none of them small:**
+**Options were weighed** (disk model, honest badge, force-FEM). The disk model would
+restore a cheap tier that sees diameter (Newman's oblate-spheroidal solution gives a
+~9% Ve spread across the sweep, correct direction), but it still cannot see pitch or
+shaped/3D electrodes — those are irreducibly FEM.
 
-1. **Make `resolve_field_tier` geometry-aware** — force FEM when a sweep varies
-   electrode extent. Honest, and makes Study an FEM-cost job (minutes, not seconds).
-2. **Give the analytical backend a disk model** — a finite-disk potential
-   (e.g. the classic oblate-spheroidal solution) instead of a point source. Restores a
-   cheap tier that can actually see diameter; real physics work, and needs validating
-   against FEM.
-3. **Say so in the UI** — badge the frontier "diameter has no effect at this tier" and
-   direct the user to FEM. Cheapest, and at least stops the screen implying an answer
-   it cannot give.
+**Resolved (P8 S4): force FEM for geometry sweeps.** The engine now knows the
+analytical tier is diameter-blind (`geometry_field_tier`,
+`require_geometry_distinguishable` — a diameter sweep on the analytical tier is a
+*raised error*, not a flat frontier), and the Study route dispatches the whole sweep
+to the conda `retinode-fem` env (FEM field + real NEURON), mirroring the FEM field
+dispatch. **Verified end-to-end:** a 2-diameter study returns 9.49 µA (d10) vs
+10.20 µA (d30) — byte-identical on the analytical tier, distinct on FEM.
 
-Until one of these lands, **the Study and Candidates screens cannot answer the question
-they are shaped around** ("which electrode diameter is most selective?") on the tier
-they run.
+The cost is real and now stated in the UI: ~28 s per geometry (a 4×4 sweep ≈ 8 min),
+against seconds for the old flat frontier. That is the price of the FEM tier the
+question actually requires. The live run also forced a genuine engine fix: the FEM
+domain must be floored to the cell's query reach (the axon of passage reaches 378 µm
+toward the optic disc, far outside a domain sized for a small electrode), or the solve
+crashes on a point outside the mesh.
 
 ---
 
