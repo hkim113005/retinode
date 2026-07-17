@@ -9,7 +9,10 @@ import type { CompareResponse, Scorecard as ScorecardData, SceneControls } from 
 import { useCommands } from "../components/Commands";
 import { ControlRail } from "../components/ControlRail";
 import type { Controls } from "../components/ControlRail";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { FieldCanvas } from "../components/FieldCanvas";
+import { History, remember, runKey } from "../components/History";
+import type { Run } from "../components/History";
 import { Rail } from "../components/Rail";
 import { Scorecard } from "../components/Scorecard";
 import type { Screen } from "../nav";
@@ -50,6 +53,7 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
   const [scorecard, setScorecard] = useState<ScorecardData | null>(null);
   const [scoreProgress, setScoreProgress] = useState<Progress | null>(null);
   const [cached, setCached] = useState(false);
+  const [runs, setRuns] = useState<Run[]>([]);
   const [error, setError] = useState<string | null>(null);
   const fieldTicket = useRef(0);
   const scoreTicket = useRef(0);
@@ -97,8 +101,12 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
       }
       if (ticket !== scoreTicket.current) return;
       if (job.status === "error") throw new Error(job.error ?? "scoring failed");
-      setScorecard(job.scorecard ?? { activated: false });
+      const card = job.scorecard ?? { activated: false };
+      setScorecard(card);
       setCached(job.cached);
+      // a scorecard costs a threshold search — keep it so two designs can be
+      // compared without re-running one from memory
+      setRuns((rs) => remember(rs, { id: runKey(controls), controls, scorecard: card }));
     })()
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "scoring failed"))
       .finally(() => {
@@ -213,11 +221,18 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
           )}
         </div>
         <div className="field-stack">
-          <FieldCanvas data={scene} tier={tier} />
-          <Suspense fallback={null}>
-            <Loupe3D electrodes={scene?.electrodes ?? []} cells={scene?.cells ?? []} tier={tier} />
-          </Suspense>
+          {/* the plot and the 3D scene each fail alone: losing the loupe (WebGL is
+              not guaranteed) must not cost the field, and neither costs the controls */}
+          <ErrorBoundary what="The field">
+            <FieldCanvas data={scene} tier={tier} />
+          </ErrorBoundary>
+          <ErrorBoundary what="The 3D loupe">
+            <Suspense fallback={null}>
+              <Loupe3D electrodes={scene?.electrodes ?? []} cells={scene?.cells ?? []} tier={tier} />
+            </Suspense>
+          </ErrorBoundary>
         </div>
+        <History runs={runs} current={runKey(controls)} onRestore={setControls} />
       </main>
       <aside className="inspect">
         <ControlRail controls={controls} onChange={setControls} />

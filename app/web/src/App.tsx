@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { StudyPoint } from "./api/client";
 import { CommandProvider, useCommands } from "./components/Commands";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SCREENS } from "./nav";
 import type { Screen } from "./nav";
 import { Candidates } from "./screens/Candidates";
@@ -11,7 +12,9 @@ import { Validation } from "./screens/Validation";
 export function App() {
   return (
     <CommandProvider>
-      <Screens />
+      <ErrorBoundary what="This screen">
+        <Screens />
+      </ErrorBoundary>
     </CommandProvider>
   );
 }
