@@ -1,0 +1,372 @@
+<title>Retinode — Candidates (design mockup)</title>
+<style>
+  :root{
+    --bg1:#eef2f8; --bg2:#e6ecf5;
+    --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14);
+    --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05);
+    --radius:18px; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg1:#0a0e16; --bg2:#0f1420;
+    --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+    --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+    --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+    --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+    --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+    --ok:#34c759; --ok-soft:rgba(48,209,88,0.18);
+    --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+    --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35);
+    --field:#0a84ff; --canvas-ink:#f5f5f7;
+  }}
+  :root[data-theme="light"]{
+    --bg1:#eef2f8; --bg2:#e6ecf5;
+    --glass:rgba(255,255,255,0.60); --glass-strong:rgba(255,255,255,0.78);
+    --inset:rgba(255,255,255,0.55); --border:rgba(17,24,39,0.10);
+    --ink:#1c1c1e; --muted:#6e6e73; --faint:#9a9aa0;
+    --accent:#007aff; --accent-strong:#0a6ae0; --accent-soft:rgba(0,122,255,0.12);
+    --warm:#d1810b; --warm-strong:#e2860a; --warm-soft:rgba(209,129,11,0.14);
+    --ok:#2fae5b; --ok-soft:rgba(47,174,91,0.14);
+    --alert:#e5484d; --alert-soft:rgba(229,72,77,0.13);
+    --shadow:0 10px 34px rgba(17,24,39,0.10),0 1px 2px rgba(17,24,39,0.05);
+    --field:#007aff; --canvas-ink:#1c1c1e;
+  }
+  :root[data-theme="dark"]{
+    --bg1:#0a0e16; --bg2:#0f1420;
+    --glass:rgba(30,33,42,0.55); --glass-strong:rgba(38,42,52,0.72);
+    --inset:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.10);
+    --ink:#f5f5f7; --muted:#a1a1a6; --faint:#70707a;
+    --accent:#0a84ff; --accent-strong:#409cff; --accent-soft:rgba(10,132,255,0.22);
+    --warm:#ff9f0a; --warm-strong:#ffb340; --warm-soft:rgba(255,159,10,0.16);
+    --ok:#34c759; --ok-soft:rgba(48,209,88,0.18);
+    --alert:#ff6b6f; --alert-soft:rgba(255,107,111,0.16);
+    --shadow:0 14px 44px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.35);
+    --field:#0a84ff; --canvas-ink:#f5f5f7;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{font-family:var(--sans); color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2)); background-attachment:fixed;
+    min-height:100vh; padding:18px; -webkit-font-smoothing:antialiased;
+    display:grid; grid-template-columns:210px minmax(0,1fr) 288px; gap:16px;}
+  @media (max-width:1080px){.app{grid-template-columns:1fr;} .rail,.inspect{position:static;}}
+  .card{background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow),inset 0 1px 0 var(--inset); backdrop-filter:blur(20px) saturate(1.2);
+    -webkit-backdrop-filter:blur(20px) saturate(1.2);}
+
+  .rail{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .brand{padding:16px 16px 14px;} .wordmark{font-size:18px; font-weight:680; letter-spacing:-0.02em;}
+  .brand .sub{font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-top:3px;}
+  .nav{padding:8px;} .nav .grp{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); padding:10px 10px 6px;}
+  .step{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:11px; font-size:13.5px; color:var(--muted); cursor:pointer; border:1px solid transparent;}
+  .step:hover{background:var(--accent-soft); color:var(--ink);}
+  .step .dot{width:7px; height:7px; border-radius:50%; background:var(--faint); flex:none;}
+  .step.done .dot{background:var(--ok);}
+  .step.active{background:var(--glass-strong); color:var(--ink); border-color:var(--border); font-weight:600;}
+  .step.active .dot{background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  .rail .badges{padding:12px; display:flex; flex-direction:column; gap:8px;}
+  .badge{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 11px; border-radius:12px; font-size:12px; border:1px solid var(--border);}
+  .badge .k{color:var(--muted); font-size:11px;} .badge .v{font-family:var(--mono); font-weight:600;}
+  .badge.tier{background:var(--accent-soft);} .badge.tier .v{color:var(--accent-strong);}
+  .badge.safe{background:var(--ok-soft);} .badge.safe .v{color:var(--ok);}
+  .kbd{font-family:var(--mono); font-size:10.5px; color:var(--faint); text-align:center; padding:2px 0 6px;}
+
+  .stage{display:flex; flex-direction:column; gap:14px; min-width:0;}
+  .stage-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:2px 4px;}
+  .stage-head h1{font-size:17px; margin:0; letter-spacing:-0.01em; font-weight:640;}
+  .stage-head .crumb{font-size:12px; color:var(--muted);}
+  .chip{font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--glass-strong); border:1px solid var(--border); border-radius:999px; padding:4px 10px; cursor:pointer; white-space:nowrap;}
+  .chip:hover{color:var(--accent-strong); border-color:var(--accent-soft);}
+
+  /* recommendation banner */
+  .reco{padding:18px 20px; display:flex; gap:18px; align-items:center; position:relative; overflow:hidden;}
+  .reco::before{content:""; position:absolute; inset:0; background:
+    radial-gradient(120% 160% at 100% 0%, var(--warm-soft), transparent 60%); pointer-events:none;}
+  .reco .rank{font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--warm-strong); font-weight:700;}
+  .reco canvas{width:96px; height:70px; border-radius:11px; border:1px solid var(--border); flex:none; background:var(--inset);}
+  .reco .body{min-width:0;}
+  .reco .name{font-family:var(--mono); font-size:16px; font-weight:650; letter-spacing:-0.01em;}
+  .reco .say{font-size:13.5px; color:var(--ink); margin-top:4px; max-width:56ch; line-height:1.5;}
+  .reco .say b{color:var(--warm-strong);}
+  .reco .nums{display:flex; gap:18px; margin-top:10px; flex-wrap:wrap;}
+  .reco .nums .n{font-family:var(--mono);} .reco .nums .n .big{font-size:17px; font-weight:650; font-variant-numeric:tabular-nums;}
+  .reco .nums .n .lab{font-size:10.5px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase;}
+
+  /* list */
+  .listcard{padding:6px 6px 4px;}
+  .lhead{display:flex; align-items:center; justify-content:space-between; padding:10px 12px 8px;}
+  .lhead h2{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0; font-weight:600;}
+  .cand{display:grid; grid-template-columns:30px 76px minmax(0,1fr) 150px 74px; gap:14px; align-items:center;
+    padding:13px 12px; border-radius:13px; border:1px solid transparent; transition:background .15s;}
+  .cand + .cand{border-top:1px solid var(--border);}
+  .cand:hover{background:var(--glass-strong); border-color:var(--border);}
+  .cand.draft{opacity:.94;}
+  .cand .rk{font-family:var(--mono); font-size:15px; font-weight:700; color:var(--muted); text-align:center;}
+  .cand .rk.top{color:var(--warm-strong);}
+  .cand canvas{width:76px; height:54px; border-radius:9px; border:1px solid var(--border); background:var(--inset); display:block;}
+  .cand .name{font-family:var(--mono); font-size:14px; font-weight:640;}
+  .cand .say{font-size:12px; color:var(--muted); margin:3px 0 8px; line-height:1.4;}
+  .band{width:100%;} .band svg{width:100%; height:34px; display:block; overflow:visible;}
+  .cand .metrics{display:flex; flex-direction:column; gap:5px; font-size:12px;}
+  .cand .metrics .m{display:flex; justify-content:space-between; gap:8px;}
+  .cand .metrics .m .k{color:var(--muted);} .cand .metrics .m .v{font-family:var(--mono); font-weight:600; font-variant-numeric:tabular-nums;}
+  .tags{display:flex; flex-direction:column; gap:6px; align-items:flex-end;}
+  .tag{font-size:10.5px; font-weight:640; padding:3px 8px; border-radius:999px; letter-spacing:.02em; white-space:nowrap;}
+  .tag.fem{background:var(--accent-soft); color:var(--accent-strong);}
+  .tag.ana{background:var(--inset); color:var(--muted); border:1px solid var(--border);}
+  .tag.safe{background:var(--ok-soft); color:var(--ok);}
+  .tag.margin{background:var(--warm-soft); color:var(--warm-strong);}
+  .tag.hash{font-family:var(--mono); background:transparent; color:var(--faint); cursor:pointer; padding:2px 4px;}
+  .tag.hash:hover{color:var(--accent-strong);}
+  @media (max-width:720px){ .cand{grid-template-columns:26px 1fr; } .cand canvas,.cand .metrics,.tags{grid-column:2;} }
+
+  .inspect{display:flex; flex-direction:column; gap:14px; align-self:start; position:sticky; top:18px;}
+  .panel{padding:14px 16px;} .panel h2{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; font-weight:600;}
+  .seg{display:flex; gap:4px; background:var(--inset); border:1px solid var(--border); border-radius:11px; padding:3px;}
+  .seg button{flex:1; border:0; background:transparent; color:var(--muted); font-family:var(--sans); font-size:12px; font-weight:600; padding:7px 6px; border-radius:8px; cursor:pointer;}
+  .seg button.on{background:var(--glass-strong); color:var(--ink); box-shadow:var(--shadow);}
+  .filt{display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;}
+  .filt button{border:1px solid var(--border); background:var(--inset); color:var(--muted); font-size:11.5px; padding:6px 10px; border-radius:9px; cursor:pointer;}
+  .filt button.on{background:var(--accent-soft); color:var(--accent-strong); border-color:transparent; font-weight:600;}
+  .exp{display:flex; flex-direction:column; gap:9px;}
+  .exp button{display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid var(--border);
+    background:var(--glass-strong); color:var(--ink); font-family:var(--sans); font-size:13px; font-weight:600; padding:11px 13px; border-radius:12px; cursor:pointer;}
+  .exp button:hover{border-color:var(--accent-soft);}
+  .exp button .sub{font-size:11px; color:var(--muted); font-weight:500;}
+  .exp .primary{background:var(--accent); color:#fff; border-color:transparent;} .exp .primary .sub{color:rgba(255,255,255,.8);}
+  .sum{display:flex; flex-direction:column; gap:9px; font-size:12.5px;}
+  .sum .r{display:flex; justify-content:space-between; gap:10px;}
+  .sum .r .k{color:var(--muted);} .sum .r .v{font-family:var(--mono); font-weight:600;}
+  .foot{font-size:11px; color:var(--faint); line-height:1.5; margin-top:10px;}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg1); font-size:12.5px; padding:9px 16px; border-radius:11px; opacity:0; pointer-events:none; transition:.28s; font-weight:500; z-index:9;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="card brand"><div class="wordmark">Retinode</div><div class="sub">Electrode studio</div></div>
+    <nav class="card nav">
+      <div class="grp">Design</div>
+      <div class="step done"><span class="dot"></span>Patch</div>
+      <div class="step done"><span class="dot"></span>Array</div>
+      <div class="step done"><span class="dot"></span>Tissue</div>
+      <div class="step done"><span class="dot"></span>Stimulus</div>
+      <div class="step done"><span class="dot"></span>Results</div>
+      <div class="grp">Analyse</div>
+      <div class="step"><span class="dot"></span>Compare</div>
+      <div class="step done"><span class="dot"></span>Study</div>
+      <div class="step"><span class="dot"></span>Validation</div>
+      <div class="step active"><span class="dot"></span>Candidates</div>
+    </nav>
+    <div class="card badges">
+      <div class="badge tier"><span class="k">Accuracy</span><span class="v">2 FEM · 4 analytical</span></div>
+      <div class="badge safe"><span class="k">Safety</span><span class="v">all filtered</span></div>
+      <div class="kbd">⌘K  ·  command palette</div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-head">
+      <div>
+        <h1>Candidates · worth testing in tissue</h1>
+        <div class="crumb">6 designs · from study <b>2c9f</b> · charge-safe · ranked</div>
+      </div>
+      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ cand·5e1b</div>
+    </div>
+
+    <!-- the one-sentence finding -->
+    <div class="card reco" id="reco"></div>
+
+    <div class="card listcard">
+      <div class="lhead">
+        <h2 id="listTitle">Shortlist</h2>
+        <span style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="sortLab">by selectivity</span>
+      </div>
+      <div id="list"></div>
+    </div>
+  </main>
+
+  <aside class="inspect">
+    <div class="card panel">
+      <h2>Rank by</h2>
+      <div class="seg" id="sortSeg">
+        <button class="on" data-k="sel">Selectivity</button>
+        <button data-k="thr">Threshold</button>
+        <button data-k="rob">Robustness</button>
+      </div>
+      <div class="filt" id="filt">
+        <button data-f="fem">FEM-confirmed</button>
+        <button data-f="safe" class="on">Charge-safe only</button>
+      </div>
+      <div class="foot">Robustness ranks by how little the threshold moves across the axon-trajectory distribution (the ± whisker).</div>
+    </div>
+
+    <div class="card panel">
+      <h2>Export for the lab</h2>
+      <div class="exp">
+        <button class="primary" id="expReport"><span>Export report<br><span class="sub">PDF · figures + rationale</span></span><span>↧</span></button>
+        <button id="expList"><span>Export list<br><span class="sub">JSON · machine-readable</span></span><span>↧</span></button>
+        <button id="expCsv"><span>Export table<br><span class="sub">CSV · metrics only</span></span><span>↧</span></button>
+      </div>
+      <div class="foot">Every candidate carries its provenance hash, so any row in the report reopens to its exact design + result.</div>
+    </div>
+
+    <div class="card panel">
+      <h2>Summary</h2>
+      <div class="sum">
+        <div class="r"><span class="k">Candidates</span><span class="v">6</span></div>
+        <div class="r"><span class="k">Charge-safe</span><span class="v" style="color:var(--ok)">6 / 6</span></div>
+        <div class="r"><span class="k">FEM-confirmed</span><span class="v">2</span></div>
+        <div class="r"><span class="k">Best window</span><span class="v" style="color:var(--warm-strong)">9.5 µA</span></div>
+        <div class="r"><span class="k">Lowest threshold</span><span class="v">6.2 µA</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const AMAX=30; // shared µA axis for comparable bands
+
+  const cands=[
+    {d:12,pitch:40,ret:"local", sel:9.5, thr:8.4, sens:0.9, byst:17.9, ceil:24, tier:"fem",  safe:"safe",
+      say:"Widest selective window at the lowest safe current — the recommendation.", hash:"8f3ac1"},
+    {d:8, pitch:40,ret:"local", sel:8.8, thr:11.2,sens:1.6, byst:20.0, ceil:20, tier:"ana",  safe:"margin",
+      say:"High selectivity, but the small disk runs close to the charge limit.", hash:"a1d904"},
+    {d:16,pitch:40,ret:"local", sel:8.1, thr:7.1, sens:0.7, byst:15.2, ceil:27, tier:"fem",  safe:"safe",
+      say:"Lowest threshold of the top set; a touch narrower window.", hash:"3c77e0"},
+    {d:12,pitch:55,ret:"local", sel:7.4, thr:9.1, sens:1.2, byst:16.5, ceil:24, tier:"ana",  safe:"safe",
+      say:"Broader pitch trades a little selectivity for spatial reach.", hash:"5be213"},
+    {d:16,pitch:55,ret:"near",  sel:5.9, thr:8.8, sens:0.8, byst:14.7, ceil:27, tier:"ana",  safe:"safe",
+      say:"Near return: a middle ground; FEM confirmation still pending.", hash:"9a02c8"},
+    {d:20,pitch:40,ret:"local", sel:5.2, thr:6.2, sens:0.6, byst:11.4, ceil:30, tier:"ana",  safe:"safe",
+      say:"Largest electrode: the lowest threshold, but selectivity falls off.", hash:"c40f19"},
+  ];
+  let sortK="sel", filters={fem:false,safe:true};
+
+  function sorted(){
+    let l=cands.filter(c=> (!filters.fem||c.tier==="fem") && (!filters.safe||c.safe!=="unsafe"));
+    const key={sel:c=>-c.sel, thr:c=>c.thr, rob:c=>c.sens};
+    return l.slice().sort((a,b)=>key[sortK](a)-key[sortK](b));
+  }
+
+  // inline operating-window band (shared 0..AMAX µA axis)
+  function band(c){
+    const X=v=>(v/AMAX*100);
+    const ok=css("--ok"),warm=css("--warm"),alert=css("--alert"),muted=css("--muted"),ink=css("--canvas-ink"),mono=css("--mono")||"monospace";
+    const a=X(c.thr),b=X(Math.min(c.byst,AMAX)),lo=X(Math.max(0,c.thr-c.sens)),hi=X(c.thr+c.sens),cl=X(c.ceil);
+    return `<svg viewBox="0 0 100 34" preserveAspectRatio="none" role="img" aria-label="operating window">
+      <line x1="0" y1="21" x2="100" y2="21" stroke="${withA(muted,0.25)}" stroke-width="1.4"/>
+      <rect x="${a}" y="15" width="${Math.max(0,b-a)}" height="12" rx="6" fill="${withA(ok,0.26)}" stroke="${withA(ok,0.55)}" stroke-width="0.6"/>
+      <line x1="${lo}" y1="21" x2="${hi}" y2="21" stroke="${withA(warm,0.5)}" stroke-width="5"/>
+      <line x1="${a}" y1="11" x2="${a}" y2="31" stroke="${warm}" stroke-width="1.6"/>
+      <line x1="${cl}" y1="11" x2="${cl}" y2="31" stroke="${withA(alert,0.9)}" stroke-width="1.6"/>
+      <text x="${a}" y="8" fill="${warm}" font-size="6.4" font-family="${mono}" text-anchor="middle">${c.thr.toFixed(1)}</text>
+      <text x="${b}" y="8" fill="${withA(ink,0.6)}" font-size="6.2" font-family="${mono}" text-anchor="middle">${c.byst.toFixed(1)}</text>
+      <text x="${cl}" y="8" fill="${withA(alert,0.9)}" font-size="6.2" font-family="${mono}" text-anchor="middle">limit</text>
+    </svg>`;
+  }
+
+  function fieldThumb(c, canvas){
+    const g=canvas.getContext("2d"), W=canvas.width, H=canvas.height, cx=W/2, cy=H/2;
+    const field=css("--field"), ink=css("--canvas-ink"), warm=css("--warm");
+    g.clearRect(0,0,W,H);
+    const rad=H*0.62*(c.pitch/45);
+    const rg=g.createRadialGradient(cx,cy,2,cx,cy,rad); rg.addColorStop(0,withA(field,0.32)); rg.addColorStop(1,withA(field,0));
+    g.fillStyle=rg; g.beginPath(); g.arc(cx,cy,rad,0,7); g.fill();
+    for(let k=1;k<=3;k++){ g.strokeStyle=withA(field,c.tier==="fem"?0.5:0.34); g.lineWidth=c.tier==="fem"?1.3:1;
+      g.setLineDash(c.tier==="fem"?[]:[2,3]); g.beginPath(); g.arc(cx,cy,k*H*0.16,0,7); g.stroke(); }
+    g.setLineDash([]);
+    g.fillStyle=withA(ink,0.55); g.beginPath(); g.arc(cx,cy,c.d*0.55,0,7); g.fill();
+    g.fillStyle=warm; g.beginPath(); g.arc(cx+H*0.16,cy-H*0.1,H*0.06,0,7); g.fill();
+  }
+
+  function render(){
+    const list=document.getElementById("list"); list.innerHTML="";
+    const rows=sorted();
+    document.getElementById("listTitle").textContent=`Shortlist · ${rows.length}`;
+    document.getElementById("sortLab").textContent="by "+({sel:"selectivity",thr:"threshold",rob:"robustness"})[sortK];
+    rows.forEach((c,i)=>{
+      const el=document.createElement("div"); el.className="cand"+(c.tier==="ana"?" draft":"");
+      el.innerHTML=`
+        <div class="rk ${i===0?"top":""}">${i+1}</div>
+        <canvas width="152" height="108"></canvas>
+        <div class="body">
+          <div class="name">d${c.d} · pitch ${c.pitch} · ${c.ret} return</div>
+          <div class="say">${c.say}</div>
+          <div class="band">${band(c)}</div>
+        </div>
+        <div class="metrics">
+          <div class="m"><span class="k">selective window</span><span class="v" style="color:var(--warm-strong)">${c.sel.toFixed(1)} µA</span></div>
+          <div class="m"><span class="k">target threshold</span><span class="v">${c.thr.toFixed(1)} ±${c.sens.toFixed(1)}</span></div>
+          <div class="m"><span class="k">charge</span><span class="v" style="color:${c.safe==="safe"?"var(--ok)":"var(--warm-strong)"}">${c.safe}</span></div>
+        </div>
+        <div class="tags">
+          <span class="tag ${c.tier}">${c.tier==="fem"?"FEM ✓":"analytical"}</span>
+          <span class="tag ${c.safe}">${c.safe==="safe"?"charge-safe":"near limit"}</span>
+          <span class="tag hash" title="Copy a link to this design">◇ ${c.hash}</span>
+        </div>`;
+      list.appendChild(el);
+      fieldThumb(c, el.querySelector("canvas"));
+      el.querySelector(".hash").addEventListener("click",e=>{e.stopPropagation(); toast("Link copied — reopens d"+c.d+"·p"+c.pitch+"·"+c.ret+" at its exact design + result");});
+    });
+    renderReco(rows[0]);
+  }
+
+  function renderReco(c){
+    const r=document.getElementById("reco");
+    r.innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <span class="rank">▲ Recommended</span>
+        <canvas width="192" height="140"></canvas>
+      </div>
+      <div class="body">
+        <div class="name">d${c.d} · pitch ${c.pitch} · ${c.ret} return</div>
+        <div class="say">The <b>widest selective window</b> (${c.sel.toFixed(1)} µA) at the <b>lowest safe current</b> (${c.thr.toFixed(1)} µA), FEM-confirmed — the design to take to tissue first.</div>
+        <div class="nums">
+          <div class="n"><div class="big" style="color:var(--warm-strong)">${c.sel.toFixed(1)} µA</div><div class="lab">selective window</div></div>
+          <div class="n"><div class="big">${c.thr.toFixed(1)} <span style="font-size:12px;color:var(--muted)">±${c.sens.toFixed(1)}</span></div><div class="lab">target threshold</div></div>
+          <div class="n"><div class="big" style="color:var(--ok)">${((c.thr*1e-6*0.2e-3)/(Math.PI*(c.d/2)**2*1e-8)*1e3).toFixed(2)}</div><div class="lab">mC/cm² · safe</div></div>
+          <div class="n"><div class="big" style="color:var(--accent-strong)">FEM ✓</div><div class="lab">accuracy tier</div></div>
+        </div>
+      </div>`;
+    fieldThumb(c, r.querySelector("canvas"));
+  }
+
+  // controls
+  const seg=document.getElementById("sortSeg");
+  seg.addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return;
+    [...seg.children].forEach(x=>x.classList.remove("on")); b.classList.add("on"); sortK=b.dataset.k; render();
+    toast("Ranked "+({sel:"by selectivity",thr:"by lowest threshold",rob:"by robustness"})[sortK]);});
+  document.getElementById("filt").addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return;
+    b.classList.toggle("on"); filters[b.dataset.f]=b.classList.contains("on"); render();});
+  document.getElementById("expReport").addEventListener("click",()=>toast("Report exported — PDF with figures, bands, and rationale for all 6"));
+  document.getElementById("expList").addEventListener("click",()=>toast("Machine-readable list exported — candidates.json"));
+  document.getElementById("expCsv").addEventListener("click",()=>toast("Metrics table exported — candidates.csv"));
+  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied — reopens this shortlist at this exact state (link = hash)"));
+
+  let toastT; function toast(m){const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show");
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2300);}
+
+  function withA(c,a){c=c.trim();
+    if(c.startsWith("#")){let h=c.slice(1); if(h.length===3)h=h.split("").map(x=>x+x).join(""); const n=parseInt(h,16);
+      return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+    if(c.startsWith("rgb")){const p=c.match(/[\d.]+/g); return `rgba(${p[0]},${p[1]},${p[2]},${a})`;}
+    return c;}
+
+  render();
+  new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",render);
+})();
+</script>

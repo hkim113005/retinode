@@ -251,7 +251,10 @@ This spec is the acceptance bar for the phase-7-plan.md steps, not new scope:
   Candidates, and small multiples.
 - **S5 (3D)** ships the loupe, not a separate screen.
 - **S6 (Candidates/Validation)** inherits the scorecard band, tier badges, and the
-  provenance chip.
+  provenance chip. Interactive mockup:
+  [`docs/mockups/candidates-screen.html`](mockups/candidates-screen.html) — the ranked
+  shortlist opens with the one-sentence recommendation, each row carrying its
+  operating-window band, tier texture, trajectory-sensitivity whisker, and export.
 - **S7 (charts/export)** ships labeled contours, sparklines, and figure-quality
   vector/raster export of every plot.
 - **S8 (polish)** ships the ⌘K spine, teaching empty/error states, reduced-motion, and
