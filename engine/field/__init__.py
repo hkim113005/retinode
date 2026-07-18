@@ -9,6 +9,7 @@ from .analytical import AnalyticalBackend
 from .backend import (
     FieldBackend,
     UnsupportedByBackend,
+    backend_solve_params,
     current_vector,
     potential_mV,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "AnalyticalBackend",
     "FenicsxBackend",
     "NGSolveBackend",
+    "backend_solve_params",
     "current_vector",
     "potential_mV",
 ]

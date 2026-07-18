@@ -128,3 +128,13 @@ def test_the_target_fires_before_the_bystander():
         if o is not None:
             assert t <= o, f"{off.cell_id} fired before the target"
         assert math.isfinite(t)
+
+
+def test_amplitude_sweep_rejects_an_empty_grid():
+    """The empty-grid guard fires before any field solve, so it is fast-testable —
+    but every other amplitude_sweep test is neuron-marked, so this cheap branch was
+    never hit."""
+    from engine.study.activation import amplitude_sweep
+
+    with pytest.raises(ValueError, match="at least one amplitude"):
+        amplitude_sweep(None, None, None, None, amplitudes_uA=[])

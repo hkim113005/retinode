@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from engine.eval import EVALUATOR_VERSION, OffTargetSet
 from engine.eval.overlap import OverlapPolicy
 from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
-from engine.field import FieldBackend
+from engine.field import FieldBackend, backend_solve_params
 from engine.spec import ConductivityModel, RetinalPatch
 from engine.store.keys import result_key
 from engine.store.project import Project
@@ -123,6 +123,7 @@ def study_status(
                     off_target_set,
                     backend_name=chosen_backend.name,
                     evaluator_version=evaluator_version,
+                    solve_params=backend_solve_params(chosen_backend, array, solve_conductivity),
                 )
             )
             for config in configs

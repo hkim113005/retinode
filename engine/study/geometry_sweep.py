@@ -134,16 +134,24 @@ def geometry_sweep(
     conductivity. ``store`` makes the whole thing resumable (each geometry's cached
     results are served from disk). ``on_geometry(index, outcome)`` is called after
     each geometry completes (progress).
+
+    **Tier-agnostic by design.** This primitive does not force FEM: sweeping geometry
+    on the diameter-blind analytical tier is legitimate (a fast integration test that
+    only exercises the Pareto machinery, or a caller who knows the field is fixed). It
+    is a *policy* — "a user comparing diameters wants a tier that can see diameter" —
+    that belongs to the caller. Callers making a real geometry comparison should invoke
+    :func:`require_geometry_distinguishable` first (as ``api.study_core`` does); it is
+    not enforced here so the primitive stays usable on any tier.
     """
     off_target_set = off_target_set or OffTargetSet()
     outcomes: list[GeometryOutcome] = []
     geometry_by_key: dict[str, ArrayGeometry] = {}
 
+    # loop-invariant (depends only on conductivity), so resolve the backend once
+    chosen_backend, solve_conductivity = _resolve_backend(conductivity, backend, backend_selector)
+
     for index, geometry in enumerate(geometries):
         array = build_array(geometry)
-        chosen_backend, solve_conductivity = _resolve_backend(
-            conductivity, backend, backend_selector
-        )
         configs = list(config_factory(array))
         sub = sweep(
             array,

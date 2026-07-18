@@ -71,10 +71,18 @@ def result_key(
     *,
     backend_name: str,
     evaluator_version: str,
+    solve_params: str | None = None,
 ) -> str:
-    """Identity of a scored evaluation (the Phase-0 result-key formula)."""
+    """Identity of a scored evaluation (the Phase-0 result-key formula).
+
+    ``solve_params`` must be threaded through here for the same reason ``field_key``
+    documents it: ``FenicsxBackend.name`` is the constant ``"fem_fenicsx"`` regardless
+    of mesh/degree/extent, so two FEM solves that differ only in resolution would
+    otherwise collide on one result key and a persisted store would serve the coarse
+    result for a fine re-solve. ``None`` (analytical, which has no mesh) reproduces the
+    previous key exactly, so analytical result keys are unchanged."""
     return combine(
-        field_key(array, conductivity, backend_name),
+        field_key(array, conductivity, backend_name, solve_params=solve_params),
         spec_hash(config),
         spec_hash(patch),
         evaluator_version,

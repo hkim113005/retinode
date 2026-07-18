@@ -28,7 +28,7 @@ from engine.eval.offtarget import select_off_targets
 from engine.eval.overlap import OverlapConflict, OverlapPolicy
 from engine.eval.result import EvaluationResult
 from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
-from engine.field import AnalyticalBackend, FieldBackend
+from engine.field import AnalyticalBackend, FieldBackend, backend_solve_params
 from engine.spec import (
     ConductivityModel,
     ElectrodeArray,
@@ -225,6 +225,7 @@ def sweep(
             off_target_set,
             backend_name=backend.name,
             evaluator_version=EVALUATOR_VERSION,
+            solve_params=backend_solve_params(backend, array, conductivity),
         )
         if store is not None:
             cached = store.get_result(rkey)  # None means a miss to evaluate

@@ -96,3 +96,32 @@ def test_result_key_changes_with_every_scored_input():
     assert base != key(off=OffTargetSet(soma_radius_um=80.0))
     assert base != key(backend="fem")
     assert base != key(ver="2")
+
+
+def test_result_key_distinguishes_fem_solve_params():
+    """result_key must thread solve_params like field_key does, or two FEM solves
+    that differ only in mesh/degree/extent collide on one key and a persisted store
+    serves the coarse result for a fine re-solve. Analytical (no mesh) is unchanged."""
+    from engine.eval import EVALUATOR_VERSION, OffTargetSet
+    from engine.field import AnalyticalBackend, FenicsxBackend, backend_solve_params
+    from engine.store.keys import result_key
+
+    off = OffTargetSet()
+    common = dict(
+        array=ARR, conductivity=COND, config=CFG, patch=_patch(), off_target_set=off,
+        evaluator_version=EVALUATOR_VERSION,
+    )
+    coarse = FenicsxBackend(degree=1, min_half_width_um=100.0)
+    fine = FenicsxBackend(degree=2, min_half_width_um=500.0)
+    k_coarse = result_key(**common, backend_name=coarse.name,
+                          solve_params=backend_solve_params(coarse, ARR, COND))
+    k_fine = result_key(**common, backend_name=fine.name,
+                        solve_params=backend_solve_params(fine, ARR, COND))
+    assert k_coarse != k_fine, "a finer FEM mesh must get a distinct result key"
+
+    # analytical has no solve_params, so omitting it reproduces the old key exactly
+    an = AnalyticalBackend()
+    assert result_key(**common, backend_name=an.name,
+                      solve_params=backend_solve_params(an, ARR, COND)) == result_key(
+        **common, backend_name=an.name
+    )

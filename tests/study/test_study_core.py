@@ -1,7 +1,5 @@
 """P8 S4: the FastAPI-free study orchestration (runs in uv OR the conda FEM env)."""
 
-import math
-
 import pytest
 
 from api.study_core import run_study
@@ -71,13 +69,54 @@ def test_a_fake_provider_bypasses_the_guard():
     assert result["n_geometries"] == 6
 
 
-def test_the_default_real_backend_is_fem_not_analytical():
-    """Without an injected provider run_study forces FEM — so it never silently uses
-    the diameter-blind analytical tier for a geometry comparison."""
+def test_the_default_real_path_forces_a_floored_fem_backend(monkeypatch):
+    """Without an injected provider, run_study must hand the sweep a FEM backend whose
+    domain is floored to the cell reach — the two things that prevent a silent flat
+    frontier and a point-outside-the-mesh crash. Capture the backend it constructs
+    rather than running a real FEM solve."""
     from engine.field import FenicsxBackend
-    from engine.study.geometry_sweep import geometry_field_tier
 
-    # the default the real path picks (constructed, not solved — lazy in uv)
-    backend, _ = geometry_field_tier(None)
-    assert isinstance(backend, FenicsxBackend)
-    assert not math.isnan(0.0)  # sanity: this test needs no NEURON, no dolfinx
+    captured = {}
+
+    class _Stop(Exception):
+        pass
+
+    def spy(*_a, backend=None, **_k):
+        captured["backend"] = backend
+        raise _Stop
+
+    monkeypatch.setattr("api.study_core.geometry_sweep", spy)
+    with pytest.raises(_Stop):
+        run_study({**_CONTROLS, "diameters_um": [10.0], "pitches_um": [40.0]})
+
+    b = captured["backend"]
+    assert isinstance(b, FenicsxBackend)  # FEM, not the diameter-blind analytical tier
+    assert b.min_half_width_um > 200.0  # floored to the axon-of-passage reach
+
+
+def test_query_reach_covers_the_axon_of_passage():
+    """The FEM domain must contain every point the field is sampled at. The reach
+    computation is pure and fast, but was only exercised by the conda fem test — a
+    regression (min vs max, or forgetting the axon) would sail through the fast and
+    NEURON jobs. Pin it: the reach far exceeds the array footprint (the axon runs
+    hundreds of µm toward the optic disc)."""
+    from api.study_core import _query_reach_um
+    from app.scene import build_patch
+
+    reach = _query_reach_um(build_patch(40.0))
+    assert reach > 200.0, "the axon of passage should reach well past the electrodes"
+
+
+def test_min_half_width_floors_the_auto_sized_domain():
+    """The floor that keeps those query points inside the mesh — a point outside is a
+    hard solve error, not a small inaccuracy (found the hard way running P8 S4 live)."""
+    from engine.field.mesh import default_domain
+    from engine.spec import HomogeneousConductivity
+    from engine.study.geometry import ArrayGeometry, build_array
+
+    array = build_array(ArrayGeometry(10.0, 40.0, "hex", 0.0))  # small: tight default
+    cond = HomogeneousConductivity(1.0)
+    tight = default_domain(array, cond).half_width_um
+    floored = default_domain(array, cond, min_half_width_um=500.0).half_width_um
+    assert tight < 500.0  # the array-sized default is small
+    assert floored == 500.0  # the floor wins

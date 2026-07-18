@@ -31,7 +31,7 @@ from typing import Any
 from engine.eval import EVALUATOR_VERSION, OffTargetSet
 from engine.eval.result import EvaluationResult
 from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
-from engine.field import FieldBackend
+from engine.field import FieldBackend, backend_solve_params
 from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimConfig
 from engine.store.keys import result_key
 from engine.store.project import Project
@@ -242,6 +242,7 @@ def _served_from_store(
             off_target_set,
             backend_name=prep.backend.name,
             evaluator_version=EVALUATOR_VERSION,
+            solve_params=backend_solve_params(prep.backend, prep.array, prep.conductivity),
         )
         result = store.get_result(key)
         if result is None:

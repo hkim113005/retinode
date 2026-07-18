@@ -115,6 +115,19 @@ def activating_function_along_axon(
     return axon_coords, activating_function(axon_coords, ve[idx])
 
 
+def leading_scale(waveform: Any, monophasic: bool) -> float:
+    """The scale applied to Ve on the pulse's *first* phase.
+
+    ``+1`` applies the field as computed — a cathodic leading edge when the driven
+    electrode is a cathode (negative weight → negative Ve → depolarizing). Anodic-first
+    biphasic (``cathodic_first=False``) leads with ``-Ve`` and recovers with ``+Ve``,
+    which is a real, distinct stimulus. A **monophasic** pulse has a single edge, so
+    its polarity is the field (weight) sign and ``cathodic_first`` does not apply —
+    honouring it there would just double the weight-sign control.
+    """
+    return 1.0 if (monophasic or waveform.cathodic_first) else -1.0
+
+
 def apply_field_pulse(
     model: RGCModel,
     ve: np.ndarray,
@@ -146,16 +159,17 @@ def apply_field_pulse(
         while h.t < t_target - 1e-9:
             h.fadvance()
 
+    lead = leading_scale(waveform, monophasic)  # +1 cathodic-first, -1 anodic-first
     h.dt = dt_ms
     h.finitialize(v_init_mV)
     set_field(0.0)
     advance_to(delay_ms)
-    set_field(1.0)  # phase 1: the imposed field Ve
+    set_field(lead)  # phase 1: the imposed field Ve (reversed if anodic-first)
     advance_to(delay_ms + pw)
     if not monophasic:
         set_field(0.0)  # interphase gap
         advance_to(delay_ms + pw + gap)
-        set_field(-1.0)  # phase 2: charge recovery (reversed)
+        set_field(-lead)  # phase 2: charge recovery (reversed relative to phase 1)
         advance_to(delay_ms + pw + gap + pw)
     set_field(0.0)
     advance_to(t_stop_ms)

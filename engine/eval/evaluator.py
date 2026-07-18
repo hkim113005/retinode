@@ -18,7 +18,7 @@ import math
 from typing import Protocol
 
 from engine.cable.population import PopulationThresholds, population_thresholds
-from engine.field import AnalyticalBackend, FieldBackend
+from engine.field import AnalyticalBackend, FieldBackend, backend_solve_params
 from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimConfig
 from engine.spec.hashing import spec_hash
 from engine.store.keys import field_key, result_key
@@ -96,8 +96,12 @@ def evaluate(
         off_target_set,
         backend_name=backend.name,
         evaluator_version=EVALUATOR_VERSION,
+        solve_params=backend_solve_params(backend, array, conductivity),
     )
-    fkey = field_key(array, conductivity, backend.name)
+    fkey = field_key(
+        array, conductivity, backend.name,
+        solve_params=backend_solve_params(backend, array, conductivity),
+    )
 
     def build(
         *,
