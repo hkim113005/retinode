@@ -18,6 +18,7 @@ from engine.field import AnalyticalBackend
 
 from ..jobs import Job, ProgressFn
 from ..models import JobStatus, SceneControls
+from ..score_worker import run_score_job
 from ..service import scorecard_payload
 
 router = APIRouter()
@@ -68,7 +69,7 @@ def to_job_status(job: Job) -> JobStatus:
 def submit_score(controls: SceneControls, request: Request) -> JobStatus:
     provider = request.app.state.thresholds_provider
 
-    def task(report: ProgressFn):
+    def analytical_task(report: ProgressFn):
         report(0.1, "placing the cell population")
         result = evaluate(
             *build_scene_specs(controls),
@@ -78,6 +79,13 @@ def submit_score(controls: SceneControls, request: Request) -> JobStatus:
         report(0.95, "scoring the operating window")
         return {"scorecard": scorecard_payload(result)}
 
+    def fem_task(report: ProgressFn):
+        # A shaped/3D electrode is FEM-only (the analytical tier can't see geometry),
+        # so score it in the conda FEM env. A penetrating body that reaches a cell
+        # raises OverlapConflict under reject; the worker surfaces it as the job error.
+        return {"scorecard": run_score_job(controls, report)}
+
+    task = fem_task if controls.body.kind != "none" else analytical_task
     job = request.app.state.jobs.submit(_cache_key(controls), task)
     return to_job_status(job)
 

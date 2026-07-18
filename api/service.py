@@ -27,6 +27,7 @@ from .models import (
     ScorecardResponse,
     ValidationReport,
 )
+from .scorecard_core import scorecard_dict
 
 # The committed report the app renders (the same file the Dash view reads). Read here
 # rather than importing app.views, which pulls plotly into the API process.
@@ -84,27 +85,10 @@ def cell_markers(patch: RetinalPatch) -> list[CellMarker]:
 
 def scorecard_payload(result) -> ScorecardResponse:  # noqa: ANN001 - an EvaluationResult
     """Map an evaluation result to the scorecard payload (mirrors
-    ``app.views.scorecard_data``)."""
-    offtarget = getattr(result, "offtarget_hash", None)
-    if not result.activated or result.window is None or result.sow is None:
-        return ScorecardResponse(activated=False, offtarget_hash=offtarget)
-    w, sow = result.window, result.sow
-    return ScorecardResponse(
-        activated=True,
-        offtarget_hash=offtarget,
-        target_uA=w.target_uA,
-        off_min_uA=sow.off_min_uA,
-        ratio=sow.ratio,
-        window_lo_uA=w.target_uA,
-        window_hi_uA=w.window_hi_uA,
-        usable_margin_uA=w.usable_margin_uA,
-        usable=w.is_usable,
-        limiting=w.limiting,
-        safety_ceiling_uA=w.safety_ceiling_uA,
-        safe_at_target=bool(result.safety_at_target and result.safety_at_target.safe),
-        off_target_thresholds_uA=dict(result.thresholds.off_target_thresholds_uA),
-        limiting_off_id=sow.limiting_off_id,
-    )
+    ``app.views.scorecard_data``). The field mapping lives in the Pydantic-free
+    ``api.scorecard_core.scorecard_dict`` (shared with the conda FEM scorecard job);
+    this just wraps it as the wire model."""
+    return ScorecardResponse(**scorecard_dict(result))
 
 
 def sweep_payload(sweep) -> AmplitudeSweepResponse:  # noqa: ANN001 - an AmplitudeSweep
