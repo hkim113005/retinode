@@ -42,6 +42,9 @@ const asRequest = (c: Controls, includeScorecard: boolean): SceneControls => ({
   extent_um: 130,
   n: 61,
   include_scorecard: includeScorecard,
+  // body + overlap_policy are wired to the control rail in a later slice; a flat disk
+  // (no body) with the default reject policy keeps the current behaviour unchanged.
+  overlap_policy: "reject",
 });
 
 // The amplitude grid the sweep button uses. 24 points is ~24 × the population in

@@ -179,6 +179,26 @@ export interface components {
             curves: components["schemas"]["ActivationCurve"][];
         };
         /**
+         * CadBodySpec
+         * @description An imported STEP/BREP solid, referenced by the id ``POST /cad`` returned. The
+         *     gmsh load lives in the FEM env, so the id resolves to a file there, not here.
+         */
+        CadBodySpec: {
+            /**
+             * Conductive Faces
+             * @default all
+             * @enum {string}
+             */
+            conductive_faces: "tip" | "sides" | "all";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "cad";
+            /** Upload Id */
+            upload_id: string;
+        };
+        /**
          * CellMarker
          * @description A soma position on the field plane; the target is drawn filled.
          */
@@ -204,6 +224,30 @@ export interface components {
             electrodes: components["schemas"]["ElectrodeMarker"][];
             field: components["schemas"]["FieldGridResponse"];
             scorecard?: components["schemas"]["ScorecardResponse"] | null;
+        };
+        /** CylinderBody */
+        CylinderBody: {
+            /**
+             * Conductive Faces
+             * @default all
+             * @enum {string}
+             */
+            conductive_faces: "tip" | "sides" | "all";
+            /**
+             * Height Um
+             * @default 30
+             */
+            height_um: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "cylinder";
+            /**
+             * Radius Um
+             * @default 5
+             */
+            radius_um: number;
         };
         /**
          * ElectrodeMarker
@@ -231,10 +275,52 @@ export interface components {
             /** Ys Um */
             ys_um: number[];
         };
+        /** FrustumBody */
+        FrustumBody: {
+            /**
+             * Base Radius Um
+             * @default 8
+             */
+            base_radius_um: number;
+            /**
+             * Conductive Faces
+             * @default all
+             * @enum {string}
+             */
+            conductive_faces: "tip" | "sides" | "all";
+            /**
+             * Height Um
+             * @default 20
+             */
+            height_um: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "frustum";
+            /**
+             * Top Radius Um
+             * @default 2
+             */
+            top_radius_um: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HemisphereBody */
+        HemisphereBody: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "hemisphere";
+            /**
+             * Radius Um
+             * @default 10
+             */
+            radius_um: number;
         };
         /**
          * JobStatus
@@ -270,11 +356,24 @@ export interface components {
             sweep?: components["schemas"]["AmplitudeSweepResponse"] | null;
         };
         /**
+         * NoBody
+         * @description A flat 2D face on the array plane — the default, analytical-friendly.
+         */
+        NoBody: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "none";
+        };
+        /**
          * SceneControls
          * @description The Compare screen's inputs — the same handful of controls the Dash app
          *     exposes, translated to specs server-side via ``app.scene.build_scene``.
          */
         SceneControls: {
+            /** Body */
+            body?: components["schemas"]["NoBody"] | components["schemas"]["HemisphereBody"] | components["schemas"]["CylinderBody"] | components["schemas"]["FrustumBody"] | components["schemas"]["CadBodySpec"];
             /**
              * Electrode Um
              * @default 10
@@ -306,6 +405,12 @@ export interface components {
              * @default 40
              */
             neighbor_um: number;
+            /**
+             * Overlap Policy
+             * @default reject
+             * @enum {string}
+             */
+            overlap_policy: "reject" | "displace";
             /**
              * Phase Width Us
              * @default 200
@@ -451,6 +556,8 @@ export interface components {
              * @default 1
              */
             amp_min_uA: number;
+            /** Body */
+            body?: components["schemas"]["NoBody"] | components["schemas"]["HemisphereBody"] | components["schemas"]["CylinderBody"] | components["schemas"]["FrustumBody"] | components["schemas"]["CadBodySpec"];
             /**
              * Electrode Um
              * @default 10
@@ -487,6 +594,12 @@ export interface components {
              * @default 40
              */
             neighbor_um: number;
+            /**
+             * Overlap Policy
+             * @default reject
+             * @enum {string}
+             */
+            overlap_policy: "reject" | "displace";
             /**
              * Phase Width Us
              * @default 200

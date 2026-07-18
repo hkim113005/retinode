@@ -35,6 +35,10 @@ def _cache_key(c: SceneControls) -> str:
             "phase_width_us": c.phase_width_us,
             "neighbor_um": c.neighbor_um,
             "sigma_S_per_m": c.sigma_S_per_m,
+            # the body + overlap policy change the score (different geometry / different
+            # in-metal compartments), so two shapes must not collide on one cache key
+            "body": c.body.model_dump(),
+            "overlap_policy": c.overlap_policy,
         },
         sort_keys=True,
     )

@@ -12,6 +12,54 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+ConductiveFaces = Literal["tip", "sides", "all"]
+
+
+# --- 3D electrode body (the custom-shape UI path) ----------------------------------
+# A body makes the driven electrode a solid protruding into the tissue. It is what
+# takes an electrode off the analytical tier: the point source sees only ``pos_um``,
+# so a bodied scene MUST be solved with FEM (the API routes it to the conda env). The
+# variants mirror ``engine.spec`` bodies; ``kind`` is the discriminator.
+
+
+class NoBody(BaseModel):
+    """A flat 2D face on the array plane — the default, analytical-friendly."""
+
+    kind: Literal["none"] = "none"
+
+
+class HemisphereBody(BaseModel):
+    kind: Literal["hemisphere"] = "hemisphere"
+    radius_um: float = Field(10.0, gt=0)
+
+
+class CylinderBody(BaseModel):
+    kind: Literal["cylinder"] = "cylinder"
+    radius_um: float = Field(5.0, gt=0)
+    height_um: float = Field(30.0, gt=0)
+    conductive_faces: ConductiveFaces = "all"
+
+
+class FrustumBody(BaseModel):
+    kind: Literal["frustum"] = "frustum"
+    base_radius_um: float = Field(8.0, gt=0)
+    top_radius_um: float = Field(2.0, gt=0)  # < base is a penetrating tip; > base widens
+    height_um: float = Field(20.0, gt=0)
+    conductive_faces: ConductiveFaces = "all"
+
+
+class CadBodySpec(BaseModel):
+    """An imported STEP/BREP solid, referenced by the id ``POST /cad`` returned. The
+    gmsh load lives in the FEM env, so the id resolves to a file there, not here."""
+
+    kind: Literal["cad"] = "cad"
+    upload_id: str
+    conductive_faces: ConductiveFaces = "all"
+
+
+# Discriminated on ``kind`` so the client (and openapi-typescript) get a clean union.
+BodySpec = NoBody | HemisphereBody | CylinderBody | FrustumBody | CadBodySpec
+
 
 class SceneControls(BaseModel):
     """The Compare screen's inputs — the same handful of controls the Dash app
@@ -29,6 +77,12 @@ class SceneControls(BaseModel):
     # the operating-window scorecard needs NEURON thresholds, so it is opt-in; the
     # field preview stays synchronous and NEURON-free (D3). S3 moves this to a job.
     include_scorecard: bool = False
+    # A 3D body shapes the driven electrode e0. Anything but ``none`` is FEM-only (the
+    # analytical tier can't see geometry), so the score/field routes dispatch a bodied
+    # scene to the conda env. ``overlap_policy`` governs a cell a penetrating body
+    # reaches: reject (refuse) or displace (sever the in-metal compartments).
+    body: BodySpec = Field(default_factory=NoBody, discriminator="kind")
+    overlap_policy: Literal["reject", "displace"] = "reject"
 
 
 class FieldGridResponse(BaseModel):

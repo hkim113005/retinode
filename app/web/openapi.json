@@ -83,6 +83,36 @@
         "title": "AmplitudeSweepResponse",
         "type": "object"
       },
+      "CadBodySpec": {
+        "description": "An imported STEP/BREP solid, referenced by the id ``POST /cad`` returned. The\ngmsh load lives in the FEM env, so the id resolves to a file there, not here.",
+        "properties": {
+          "conductive_faces": {
+            "default": "all",
+            "enum": [
+              "tip",
+              "sides",
+              "all"
+            ],
+            "title": "Conductive Faces",
+            "type": "string"
+          },
+          "kind": {
+            "const": "cad",
+            "default": "cad",
+            "title": "Kind",
+            "type": "string"
+          },
+          "upload_id": {
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id"
+        ],
+        "title": "CadBodySpec",
+        "type": "object"
+      },
       "CellMarker": {
         "description": "A soma position on the field plane; the target is drawn filled.",
         "properties": {
@@ -144,6 +174,40 @@
           "cells"
         ],
         "title": "CompareResponse",
+        "type": "object"
+      },
+      "CylinderBody": {
+        "properties": {
+          "conductive_faces": {
+            "default": "all",
+            "enum": [
+              "tip",
+              "sides",
+              "all"
+            ],
+            "title": "Conductive Faces",
+            "type": "string"
+          },
+          "height_um": {
+            "default": 30.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Height Um",
+            "type": "number"
+          },
+          "kind": {
+            "const": "cylinder",
+            "default": "cylinder",
+            "title": "Kind",
+            "type": "string"
+          },
+          "radius_um": {
+            "default": 5.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Radius Um",
+            "type": "number"
+          }
+        },
+        "title": "CylinderBody",
         "type": "object"
       },
       "ElectrodeMarker": {
@@ -211,6 +275,46 @@
         "title": "FieldGridResponse",
         "type": "object"
       },
+      "FrustumBody": {
+        "properties": {
+          "base_radius_um": {
+            "default": 8.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Base Radius Um",
+            "type": "number"
+          },
+          "conductive_faces": {
+            "default": "all",
+            "enum": [
+              "tip",
+              "sides",
+              "all"
+            ],
+            "title": "Conductive Faces",
+            "type": "string"
+          },
+          "height_um": {
+            "default": 20.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Height Um",
+            "type": "number"
+          },
+          "kind": {
+            "const": "frustum",
+            "default": "frustum",
+            "title": "Kind",
+            "type": "string"
+          },
+          "top_radius_um": {
+            "default": 2.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Top Radius Um",
+            "type": "number"
+          }
+        },
+        "title": "FrustumBody",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -222,6 +326,24 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HemisphereBody": {
+        "properties": {
+          "kind": {
+            "const": "hemisphere",
+            "default": "hemisphere",
+            "title": "Kind",
+            "type": "string"
+          },
+          "radius_um": {
+            "default": 10.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Radius Um",
+            "type": "number"
+          }
+        },
+        "title": "HemisphereBody",
         "type": "object"
       },
       "JobStatus": {
@@ -325,9 +447,52 @@
         "title": "JobStatus",
         "type": "object"
       },
+      "NoBody": {
+        "description": "A flat 2D face on the array plane \u2014 the default, analytical-friendly.",
+        "properties": {
+          "kind": {
+            "const": "none",
+            "default": "none",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "NoBody",
+        "type": "object"
+      },
       "SceneControls": {
         "description": "The Compare screen's inputs \u2014 the same handful of controls the Dash app\nexposes, translated to specs server-side via ``app.scene.build_scene``.",
         "properties": {
+          "body": {
+            "discriminator": {
+              "mapping": {
+                "cad": "#/components/schemas/CadBodySpec",
+                "cylinder": "#/components/schemas/CylinderBody",
+                "frustum": "#/components/schemas/FrustumBody",
+                "hemisphere": "#/components/schemas/HemisphereBody",
+                "none": "#/components/schemas/NoBody"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NoBody"
+              },
+              {
+                "$ref": "#/components/schemas/HemisphereBody"
+              },
+              {
+                "$ref": "#/components/schemas/CylinderBody"
+              },
+              {
+                "$ref": "#/components/schemas/FrustumBody"
+              },
+              {
+                "$ref": "#/components/schemas/CadBodySpec"
+              }
+            ],
+            "title": "Body"
+          },
           "electrode_um": {
             "default": 10.0,
             "exclusiveMinimum": 0.0,
@@ -366,6 +531,15 @@
             "exclusiveMinimum": 0.0,
             "title": "Neighbor Um",
             "type": "number"
+          },
+          "overlap_policy": {
+            "default": "reject",
+            "enum": [
+              "reject",
+              "displace"
+            ],
+            "title": "Overlap Policy",
+            "type": "string"
           },
           "phase_width_us": {
             "default": 200.0,
@@ -704,6 +878,36 @@
             "title": "Amp Min Ua",
             "type": "number"
           },
+          "body": {
+            "discriminator": {
+              "mapping": {
+                "cad": "#/components/schemas/CadBodySpec",
+                "cylinder": "#/components/schemas/CylinderBody",
+                "frustum": "#/components/schemas/FrustumBody",
+                "hemisphere": "#/components/schemas/HemisphereBody",
+                "none": "#/components/schemas/NoBody"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NoBody"
+              },
+              {
+                "$ref": "#/components/schemas/HemisphereBody"
+              },
+              {
+                "$ref": "#/components/schemas/CylinderBody"
+              },
+              {
+                "$ref": "#/components/schemas/FrustumBody"
+              },
+              {
+                "$ref": "#/components/schemas/CadBodySpec"
+              }
+            ],
+            "title": "Body"
+          },
           "electrode_um": {
             "default": 10.0,
             "exclusiveMinimum": 0.0,
@@ -749,6 +953,15 @@
             "exclusiveMinimum": 0.0,
             "title": "Neighbor Um",
             "type": "number"
+          },
+          "overlap_policy": {
+            "default": "reject",
+            "enum": [
+              "reject",
+              "displace"
+            ],
+            "title": "Overlap Policy",
+            "type": "string"
           },
           "phase_width_us": {
             "default": 200.0,
