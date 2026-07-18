@@ -103,10 +103,13 @@ cd app/web && npm install && npm run dev                   # http://localhost:51
 ```
 
 Screens: **Compare** (live field, isopotential contours, scorecard, FEM tier, run
-history), **Study** (a diameter × pitch sweep to a selectivity-versus-cost
-frontier), **Candidates** (a charge-safe ranked shortlist, exportable), and
-**Validation** (what the engine reproduces). Every plot exports as figure-quality
-SVG or high-DPI PNG; `⌘K` opens the command palette.
+history — and a **3D electrode body**: author a pillar / dome / taper or upload a
+STEP/BREP solid, scored on FEM with the real bodied field and the shape in the 3D
+loupe; see [docs/custom-electrode.md](docs/custom-electrode.md)), **Study** (a
+diameter × pitch sweep to a selectivity-versus-cost frontier), **Candidates** (a
+charge-safe ranked shortlist, exportable), and **Validation** (what the engine
+reproduces). Every plot exports as figure-quality SVG or high-DPI PNG; `⌘K` opens the
+command palette.
 
 > The Phase-2 Dash dashboard was retired in Phase 7 once the React client reached
 > parity. `app/views.py` outlived it as the API's independent test oracle.

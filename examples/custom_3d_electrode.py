@@ -7,8 +7,9 @@ point source that cannot see an electrode's extent at all:
     FEMPY=/opt/homebrew/Caskroom/miniforge/base/envs/retinode-fem/bin/python
     $FEMPY examples/custom_3d_electrode.py
 
-There is deliberately no UI path for this yet (the Compare/Study screens author flat
-disks only); a 3D design is a code-level spec you build directly, as below.
+The Compare screen can also author a body (Flat/Dome/Pillar/Taper + CAD upload) and
+run it on FEM — see docs/custom-electrode.md. This script is the code path: for
+scripting, reproducibility, sweeps, and anything the rail doesn't expose.
 
 What it does: scores a flat 10 µm disk and a custom 5 µm-radius, 30 µm-tall pillar
 (tip-only injection) against the *same* target-plus-bystander patch, both on the FEM

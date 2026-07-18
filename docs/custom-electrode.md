@@ -36,20 +36,33 @@ window — because its deep, tip-only injection concentrates current where a fla
 spreads it. That difference is the whole point: it is the geometry effect the
 analytical tier is structurally blind to.
 
-## Three things to know before you start
+## In the UI, or in code
 
-1. **There is no UI path for custom shapes.** The Compare/Study screens author flat
-   disks only. A shaped or 3D design is a **code-level spec** you build directly, as
-   a few lines of `engine.spec` — that is what this how-to is for.
+There are two ways to test a custom shape:
 
-2. **Custom shapes are FEM-only, so use the conda env.** The analytical field tier is
+- **In the Compare screen** (the quick path). The control rail has an **Electrode
+  body** selector — Flat / Dome / Pillar / Taper, plus a **CAD** file picker for a
+  STEP/BREP solid — with dimension inputs, a conductive-faces selector (tip/sides/all),
+  and an overlap policy (reject/displace). Author a body and the live 2D field is
+  replaced by a "3D — FEM required" prompt (the analytical preview can't represent
+  geometry); **Run field (FEM)** and **Run scorecard** dispatch to the conda env and
+  return the real potential (with a hole where the metal sits) and the operating
+  window. The true solid also renders in the 3D loupe.
+- **In code** (this how-to). Scripting, reproducibility, parameter sweeps, and anything
+  the rail doesn't expose (array tilt, bipolar bodies, a custom patch) still live here.
+  The rest of this document is the code path.
+
+## Two things to know before you start
+
+1. **Custom shapes are FEM-only, so use the conda env.** The analytical field tier is
    a point source: it sees only `pos_um` and is blind to an electrode's diameter,
    height, and shape (two different diameters produce byte-identical fields). Anything
    where the geometry is the variable *must* be solved with FEM, and the only
    interpreter with DOLFINx **and** NEURON is the conda `retinode-fem` env. The `uv`
    env cannot run this. If `import dolfinx` fails, you're in the wrong interpreter.
+   (The UI handles this for you — a bodied electrode dispatches to the conda env.)
 
-3. **The FEM domain must contain the whole cell.** The cell's axon of passage reaches
+2. **The FEM domain must contain the whole cell.** The cell's axon of passage reaches
    ~380 µm toward the optic disc — far outside a mesh sized for the electrode. If the
    auto-sized domain is too tight, the solve raises on a query point outside the mesh.
    Floor it with `FenicsxBackend(min_half_width_um=450.0)` (the example does this; it's
