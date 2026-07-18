@@ -3,7 +3,8 @@
 This is the user-facing reference for the Phase-6 geometry model — how to describe
 an electrode (2D shape, 3D body, or imported CAD), plant an array into the tissue,
 and reason about how it interacts with the neuron population. It complements the
-build plan in [phase-6-plan.md](phase-6-plan.md).
+build plan in [phase-6-plan.md](phase-6-plan.md). For a task-oriented "just run it"
+walkthrough, see the how-to in [custom-electrode.md](custom-electrode.md).
 
 The one invariant to keep in mind: **geometry only changes the field solve.**
 Every electrode — a flat disk, a penetrating pillar, an imported CAD solid — reaches
