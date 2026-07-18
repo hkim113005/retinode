@@ -57,7 +57,7 @@ def test_compare_field_matches_the_dash_view_exactly():
     assert np.max(np.array(body["field"]["ve_mV"])) <= 0.0
 
     # scene overlays: one electrode at the origin, target + neighbour cells
-    assert body["electrodes"] == [{"x_um": 0.0, "y_um": 0.0, "radius_um": 5.0}]
+    assert body["electrodes"] == [{"x_um": 0.0, "y_um": 0.0, "radius_um": 5.0, "body": None}]
     assert {"x_um": 0.0, "y_um": 0.0, "is_target": True} in body["cells"]
     assert {"x_um": 40.0, "y_um": 0.0, "is_target": False} in body["cells"]
 

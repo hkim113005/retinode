@@ -97,12 +97,27 @@ class FieldGridResponse(BaseModel):
     vmax_mV: float  # symmetric colour limit, |Ve| max (>=0)
 
 
+class MarkerBody(BaseModel):
+    """The 3D shape an electrode marker carries, so the loupe can draw the true solid
+    (not just its flat footprint). Dimensions are summarised to what the view needs:
+    ``radius_um`` is the base/lateral radius, ``height_um`` the depth into the tissue
+    (0 for a hemisphere — its radius is the depth), ``top_radius_um`` the frustum's tip.
+    A CAD solid is drawn as its bounding cylinder."""
+
+    kind: Literal["hemisphere", "cylinder", "frustum", "cad"]
+    radius_um: float
+    height_um: float = 0.0
+    top_radius_um: float | None = None
+
+
 class ElectrodeMarker(BaseModel):
-    """An electrode's footprint on the field plane, for the overlay."""
+    """An electrode's footprint on the field plane, for the overlay. ``body`` is present
+    for a 3D electrode, so the loupe can render the solid rather than a flat disk."""
 
     x_um: float
     y_um: float
     radius_um: float
+    body: MarkerBody | None = None
 
 
 class CellMarker(BaseModel):

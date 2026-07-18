@@ -251,9 +251,11 @@ export interface components {
         };
         /**
          * ElectrodeMarker
-         * @description An electrode's footprint on the field plane, for the overlay.
+         * @description An electrode's footprint on the field plane, for the overlay. ``body`` is present
+         *     for a 3D electrode, so the loupe can render the solid rather than a flat disk.
          */
         ElectrodeMarker: {
+            body?: components["schemas"]["MarkerBody"] | null;
             /** Radius Um */
             radius_um: number;
             /** X Um */
@@ -354,6 +356,30 @@ export interface components {
             status: "running" | "done" | "error";
             study?: components["schemas"]["StudyResult"] | null;
             sweep?: components["schemas"]["AmplitudeSweepResponse"] | null;
+        };
+        /**
+         * MarkerBody
+         * @description The 3D shape an electrode marker carries, so the loupe can draw the true solid
+         *     (not just its flat footprint). Dimensions are summarised to what the view needs:
+         *     ``radius_um`` is the base/lateral radius, ``height_um`` the depth into the tissue
+         *     (0 for a hemisphere — its radius is the depth), ``top_radius_um`` the frustum's tip.
+         *     A CAD solid is drawn as its bounding cylinder.
+         */
+        MarkerBody: {
+            /**
+             * Height Um
+             * @default 0
+             */
+            height_um: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "hemisphere" | "cylinder" | "frustum" | "cad";
+            /** Radius Um */
+            radius_um: number;
+            /** Top Radius Um */
+            top_radius_um?: number | null;
         };
         /**
          * NoBody

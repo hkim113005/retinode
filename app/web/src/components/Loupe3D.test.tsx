@@ -21,4 +21,15 @@ describe("Loupe3D", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  // The r3f Canvas is stubbed in jsdom (no WebGL), so the mesh itself is verified live
+  // in the browser; here we only guard that a bodied marker flows through the props
+  // without breaking the loupe's chrome.
+  it("accepts a 3D-body marker (pillar) without breaking", () => {
+    const pillar = [
+      { x_um: 0, y_um: 0, radius_um: 5, body: { kind: "cylinder" as const, radius_um: 5, height_um: 30 } },
+    ];
+    render(<Loupe3D electrodes={pillar} cells={CELLS} />);
+    expect(screen.getByLabelText(/Expand the 3D array view/)).toBeInTheDocument();
+  });
 });

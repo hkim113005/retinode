@@ -24,6 +24,7 @@ from .models import (
     CellMarker,
     ElectrodeMarker,
     FieldGridResponse,
+    MarkerBody,
     ScorecardResponse,
     ValidationReport,
 )
@@ -68,11 +69,41 @@ def field_grid_payload(
 
 
 def electrode_markers(array: ElectrodeArray) -> list[ElectrodeMarker]:
-    """Electrode footprints on the field plane, for the overlay."""
+    """Electrode footprints on the field plane, for the overlay. A 3D electrode also
+    carries its body so the loupe can draw the true solid."""
     return [
-        ElectrodeMarker(x_um=e.pos_um[0], y_um=e.pos_um[1], radius_um=radius_um(e))
+        ElectrodeMarker(
+            x_um=e.pos_um[0],
+            y_um=e.pos_um[1],
+            radius_um=radius_um(e),
+            body=_marker_body(e.body),
+        )
         for e in array.electrodes
     ]
+
+
+def _marker_body(body) -> MarkerBody | None:  # noqa: ANN001 - an engine.spec ElectrodeBody
+    """Summarise an engine body to the fields the loupe needs (None for a flat disk)."""
+    from engine.spec import CadBody, Cylinder, Frustum, Hemisphere
+
+    if body is None:
+        return None
+    if isinstance(body, Hemisphere):
+        return MarkerBody(kind="hemisphere", radius_um=body.radius_um)
+    if isinstance(body, Cylinder):
+        return MarkerBody(kind="cylinder", radius_um=body.radius_um, height_um=body.height_um)
+    if isinstance(body, Frustum):
+        return MarkerBody(
+            kind="frustum",
+            radius_um=body.base_radius_um,
+            height_um=body.height_um,
+            top_radius_um=body.top_radius_um,
+        )
+    if isinstance(body, CadBody):  # drawn as its bounding cylinder
+        return MarkerBody(
+            kind="cad", radius_um=body.bounding_radius_um, height_um=body.bounding_height_um
+        )
+    return None
 
 
 def cell_markers(patch: RetinalPatch) -> list[CellMarker]:

@@ -4,12 +4,12 @@
 // expand full-bleed. Rendered with react-three-fiber; lazy-loaded so three.js stays
 // off the main chunk.
 //
-// Scope, precisely: this draws FLAT DISKS ONLY. Phase 6 gave the engine 3D bodies,
-// array tilt, CAD import and overlap flags — none of which can reach here, because
-// the view contract is flat (ElectrodeMarker is x/y/radius; no z, no rotation, no
-// body). That is a contract gap, not a dormant code path: there is no body-rendering
-// code below, and none could be triggered if there were. Drawing them needs the
-// contract to carry them and an authoring surface to set them (see docs/phase-8).
+// Scope: this draws each electrode's true solid when the marker carries a body
+// (ElectrodeMarker.body — a pillar, dome, taper, or a CAD solid's bounding cylinder),
+// and a flat disk otherwise. Array tilt/rotation is still not represented (the marker
+// has no orientation); a tilted body draws upright. The body is schematic — lateral
+// and depth share one scale so proportions read true, but the whole view exaggerates
+// the ~20 µm layer separation so the cell plane is legible.
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useState } from "react";
@@ -50,6 +50,7 @@ function Scene({
   );
   const LAT = 2.2 / (reach + 15);
   const DEPTH = LAT * 5; // exaggerate depth so the ~20 µm layer separation reads
+  const EL = LAT * 4; // electrode lateral+depth scale — a body draws at true aspect
   const grid = 2.4 * reach * LAT;
   const slabH = (CELL_DEPTH + 10) * DEPTH;
   return (
@@ -69,13 +70,48 @@ function Scene({
       </mesh>
       {/* the array plane at the top of the tissue */}
       <gridHelper args={[grid, 10, accent, accent]} position={[0, 0.02, 0]} />
-      {/* electrodes: metal disks on the plane, lit so they read against the slab */}
-      {electrodes.map((e, i) => (
-        <mesh key={`e${i}`} position={[e.x_um * LAT, 0.2, e.y_um * LAT]}>
-          <cylinderGeometry args={[e.radius_um * LAT * 4, e.radius_um * LAT * 4, 0.4, 28]} />
-          <meshStandardMaterial color={ink} metalness={0.6} roughness={0.3} emissive={ink} emissiveIntensity={0.15} />
-        </mesh>
-      ))}
+      {/* electrodes: metal, lit to read against the slab. A body protrudes DOWN into
+          the tissue (−y = +z into tissue); a flat electrode is a thin disk on the plane. */}
+      {electrodes.map((e, i) => {
+        const b = e.body;
+        const mat = (
+          <meshStandardMaterial
+            color={ink}
+            metalness={0.6}
+            roughness={0.3}
+            emissive={ink}
+            emissiveIntensity={0.15}
+          />
+        );
+        if (!b) {
+          return (
+            <mesh key={`e${i}`} position={[e.x_um * LAT, 0.2, e.y_um * LAT]}>
+              <cylinderGeometry args={[e.radius_um * EL, e.radius_um * EL, 0.4, 28]} />
+              {mat}
+            </mesh>
+          );
+        }
+        if (b.kind === "hemisphere") {
+          // lower half-sphere: a dome pushing into the tissue from the plane
+          return (
+            <mesh key={`e${i}`} position={[e.x_um * LAT, 0, e.y_um * LAT]}>
+              <sphereGeometry args={[b.radius_um * EL, 24, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
+              {mat}
+            </mesh>
+          );
+        }
+        // cylinder / frustum / cad(bounding): a (possibly tapered) column, base at the
+        // plane (+y) tapering to the tip at depth (−y). cylinderGeometry(top, bottom, h).
+        const h = b.height_um * EL;
+        const rBase = b.radius_um * EL;
+        const rTip = b.kind === "frustum" && b.top_radius_um != null ? b.top_radius_um * EL : rBase;
+        return (
+          <mesh key={`e${i}`} position={[e.x_um * LAT, -h / 2, e.y_um * LAT]}>
+            <cylinderGeometry args={[rBase, rTip, h, 28]} />
+            {mat}
+          </mesh>
+        );
+      })}
       {/* cell somata at depth: target filled + glowing, off-target muted blue */}
       {cells.map((c, i) => (
         <mesh key={`c${i}`} position={[c.x_um * LAT, -CELL_DEPTH * DEPTH, c.y_um * LAT]}>
