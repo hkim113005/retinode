@@ -75,8 +75,14 @@ def max_divergence_pct(fem: FieldGridResponse, controls: SceneControls) -> float
 
 def solve_accurate_field(
     controls: SceneControls, *, timeout_s: float = 180.0, runner=subprocess.run
-) -> tuple[FieldGridResponse, float]:
-    """Run the FEM solve and return its field plus its divergence from analytical."""
+) -> tuple[FieldGridResponse, float | None]:
+    """Run the FEM solve and return its field plus its divergence from analytical.
+
+    A bodied (3D) electrode has no analytical baseline — the point source is blind to
+    the geometry — so the divergence is meaningless there and returned as ``None``
+    (the UI simply shows the FEM field without an "accuracy changed by X%" note)."""
     grid = _run_fem_job(controls, timeout_s, runner=runner)
     field = FieldGridResponse(**grid)
+    if controls.body.kind != "none":
+        return field, None
     return field, max_divergence_pct(field, controls)

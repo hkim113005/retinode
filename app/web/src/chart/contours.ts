@@ -35,7 +35,12 @@ const CASES: Record<number, Array<[number, number]>> = {
  * Trace `level` through the scalar grid `z` (row-major over `ys` then `xs`),
  * returning polylines in data coordinates.
  */
-export function isoContours(xs: number[], ys: number[], z: number[][], level: number): Poly[] {
+export function isoContours(
+  xs: number[],
+  ys: number[],
+  z: (number | null)[][],
+  level: number,
+): Poly[] {
   const segs: Seg[] = [];
   const rows = Math.min(ys.length, z.length);
 
@@ -49,6 +54,8 @@ export function isoContours(xs: number[], ys: number[], z: number[][], level: nu
       const b = r0[j + 1];
       const c = r1[j + 1];
       const d = r1[j];
+      // a cell touching a hole (null corner) has no well-defined contour — skip it
+      if (a == null || b == null || c == null || d == null) continue;
       const x0 = xs[j];
       const x1 = xs[j + 1];
       const y0 = ys[i];
@@ -157,15 +164,28 @@ export function niceLevels(lo: number, hi: number, target = 4): number[] {
 }
 
 /** Bilinear sample of `z` at (x, y) in data coords; null outside the grid. */
-export function sampleGrid(xs: number[], ys: number[], z: number[][], x: number, y: number): number | null {
+export function sampleGrid(
+  xs: number[],
+  ys: number[],
+  z: (number | null)[][],
+  x: number,
+  y: number,
+): number | null {
   const j = span(xs, x);
   const i = span(ys, y);
   if (i == null || j == null) return null;
   const r0 = z[i.k];
   const r1 = z[i.k + 1];
   if (!r0 || !r1) return null;
-  const top = r0[j.k] * (1 - j.t) + r0[j.k + 1] * j.t;
-  const bot = r1[j.k] * (1 - j.t) + r1[j.k + 1] * j.t;
+  // any null corner means this cell straddles a hole (a 3D body on the plane); there
+  // is no potential to interpolate there, so report no reading rather than a fabricated one
+  const a = r0[j.k];
+  const b = r0[j.k + 1];
+  const c = r1[j.k];
+  const d = r1[j.k + 1];
+  if (a == null || b == null || c == null || d == null) return null;
+  const top = a * (1 - j.t) + b * j.t;
+  const bot = c * (1 - j.t) + d * j.t;
   return top * (1 - i.t) + bot * i.t;
 }
 

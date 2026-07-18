@@ -240,7 +240,14 @@
           "ve_mV": {
             "items": {
               "items": {
-                "type": "number"
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "type": "array"
             },

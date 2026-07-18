@@ -90,7 +90,10 @@ class FieldGridResponse(BaseModel):
 
     xs_um: list[float]
     ys_um: list[float]
-    ve_mV: list[list[float]]  # (n, n), row-major over ys then xs
+    # (n, n), row-major over ys then xs. A cell is ``null`` where a 3D electrode body
+    # occupies the cell plane — there is no extracellular potential inside metal, so
+    # the FEM field has a hole there (the analytical preview is always fully populated).
+    ve_mV: list[list[float | None]]
     vmax_mV: float  # symmetric colour limit, |Ve| max (>=0)
 
 

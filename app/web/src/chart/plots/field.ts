@@ -52,7 +52,9 @@ export function fieldScene({
     const row = ve_mV[i] ?? [];
     const cols = Math.min(xs_um.length, row.length);
     for (let j = 0; j < cols; j++) {
-      const t = row[j] / (vmax_mV || 1);
+      const v = row[j];
+      if (v == null) continue; // a hole where a 3D body occupies the plane — draw nothing
+      const t = v / (vmax_mV || 1);
       const a = Math.min(1, Math.abs(t));
       if (a < 0.02) continue; // near-zero cells would only muddy the paper
       items.push({
@@ -74,6 +76,7 @@ export function fieldScene({
     let hi = Number.NEGATIVE_INFINITY;
     for (const row of ve_mV)
       for (const v of row) {
+        if (v == null) continue; // holes don't bound the colour range
         if (v < lo) lo = v;
         if (v > hi) hi = v;
       }

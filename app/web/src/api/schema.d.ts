@@ -267,7 +267,7 @@ export interface components {
          */
         FieldGridResponse: {
             /** Ve Mv */
-            ve_mV: number[][];
+            ve_mV: (number | null)[][];
             /** Vmax Mv */
             vmax_mV: number;
             /** Xs Um */
