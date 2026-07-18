@@ -34,26 +34,45 @@ def test_monophasic_ignores_cathodic_first():
 
 @pytest.mark.neuron
 @pytest.mark.slow
-def test_cathodic_and_anodic_first_give_different_thresholds(neuron_h):
-    """The flag is real end to end: anodic-first biphasic activates differently from
-    cathodic-first (the classic result). Also guards that the DEFAULT (cathodic-first)
-    path is unchanged — every other NEURON test asserts the old numbers."""
+def test_cathodic_first_changes_where_the_spike_initiates(neuron_h):
+    """The flag is real end to end: reversing a biphasic pulse's order changes the
+    outcome. At a fixed supra-threshold amplitude the two orders initiate the spike in
+    a different region (soma for cathodic-first, AIS for anodic-first) — the
+    axon-avoidance-relevant observable.
+
+    Note it is the initiation *site/timing* that differs, not the threshold amplitude:
+    at these phase widths each phase acts near-independently, so the depolarizing phase
+    reaches threshold at the same amplitude regardless of order (verified — both land
+    on the same search bracket). cathodic_first is only meaningful for BIPHASIC pulses;
+    the tool's threshold search defaults to monophasic, where `leading_scale` ignores
+    it (one edge, polarity is the weight sign). The DEFAULT cathodic-first path is
+    unchanged — every other NEURON test asserts the old numbers, and they pass."""
     import dataclasses
 
     from app.scene import build_scene
-    from engine.cable.multisite import multisite_threshold
+    from engine.cable.multisite import run_multisite
+    from engine.cable.placement import place_cell
+    from engine.cable.solved import solve_field
+    from engine.field import AnalyticalBackend
 
     s = build_scene(
-        layout="single", electrode_um=10.0, pitch_um=60.0,
-        phase_width_us=200.0, neighbor_um=40.0, sigma_S_per_m=1.0,
+        layout="single", electrode_um=10.0, pitch_um=100.0, phase_width_us=100.0,
+        neighbor_um=40.0, sigma_S_per_m=1.0,
     )
-    target = s.patch.target()
+    target = place_cell(s.patch.target(), optic_disc=s.patch.optic_disc_um)
+    solved = solve_field(target, s.array, s.conductivity, AnalyticalBackend())
 
-    cath = multisite_threshold(target, s.array, s.config, s.conductivity).threshold_uA
-    anodic_cfg = dataclasses.replace(
-        s.config, waveform=dataclasses.replace(s.config.waveform, cathodic_first=False)
-    )
-    anod = multisite_threshold(target, s.array, anodic_cfg, s.conductivity).threshold_uA
+    def outcome(cathodic_first: bool):
+        cfg = dataclasses.replace(
+            s.config,
+            waveform=dataclasses.replace(
+                s.config.waveform, amplitude_scale_uA=20.0, cathodic_first=cathodic_first
+            ),
+        )
+        r = run_multisite(target, s.array, cfg, s.conductivity, solved=solved, monophasic=False)
+        return (r.activated, r.initiation_region, r.first_spike_ms)
 
-    assert cath is not None and anod is not None
-    assert cath != anod, "anodic-first must activate differently from cathodic-first"
+    cath, anod = outcome(True), outcome(False)
+    assert cath[0] and anod[0], "both orders should fire at this supra-threshold amplitude"
+    assert cath != anod, "reversing the biphasic order must change the outcome"
+    assert cath[1] != anod[1], "the initiation region should differ (soma vs AIS)"
