@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 // The Compare controls — the same handful the Dash app exposes, plus an optional 3D
 // electrode body. Edits the geometry and stimulus; a flat electrode recomputes live on
 // the analytical tier, a body is FEM-only (the point source can't see geometry).
@@ -105,10 +107,15 @@ const SLIDERS: Slider[] = [
 export function ControlRail({
   controls,
   onChange,
+  uploadCad,
 }: {
   controls: Controls;
   onChange: (next: Controls) => void;
+  // uploads a CAD solid and returns its id; injected so the rail stays API-agnostic
+  uploadCad?: (file: File) => Promise<{ upload_id: string; filename: string }>;
 }) {
+  const [cadName, setCadName] = useState<string | null>(null);
+  const [cadError, setCadError] = useState<string | null>(null);
   const set = (patch: Partial<Controls>) => onChange({ ...controls, ...patch });
   // update a single field of the current body (dims / conductive_faces). Cast because
   // TS can't verify a dynamic-key spread stays within the discriminated union.
@@ -166,19 +173,53 @@ export function ControlRail({
           Electrode body<b>{body.kind === "none" ? "flat disk" : BODY_LABEL[body.kind]}</b>
         </label>
         <div className="seg" role="tablist" aria-label="Electrode body">
-          {(["none", "hemisphere", "cylinder", "frustum"] as const).map((k) => (
+          {(["none", "hemisphere", "cylinder", "frustum", "cad"] as const).map((k) => (
             <button
               key={k}
               role="tab"
               aria-selected={body.kind === k}
               className={body.kind === k ? "on" : ""}
-              onClick={() => set({ body: BODY_DEFAULTS[k] })}
+              onClick={() => {
+                setCadError(null);
+                if (k !== "cad") setCadName(null);
+                set({ body: BODY_DEFAULTS[k] });
+              }}
             >
               {BODY_LABEL[k]}
             </button>
           ))}
         </div>
       </div>
+
+      {body.kind === "cad" && (
+        <div className="ctl">
+          <label htmlFor="body-cad">
+            CAD solid<b>{body.upload_id ? (cadName ?? "loaded") : "STEP / BREP"}</b>
+          </label>
+          <input
+            id="body-cad"
+            type="file"
+            accept=".step,.stp,.brep"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file || !uploadCad) return;
+              setCadError(null);
+              try {
+                const up = await uploadCad(file);
+                setCadName(up.filename);
+                setBodyField({ upload_id: up.upload_id });
+              } catch (err) {
+                setCadError(err instanceof Error ? err.message : "upload failed");
+              }
+            }}
+          />
+          {cadError && (
+            <span className="empty" role="alert">
+              {cadError}
+            </span>
+          )}
+        </div>
+      )}
 
       {body.kind !== "none" && body.kind !== "cad" &&
         BODY_DIMS[body.kind].map((dim) => (

@@ -23,13 +23,15 @@ import numpy as np
 
 def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
     """Solve the DOLFINx field for the scene on the query grid. Conda env only."""
-    from app.scene import body_from_spec, build_scene, cell_depth_um
+    from app.scene import build_scene, cell_depth_um
     from engine.field import current_vector, mesh
     from engine.field.fem_fenicsx import FenicsxBackend
 
+    from .cad_store import resolve_body
+
     # A 3D body shapes the driven electrode; the FEM field then reflects the geometry
-    # (the analytical preview it is compared against cannot). Primitives resolve here;
-    # a CAD body is loaded with gmsh (present in this env) in the CAD slice.
+    # (the analytical preview it is compared against cannot). Primitives + CAD (gmsh is
+    # present in this env) both resolve through the shared body resolver.
     scene = build_scene(
         layout=params["layout"],
         electrode_um=params["electrode_um"],
@@ -37,7 +39,7 @@ def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
         phase_width_us=params["phase_width_us"],
         neighbor_um=params["neighbor_um"],
         sigma_S_per_m=params["sigma_S_per_m"],
-        body=body_from_spec(params.get("body") or {"kind": "none"}),
+        body=resolve_body(params.get("body") or {"kind": "none"}),
     )
     extent = float(params.get("extent_um", 130.0))
     n = int(params.get("n", 61))  # match SceneControls.n, so the grid shape agrees

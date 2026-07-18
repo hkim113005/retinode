@@ -4,7 +4,7 @@
 // which no longer matches. The scorecard and the FEM field each run as a background
 // job (submit then poll), kept in their own state so nothing clobbers anything else.
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getJob, postAccurateField, postCompare, postScore, postSweep } from "../api/client";
+import { getJob, postAccurateField, postCad, postCompare, postScore, postSweep } from "../api/client";
 import type {
   AmplitudeSweep,
   CompareResponse,
@@ -351,7 +351,7 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
         <History runs={runs} current={runKey(controls)} onRestore={setControls} />
       </main>
       <aside className="inspect">
-        <ControlRail controls={controls} onChange={setControls} />
+        <ControlRail controls={controls} onChange={setControls} uploadCad={postCad} />
         <Scorecard data={scorecard} progress={scoreProgress} cached={cached} onRun={runScorecard} />
       </aside>
     </div>

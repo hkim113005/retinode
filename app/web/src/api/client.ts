@@ -48,6 +48,20 @@ export async function postScore(controls: SceneControls): Promise<JobStatus> {
   return (await res.json()) as JobStatus;
 }
 
+// Upload a CAD solid (STEP/BREP). Returns the id a cad BodySpec references; the gmsh
+// load happens later in the FEM job, so a bad solid surfaces then, not here.
+export type CadUpload = components["schemas"]["CadUploadResponse"];
+export async function postCad(file: File): Promise<CadUpload> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/cad`, { method: "POST", body: form });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(detail?.detail ?? `upload failed (${res.status})`);
+  }
+  return (await res.json()) as CadUpload;
+}
+
 export async function getJob(id: string): Promise<JobStatus> {
   const res = await fetch(`${BASE}/jobs/${id}`);
   if (!res.ok) throw new Error(`job poll failed (${res.status})`);

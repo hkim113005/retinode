@@ -40,6 +40,7 @@ api = [
     "fastapi",
     "uvicorn[standard]",
     "httpx",             # FastAPI's TestClient (starlette) needs it; also the API tests
+    "python-multipart",  # FastAPI UploadFile (the CAD upload endpoint) needs it
 ]
 dev = [
     "pytest",

@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/cad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Cad */
+        post: operations["upload_cad_cad_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compare": {
         parameters: {
             query?: never;
@@ -178,6 +195,11 @@ export interface components {
             /** Curves */
             curves: components["schemas"]["ActivationCurve"][];
         };
+        /** Body_upload_cad_cad_post */
+        Body_upload_cad_cad_post: {
+            /** File */
+            file: string;
+        };
         /**
          * CadBodySpec
          * @description An imported STEP/BREP solid, referenced by the id ``POST /cad`` returned. The
@@ -195,6 +217,16 @@ export interface components {
              * @enum {string}
              */
             kind: "cad";
+            /** Upload Id */
+            upload_id: string;
+        };
+        /**
+         * CadUploadResponse
+         * @description The id ``POST /cad`` hands back for a stored solid, plus its original name.
+         */
+        CadUploadResponse: {
+            /** Filename */
+            filename: string;
             /** Upload Id */
             upload_id: string;
         };
@@ -704,6 +736,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    upload_cad_cad_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_cad_cad_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CadUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     compare_compare_post: {
         parameters: {
             query?: never;

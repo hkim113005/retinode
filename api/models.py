@@ -57,6 +57,13 @@ class CadBodySpec(BaseModel):
     conductive_faces: ConductiveFaces = "all"
 
 
+class CadUploadResponse(BaseModel):
+    """The id ``POST /cad`` hands back for a stored solid, plus its original name."""
+
+    upload_id: str
+    filename: str
+
+
 # Discriminated on ``kind`` so the client (and openapi-typescript) get a clean union.
 BodySpec = NoBody | HemisphereBody | CylinderBody | FrustumBody | CadBodySpec
 

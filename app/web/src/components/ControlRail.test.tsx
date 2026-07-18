@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ControlRail } from "./ControlRail";
 import type { Controls } from "./ControlRail";
@@ -103,5 +103,22 @@ describe("ControlRail", () => {
     render(<ControlRail controls={dome} onChange={onChange} />);
     fireEvent.click(screen.getByRole("tab", { name: "displace" }));
     expect(onChange).toHaveBeenCalledWith({ ...dome, overlap_policy: "displace" });
+  });
+
+  it("uploads a CAD solid and sets the body's upload id", async () => {
+    const onChange = vi.fn();
+    const uploadCad = vi.fn().mockResolvedValue({ upload_id: "abc123.step", filename: "pillar.step" });
+    const cad: Controls = { ...BASE, body: { kind: "cad", upload_id: "", conductive_faces: "all" } };
+    render(<ControlRail controls={cad} onChange={onChange} uploadCad={uploadCad} />);
+
+    const file = new File([new Uint8Array([1, 2, 3])], "pillar.step");
+    fireEvent.change(screen.getByLabelText(/CAD solid/), { target: { files: [file] } });
+    await waitFor(() => expect(uploadCad).toHaveBeenCalledWith(file));
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith({
+        ...cad,
+        body: { kind: "cad", upload_id: "abc123.step", conductive_faces: "all" },
+      }),
+    );
   });
 });

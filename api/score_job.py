@@ -24,11 +24,10 @@ def _emit_progress(fraction: float, message: str) -> None:
 
 
 def _resolve_body(body_spec: dict[str, Any]) -> Any:
-    """A contract body dict → an ``engine.spec`` body. Primitives resolve in the uv
-    helper; CAD (gmsh-loaded here, since uv has no gmsh) is wired in the CAD slice."""
-    from app.scene import body_from_spec
+    """A contract body dict → an ``engine.spec`` body (primitives + CAD via gmsh)."""
+    from .cad_store import resolve_body
 
-    return body_from_spec(body_spec)  # raises for kind="cad" until the CAD slice lands
+    return resolve_body(body_spec)
 
 
 def solve_scorecard(controls: dict[str, Any]) -> dict[str, Any]:
