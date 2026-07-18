@@ -69,6 +69,7 @@ def test_a_fake_provider_bypasses_the_guard():
     assert result["n_geometries"] == 6
 
 
+@pytest.mark.neuron  # run_study's default branch calls _query_reach_um -> place_cell (NEURON)
 def test_the_default_real_path_forces_a_floored_fem_backend(monkeypatch):
     """Without an injected provider, run_study must hand the sweep a FEM backend whose
     domain is floored to the cell reach — the two things that prevent a silent flat
@@ -94,6 +95,7 @@ def test_the_default_real_path_forces_a_floored_fem_backend(monkeypatch):
     assert b.min_half_width_um > 200.0  # floored to the axon-of-passage reach
 
 
+@pytest.mark.neuron  # _query_reach_um places the cell (build_active_rgc needs NEURON)
 def test_query_reach_covers_the_axon_of_passage():
     """The FEM domain must contain every point the field is sampled at. The reach
     computation is pure and fast, but was only exercised by the conda fem test — a
