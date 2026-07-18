@@ -379,6 +379,8 @@ If warranted, the FastAPI-plus-React app to the instrument-panel visual language
 ### Phase 8: The geometry study and validation dashboard
 Use the accurate engine to compare geometries systematically — including the Phase-6 3D electrode designs — producing the Pareto frontier and a defensible design finding, reported with tier and trajectory sensitivity, and complete the Validation dashboard. **Done when** there is a one-sentence, robust design finding backed by the frontier, and the trust panel is complete.
 
+> **Execution note (this roadmap is forward-looking; the phase docs are authoritative).** In practice the geometry study, the Pareto frontier, and the Validation + Candidates dashboards shipped in **Phase 7** ([`phase-7-plan.md`](phase-7-plan.md), S4/S6). The delivered **Phase 8** ([`phase-8-plan.md`](phase-8-plan.md)) became *closing Phase 7's deferrals and the defect they hid* — the activation/threshold plots, trajectory sensitivity, and forcing the geometry study onto the FEM tier (the analytical point source cannot see electrode diameter). The design finding + trust panel this entry describes are delivered; the phase numbering simply shifted.
+
 ### Phase 9: Packaging, docs, and release
 A pip-installable engine and app, documentation, reproducibility guarantees, and a public repo with a clear README and examples. **Done when** a stranger can install it, reproduce a headline result with one command, and read how to use it.
 

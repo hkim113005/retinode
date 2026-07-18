@@ -50,20 +50,23 @@ rewrite.
 
 ## Status
 
-**Phase 1 complete** — the single-configuration evaluator runs end to end. Given
-an electrode array, a stimulus, and a patch of retinal ganglion cells, Retinode
-places biophysical (Fohlmeister–Miller) RGCs, drives them with the array's
-extracellular field through NEURON, finds each cell's activation threshold with
+**Phases 1–8 complete** — from the single-configuration evaluator through to the
+polished application. Retinode places biophysical (Fohlmeister–Miller) RGCs, drives
+them with the array's extracellular field, finds each cell's threshold with
 multi-site detection (a spike at any compartment — so an axon of passage is a
-first-class off-target), and scores the result into a **safe-and-selective
-operating window** carrying the provenance key that identifies it.
+first-class off-target), and scores a **safe-and-selective operating window** with
+the provenance key that identifies it. On top of that evaluator: a **FEM field tier**
+(DOLFINx) for shaped/3D electrodes and geometry comparison, a **geometry-sweep study
+engine** with a selectivity-versus-cost Pareto frontier, and a **FastAPI + React
+application** (Compare / Study / Candidates / Validation) — see *The app* below.
 
-- [`docs/phase-1-plan.md`](docs/phase-1-plan.md) — the step-by-step build (S1–S7), decisions, and findings
+The phase plans record the build step by step, with decisions and findings:
+
+- [`docs/phase-1-plan.md`](docs/phase-1-plan.md) … [`docs/phase-8-plan.md`](docs/phase-8-plan.md) — the per-phase build logs
+  ([phase-7-design.md](docs/phase-7-design.md) is the UX bar for the app;
+  [phase-8-findings.md](docs/phase-8-findings.md) records the analytical-tier limits and their fix)
 - [`docs/retinode-project-plan-revised.md`](docs/retinode-project-plan-revised.md) — full design and phased plan
 - [`docs/retinode-project-plan.md`](docs/retinode-project-plan.md) — earlier draft
-
-Next is Phase 2: the content-addressed store (seeded by `engine/store/keys.py`)
-and configuration sweeps over the fixed evaluator.
 
 ## Development
 

@@ -326,10 +326,11 @@ Pydantic models mirror.
     correctly reflecting what was actually asked for. This closes the S4 deferral
     "brush→Candidates".
 
-  *(Still deferred from S7: the activation-vs-amplitude and threshold plots need a
-  contract extension — the engine does not expose an amplitude sweep as a view
-  payload yet — and native PDF export, which the SVG already reaches via
-  Illustrator/Inkscape.)*
+  *(Deferred from S7, resolved in P8: the activation-vs-amplitude and threshold plots
+  were built in P8 S1 — see `docs/phase-8-plan.md`. Native PDF was assessed and
+  deliberately dropped in P8 S2; the "SVG already reaches PDF" reasoning here was
+  wrong — SVG is not a journal format — and D8's wording was amended to promise
+  vector (SVG) + raster (PNG), which is what ships.)*
 
 - **P7 S8 — Polish + parity cutover — done.**
 
