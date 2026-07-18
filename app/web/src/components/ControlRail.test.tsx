@@ -10,6 +10,8 @@ const BASE: Controls = {
   phase_width_us: 200,
   neighbor_um: 40,
   sigma_S_per_m: 1,
+  body: { kind: "none" },
+  overlap_policy: "reject",
 };
 
 describe("ControlRail", () => {
@@ -49,5 +51,57 @@ describe("ControlRail", () => {
     expect(screen.queryByLabelText(/Pair pitch/)).not.toBeInTheDocument();
     rerender(<ControlRail controls={{ ...BASE, layout: "bipolar" }} onChange={vi.fn()} />);
     expect(screen.getByLabelText(/Pair pitch/)).toBeInTheDocument();
+  });
+
+  it("switches the electrode to a 3D pillar with sensible starting dimensions", () => {
+    const onChange = vi.fn();
+    render(<ControlRail controls={BASE} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Pillar" }));
+    expect(onChange).toHaveBeenCalledWith({
+      ...BASE,
+      body: { kind: "cylinder", radius_um: 5, height_um: 30, conductive_faces: "tip" },
+    });
+  });
+
+  it("shows body dimensions + conductive faces only for a bodied electrode", () => {
+    const flat = render(<ControlRail controls={BASE} onChange={vi.fn()} />);
+    expect(screen.queryByLabelText(/Radius/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: /Conductive faces/ })).not.toBeInTheDocument();
+    flat.unmount();
+
+    const cyl: Controls = {
+      ...BASE,
+      body: { kind: "cylinder", radius_um: 5, height_um: 30, conductive_faces: "tip" },
+    };
+    render(<ControlRail controls={cyl} onChange={vi.fn()} />);
+    expect(screen.getByLabelText(/Radius/)).toHaveValue(5);
+    expect(screen.getByLabelText(/Height/)).toHaveValue(30);
+    expect(screen.getByRole("tablist", { name: /Conductive faces/ })).toBeInTheDocument();
+  });
+
+  it("edits a body dimension as a number", () => {
+    const onChange = vi.fn();
+    const cyl: Controls = {
+      ...BASE,
+      body: { kind: "cylinder", radius_um: 5, height_um: 30, conductive_faces: "tip" },
+    };
+    render(<ControlRail controls={cyl} onChange={onChange} />);
+    fireEvent.input(screen.getByLabelText(/Height/), { target: { value: "15" } });
+    expect(onChange).toHaveBeenCalledWith({
+      ...cyl,
+      body: { kind: "cylinder", radius_um: 5, height_um: 15, conductive_faces: "tip" },
+    });
+  });
+
+  it("exposes the overlap policy only when a body can hit a cell", () => {
+    const flat = render(<ControlRail controls={BASE} onChange={vi.fn()} />);
+    expect(screen.queryByRole("tablist", { name: /Cell overlap/ })).not.toBeInTheDocument();
+    flat.unmount();
+
+    const onChange = vi.fn();
+    const dome: Controls = { ...BASE, body: { kind: "hemisphere", radius_um: 10 } };
+    render(<ControlRail controls={dome} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("tab", { name: "displace" }));
+    expect(onChange).toHaveBeenCalledWith({ ...dome, overlap_policy: "displace" });
   });
 });

@@ -12,6 +12,8 @@ const C: Controls = {
   phase_width_us: 200,
   neighbor_um: 40,
   sigma_S_per_m: 1,
+  body: { kind: "none" },
+  overlap_policy: "reject",
 };
 
 const CARD: ScorecardData = {
@@ -35,6 +37,14 @@ describe("runKey", () => {
     expect(runKey(C)).not.toBe(runKey({ ...C, sigma_S_per_m: 1.4 }));
     // conductivity must take part: it changes the physics, so it is a different run
     expect(runKey({ ...C, sigma_S_per_m: 0.5 })).not.toBe(runKey({ ...C, sigma_S_per_m: 2 }));
+    // a 3D body + overlap policy change the score, so they must key distinctly from
+    // the flat disk of the same footprint (else a pillar would masquerade as its disk)
+    const pillar: Controls = {
+      ...C,
+      body: { kind: "cylinder", radius_um: 5, height_um: 30, conductive_faces: "tip" },
+    };
+    expect(runKey(pillar)).not.toBe(runKey(C));
+    expect(runKey(pillar)).not.toBe(runKey({ ...pillar, overlap_policy: "displace" }));
   });
 });
 

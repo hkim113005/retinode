@@ -16,11 +16,20 @@ export type Run = {
   scorecard: ScorecardData;
 };
 
-/** A stable identity for a configuration: same knobs → same run. */
+/** A stable identity for a configuration: same knobs → same run. Includes the 3D
+ * body + overlap policy, so a pillar and a flat disk of the same footprint are
+ * distinct runs (they score differently). */
 export function runKey(c: Controls): string {
-  return [c.layout, c.electrode_um, c.pitch_um, c.phase_width_us, c.neighbor_um, c.sigma_S_per_m].join(
-    "/",
-  );
+  return [
+    c.layout,
+    c.electrode_um,
+    c.pitch_um,
+    c.phase_width_us,
+    c.neighbor_um,
+    c.sigma_S_per_m,
+    JSON.stringify(c.body),
+    c.overlap_policy,
+  ].join("/");
 }
 
 /** Newest first, de-duplicated by configuration, capped at MAX_RUNS. */
