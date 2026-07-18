@@ -2,8 +2,10 @@
 
 This runs in the **conda** ``retinode-fem`` env (the only one with DOLFINx), invoked
 by :mod:`api.fem_worker` in the uv API env. It reads the scene controls as JSON on
-stdin and prints ``{xs_um, ys_um, ve_mV, vmax_mV}`` on stdout — plain dicts, no
-FastAPI, so it imports cleanly in the FEM env (see the lazy ``api/__init__``).
+stdin and writes ``{xs_um, ys_um, ve_mV, vmax_mV}`` to the file named in ``argv[1]``
+— NOT stdout, because gmsh/PETSc scribble banners there and would corrupt the JSON
+(see ``main`` below). Plain dicts, no FastAPI, so it imports cleanly in the FEM env
+(see the lazy ``api/__init__``).
 
 The FEM tissue is the ``z >= 0`` slab, so the field is sampled at ``+|cell depth|``
 (the analytical tier is mirror-symmetric across ``z = 0``, so this is the same
@@ -34,7 +36,8 @@ def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
         sigma_S_per_m=params["sigma_S_per_m"],
     )
     extent = float(params.get("extent_um", 130.0))
-    n = int(params.get("n", 41))
+    n = int(params.get("n", 61))  # match SceneControls.n, so the grid shape agrees
+    # with the analytical grid the divergence is measured against
     z = cell_depth_um()  # the cell plane, in the z>=0 tissue the FEM domain meshes
 
     xs = np.linspace(-extent, extent, n)

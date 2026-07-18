@@ -9,6 +9,12 @@ the tasks run in-process (NEURON in the uv env).
 Deliberately dependency-free (no Redis/Celery): a dict + a lock + a thread pool is
 enough for a single-user bench tool, and it keeps the API importable in the fast
 test job with no extra services.
+
+Scope note: the job and result maps grow for the process lifetime — nothing is
+evicted. That is acceptable and intentional for the single-user assumption above
+(one researcher, a session's worth of jobs); a long-lived multi-user server would
+want an LRU/TTL bound, but adding eviction here would only risk dropping an in-flight
+job's entry for a problem this tool does not have.
 """
 
 from __future__ import annotations

@@ -26,11 +26,16 @@ class _FakeProc:
         self.stdin = io.StringIO()
         self.stderr = iter(stderr_lines)
 
+        self.killed = False
+
     def wait(self, timeout=None):
         if self._result is not None:
             with open(self._out_path, "w") as f:
                 json.dump(self._result, f)
         return self._code
+
+    def kill(self):
+        self.killed = True
 
 
 def _popen_factory(stderr_lines, result, code=0):
@@ -87,3 +92,48 @@ def test_a_missing_fem_interpreter_is_a_clear_message():
 
     with pytest.raises(RuntimeError, match="FEM env is not available"):
         run_study_job(_CONTROLS, lambda f, m: None, popen=popen)
+
+
+def test_a_hung_child_is_killed_by_the_watchdog_and_reported_as_a_timeout():
+    """The real robustness fix: a FEM solve that hangs while alive (stops emitting
+    output but never exits) would block the worker forever, because the stderr read
+    loop only ends at child EOF. A watchdog must kill it and surface a timeout."""
+    import threading
+
+    unblocked = threading.Event()
+    proc_ref = {}
+
+    class HangProc:
+        def __init__(self):
+            self.stdin = io.StringIO()
+            self.killed = False
+
+            def gen():
+                unblocked.wait(5.0)  # blocks the read loop until kill() (or a safety cap)
+                return
+                yield  # unreachable — makes this a generator
+
+            self.stderr = gen()
+
+        def wait(self, timeout=None):
+            return -9  # killed
+
+        def kill(self):
+            self.killed = True
+            unblocked.set()  # let the blocked stderr generator finish
+
+    def popen(cmd, **kwargs):
+        p = HangProc()
+        proc_ref["p"] = p
+        return p
+
+    with pytest.raises(RuntimeError, match="timed out"):
+        run_study_job(_CONTROLS, lambda f, m: None, timeout_s=0.2, popen=popen)
+    assert proc_ref["p"].killed  # the child was reaped, not orphaned
+
+
+def test_the_child_is_reaped_even_on_a_normal_failure():
+    popen = _popen_factory(["boom\n"], result=None, code=1)
+    with pytest.raises(RuntimeError):
+        run_study_job(_CONTROLS, lambda f, m: None, popen=popen)
+    # the finally-kill ran (the fake records it)

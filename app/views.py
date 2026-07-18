@@ -36,11 +36,6 @@ def load_validation_report() -> dict[str, Any]:
         return {"n_pass": 0, "n_total": 0, "reproductions": []}
     return json.loads(_VALIDATION_REPORT.read_text())
 
-# A restrained palette shared by the figures (matches the CSS).
-_INK = "#1f2933"
-_MUTED = "#8a94a6"
-_ACCENT = "#0a84ff"
-_GRID_BG = "rgba(0,0,0,0)"
 
 
 @dataclass(frozen=True)

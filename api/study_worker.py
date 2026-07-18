@@ -15,6 +15,7 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
 
 from .fem_worker import fem_python
 from .jobs import ProgressFn
@@ -62,15 +63,29 @@ def run_study_job(
                 "set RETINODE_FEM_PYTHON or install env/fem-environment.yml"
             ) from exc
 
-        proc.stdin.write(payload)
-        proc.stdin.close()
-        tail: list[str] = []
-        for line in proc.stderr:  # streams live while the sweep runs
-            if line.startswith("@@P "):
-                _drain_progress(line, report)
-            else:
-                tail.append(line.rstrip())
-        code = proc.wait(timeout=timeout_s)
+        # Enforce the wall-clock bound with a watchdog, and ALWAYS reap the child.
+        # The stderr read loop below blocks until EOF (child exit), so `wait(timeout)`
+        # alone gives no protection against a solve that hangs while alive and stops
+        # emitting output — the timer kills it, which closes stderr and unblocks us.
+        timed_out = threading.Event()
+        watchdog = threading.Timer(timeout_s, lambda: (timed_out.set(), proc.kill()))
+        watchdog.start()
+        try:
+            proc.stdin.write(payload)
+            proc.stdin.close()
+            tail: list[str] = []
+            for line in proc.stderr:  # streams live while the sweep runs
+                if line.startswith("@@P "):
+                    _drain_progress(line, report)
+                else:
+                    tail.append(line.rstrip())
+            code = proc.wait()
+        finally:
+            watchdog.cancel()
+            proc.kill()  # no-op if already dead; reaps an orphan on any error path
+
+        if timed_out.is_set():
+            raise RuntimeError(f"FEM study timed out after {timeout_s:.0f}s")
         if code != 0:
             last = " / ".join(t for t in tail[-3:] if t)
             raise RuntimeError(f"FEM study failed: {last}" if last else "FEM study failed")
