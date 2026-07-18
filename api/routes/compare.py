@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
-from app.scene import build_scene
+from app.scene import body_from_spec, build_scene
 from engine.eval import evaluate
 from engine.field import AnalyticalBackend
 
@@ -28,6 +28,12 @@ router = APIRouter()
 
 @router.post("/compare", response_model=CompareResponse)
 def compare(controls: SceneControls, request: Request) -> CompareResponse:
+    # Thread a primitive body through so the electrode markers reflect its footprint
+    # (the loupe draws the true 3D shape from them). The analytical field itself stays
+    # geometry-blind — a bodied scene is FEM-only, and the client shows a Run-FEM prompt
+    # instead of this field. CAD needs gmsh (absent here), so it falls back to the flat
+    # footprint for the marker; its real field/scorecard come from the FEM dispatch.
+    body = None if controls.body.kind == "cad" else body_from_spec(controls.body.model_dump())
     scene = build_scene(
         layout=controls.layout,
         electrode_um=controls.electrode_um,
@@ -35,6 +41,7 @@ def compare(controls: SceneControls, request: Request) -> CompareResponse:
         phase_width_us=controls.phase_width_us,
         neighbor_um=controls.neighbor_um,
         sigma_S_per_m=controls.sigma_S_per_m,
+        body=body,
     )
     field = field_grid_payload(
         scene.array, scene.config, scene.conductivity, extent_um=controls.extent_um, n=controls.n

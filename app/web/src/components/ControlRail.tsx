@@ -62,7 +62,7 @@ const DIM_LABEL: Record<string, string> = {
   top_radius_um: "Top radius",
 };
 
-const BODY_LABEL: Record<BodyControls["kind"], string> = {
+export const BODY_LABEL: Record<BodyControls["kind"], string> = {
   none: "Flat",
   hemisphere: "Dome",
   cylinder: "Pillar",

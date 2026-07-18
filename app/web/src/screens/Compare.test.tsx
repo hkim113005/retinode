@@ -142,4 +142,36 @@ describe("Compare", () => {
       expect.objectContaining({ layout: "single" }),
     );
   });
+
+  it("replaces the analytical field with an honest FEM-required prompt for a 3D body", async () => {
+    render(<Compare />);
+    await screen.findByLabelText(/potential field/i); // flat disk shows the analytical field
+    // author a pillar
+    fireEvent.click(screen.getByRole("tab", { name: "Pillar" }));
+    // the misleading analytical field is gone; the honest prompt takes its place
+    await waitFor(() =>
+      expect(screen.queryByLabelText(/potential field/i)).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText(/can’t represent electrode geometry/i)).toBeInTheDocument();
+    expect(screen.getByText(/3D · FEM required/)).toBeInTheDocument();
+    // the scorecard request carries the body + overlap policy
+    fireEvent.click(screen.getByRole("button", { name: /Run scorecard/ }));
+    await waitFor(() =>
+      expect(client.postScore).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({ kind: "cylinder" }),
+          overlap_policy: "reject",
+        }),
+      ),
+    );
+  });
+
+  it("shows the FEM field once solved for a 3D body (holes and all)", async () => {
+    vi.mocked(client.getJob).mockResolvedValue(FEM_DONE);
+    render(<Compare />);
+    fireEvent.click(await screen.findByRole("tab", { name: "Dome" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Run field \(FEM\)/ }));
+    expect(await screen.findByText(/FEM ✓ inked/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/potential field/i)).toBeInTheDocument();
+  });
 });

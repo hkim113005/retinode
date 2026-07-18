@@ -13,7 +13,7 @@ import type {
 } from "../api/client";
 import { ActivationPlot } from "../components/ActivationPlot";
 import { useCommands } from "../components/Commands";
-import { ControlRail } from "../components/ControlRail";
+import { BODY_LABEL, ControlRail } from "../components/ControlRail";
 import type { Controls } from "../components/ControlRail";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { FieldCanvas } from "../components/FieldCanvas";
@@ -216,6 +216,13 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
   }, [controls]);
 
   const layoutName = controls.layout === "bipolar" ? "Bipolar · local return" : "Monopolar";
+  // A 3D body is FEM-only: the analytical preview is a point source blind to geometry,
+  // so we don't show it as "the field" — we prompt for the FEM solve instead.
+  const bodied = controls.body.kind !== "none";
+  const shapeName = bodied
+    ? `${BODY_LABEL[controls.body.kind]} electrode`
+    : `${controls.electrode_um} µm disk`;
+  const showFemPrompt = bodied && tier !== "fem";
 
   useCommands(
     "compare",
@@ -276,10 +283,11 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
         <div className="stage-head">
           <div>
             <h1>
-              {layoutName} · {controls.electrode_um} µm disk
+              {layoutName} · {shapeName}
             </h1>
             <div className="crumb">
-              live analytical field · target + neighbour at {controls.neighbor_um} µm
+              {bodied ? "3D electrode · FEM required" : "live analytical field"} · target +
+              neighbour at {controls.neighbor_um} µm
             </div>
           </div>
         </div>
@@ -291,7 +299,9 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
           </div>
         )}
         <div className="fieldbar card">
-          <span className={`tierchip ${tier}`}>{tier === "fem" ? "FEM ✓ inked" : "Analytical"}</span>
+          <span className={`tierchip ${tier}`}>
+            {tier === "fem" ? "FEM ✓ inked" : bodied ? "3D · FEM required" : "Analytical"}
+          </span>
           {tier === "fem" && divergence != null && (
             <span className="diverge">differs from the analytical preview by up to {divergence.toFixed(0)}%</span>
           )}
@@ -300,7 +310,7 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
             <span className="running">{femProgress.message}…</span>
           ) : (
             <button className="btn small" onClick={runAccurate}>
-              Run accurately (FEM)
+              {bodied ? "Run field (FEM)" : "Run accurately (FEM)"}
             </button>
           )}
         </div>
@@ -308,7 +318,17 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
           {/* the plot and the 3D scene each fail alone: losing the loupe (WebGL is
               not guaranteed) must not cost the field, and neither costs the controls */}
           <ErrorBoundary what="The field">
-            <FieldCanvas data={scene} tier={tier} />
+            {showFemPrompt ? (
+              <div className="card panel field-3d-notice" role="note">
+                <p className="empty">
+                  {BODY_LABEL[controls.body.kind]} electrode — the analytical preview is a
+                  point source and can’t represent electrode geometry. Run the FEM field
+                  (button above) for the real potential; it also drives the scorecard.
+                </p>
+              </div>
+            ) : (
+              <FieldCanvas data={scene} tier={tier} />
+            )}
           </ErrorBoundary>
           <ErrorBoundary what="The 3D loupe">
             <Suspense fallback={null}>
