@@ -31,14 +31,55 @@ class Scene:
     conductivity: spec.HomogeneousConductivity
 
 
-def build_array(layout: str, electrode_um: float, pitch_um: float) -> spec.ElectrodeArray:
-    """A single disk on the axis, or a bipolar pair split by ``pitch_um``."""
+def body_from_spec(d: dict | None) -> spec.ElectrodeBody | None:
+    """Translate a contract body dict to an ``engine.spec`` primitive body.
+
+    ``None`` / ``{"kind": "none"}`` -> a flat electrode (no body). The primitives
+    (hemisphere / cylinder / frustum) resolve here, in the uv env, with no gmsh. A
+    ``"cad"`` body cannot be built here — it needs gmsh to read the solid — so this
+    raises; the FEM jobs resolve CAD via ``engine.field.mesh3d.load_cad_body`` in the
+    conda env and pass the resulting ``CadBody`` straight to ``build_scene``.
+    """
+    if d is None or d.get("kind", "none") == "none":
+        return None
+    kind = d["kind"]
+    if kind == "hemisphere":
+        return spec.Hemisphere(radius_um=d["radius_um"])
+    if kind == "cylinder":
+        return spec.Cylinder(
+            radius_um=d["radius_um"],
+            height_um=d["height_um"],
+            conductive_faces=d.get("conductive_faces", "all"),
+        )
+    if kind == "frustum":
+        return spec.Frustum(
+            base_radius_um=d["base_radius_um"],
+            top_radius_um=d["top_radius_um"],
+            height_um=d["height_um"],
+            conductive_faces=d.get("conductive_faces", "all"),
+        )
+    if kind == "cad":
+        raise ValueError("CAD bodies must be resolved with load_cad_body in the FEM env")
+    raise ValueError(f"unknown electrode body kind: {kind!r}")
+
+
+def build_array(
+    layout: str,
+    electrode_um: float,
+    pitch_um: float,
+    *,
+    body: spec.ElectrodeBody | None = None,
+) -> spec.ElectrodeArray:
+    """A single disk on the axis, or a bipolar pair split by ``pitch_um``.
+
+    ``body`` (if given) is attached to the *driven* electrode ``e0`` only; a bipolar
+    return ``e1`` stays a flat disk (shaping the return is out of scope for now)."""
     if layout == "bipolar":
         half = pitch_um / 2.0
         return spec.ElectrodeArray(
             electrodes=(
                 spec.Electrode(
-                    id="e0", pos_um=(-half, 0.0, 0.0), shape="disk", size_um=electrode_um
+                    id="e0", pos_um=(-half, 0.0, 0.0), shape="disk", size_um=electrode_um, body=body
                 ),
                 spec.Electrode(
                     id="e1", pos_um=(half, 0.0, 0.0), shape="disk", size_um=electrode_um
@@ -47,7 +88,9 @@ def build_array(layout: str, electrode_um: float, pitch_um: float) -> spec.Elect
         )
     return spec.ElectrodeArray(
         electrodes=(
-            spec.Electrode(id="e0", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=electrode_um),
+            spec.Electrode(
+                id="e0", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=electrode_um, body=body
+            ),
         )
     )
 
@@ -82,10 +125,16 @@ def build_scene(
     phase_width_us: float,
     neighbor_um: float,
     sigma_S_per_m: float,
+    body: spec.ElectrodeBody | None = None,
 ) -> Scene:
-    """Assemble the full scene from the dashboard controls."""
+    """Assemble the full scene from the dashboard controls.
+
+    ``body`` shapes the driven electrode ``e0`` (a 3D pillar/dome/taper/CAD solid);
+    ``None`` is the flat disk the analytical tier handles. A bodied scene is FEM-only
+    — the analytical field is a point source blind to the body — so the caller must
+    solve it on ``FenicsxBackend`` (the API routes a bodied scene to the conda env)."""
     return Scene(
-        array=build_array(layout, electrode_um, pitch_um),
+        array=build_array(layout, electrode_um, pitch_um, body=body),
         config=build_config(layout, phase_width_us),
         patch=build_patch(neighbor_um),
         conductivity=spec.HomogeneousConductivity(sigma_S_per_m=sigma_S_per_m),
