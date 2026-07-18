@@ -12,6 +12,10 @@ The tool **screens and generates hypotheses**. It proposes configurations for
 ex vivo or in vivo testing. It is not, from simulation alone, a ground-truth
 oracle — every result carries its accuracy tier and its sensitivity.
 
+> **New here?** [`docs/user-guide.md`](docs/user-guide.md) is the front-to-end
+> walkthrough — install, launch the app, work through every screen, and drop to the
+> code path. The rest of this README is the architecture and development reference.
+
 ## Terminology
 
 - **Geometry** — the *physical* array: electrode sizes, shapes, positions,
