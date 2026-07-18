@@ -96,6 +96,14 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
     setScorecard(null);
     setSweep(null); // this grid was swept for a different scene
     setSweepCached(false);
+    // clear the progress of any in-flight job too, not just its result: the job's
+    // ticket is now stale so its own `.finally` guard declines to clear it, which
+    // would otherwise orphan the progress bar and lock the action forever. Safe —
+    // the poll loops re-check their ticket before every setProgress, so a superseded
+    // job cannot re-populate what we clear here.
+    setScoreProgress(null);
+    setFemProgress(null);
+    setSweepProgress(null);
     setTier("analytical");
     setDivergence(null);
     const ctrl = new AbortController();
@@ -139,7 +147,12 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
       // compared without re-running one from memory
       setRuns((rs) => remember(rs, { id: runKey(controls), controls, scorecard: card }));
     })()
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "scoring failed"))
+      .catch((e: unknown) => {
+        // don't surface a superseded job's failure — the scene has moved on
+        if (ticket === scoreTicket.current) {
+          setError(e instanceof Error ? e.message : "scoring failed");
+        }
+      })
       .finally(() => {
         if (ticket === scoreTicket.current) setScoreProgress(null);
       });
@@ -164,7 +177,11 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
         setDivergence(job.max_divergence_pct ?? null);
       }
     })()
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "FEM solve failed"))
+      .catch((e: unknown) => {
+        if (ticket === femTicket.current) {
+          setError(e instanceof Error ? e.message : "FEM solve failed");
+        }
+      })
       .finally(() => {
         if (ticket === femTicket.current) setFemProgress(null);
       });
@@ -186,7 +203,11 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
       setSweep(job.sweep ?? null);
       setSweepCached(job.cached);
     })()
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "the sweep failed"))
+      .catch((e: unknown) => {
+        if (ticket === sweepTicket.current) {
+          setError(e instanceof Error ? e.message : "the sweep failed");
+        }
+      })
       .finally(() => {
         if (ticket === sweepTicket.current) setSweepProgress(null);
       });

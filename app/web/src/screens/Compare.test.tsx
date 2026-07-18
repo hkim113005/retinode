@@ -107,6 +107,23 @@ describe("Compare", () => {
     expect(client.getJob).toHaveBeenCalledWith("j1"); // it polled the running job
   });
 
+  it("clears a running job's progress when a control is edited — no permanent lock", async () => {
+    // regression: editing a control mid-job used to orphan the progress state (the
+    // job's ticket goes stale so its own `.finally` declines to clear it), leaving
+    // the Run action gone forever. The [controls] effect must clear it.
+    vi.mocked(client.getJob).mockResolvedValue(RUNNING); // the job never finishes
+    render(<Compare />);
+    fireEvent.click(await screen.findByRole("button", { name: /Run scorecard/ }));
+    // it is running now: the Run button is replaced by the progress bar
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /Run scorecard/ })).not.toBeInTheDocument(),
+    );
+    // edit a control -> the debounced field effect clears the orphaned progress
+    fireEvent.input(screen.getByLabelText(/Electrode diameter/), { target: { value: "16" } });
+    // the Run action returns rather than staying locked
+    expect(await screen.findByRole("button", { name: /Run scorecard/ })).toBeInTheDocument();
+  });
+
   it("renders immediately when the job is served from cache (no polling)", async () => {
     vi.mocked(client.postScore).mockResolvedValue({ ...DONE, cached: true });
     render(<Compare />);

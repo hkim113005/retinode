@@ -5,11 +5,13 @@ import { useEffect, useRef } from "react";
 import type { Scorecard } from "../api/client";
 import { thresholdHeight, thresholdRows, thresholdScene } from "../chart/plots/thresholds";
 import { drawScene } from "../chart/render";
+import { useResizeRedraw } from "../chart/useResizeRedraw";
 import { livePalette } from "../chart/scene";
 import { FigureExport } from "./FigureExport";
 
 export function ThresholdPlot({ data }: { data: Scorecard | null | undefined }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rtick = useResizeRedraw(ref);
   const height = data ? thresholdHeight(data) : 0;
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export function ThresholdPlot({ data }: { data: Scorecard | null | undefined }) 
     const w = canvas.getBoundingClientRect().width || 520;
     const scene = thresholdScene({ data, width: w, palette: livePalette() });
     drawScene(canvas, scene, Math.min(window.devicePixelRatio || 1, 2));
-  }, [data]);
+  }, [data, rtick]);
 
   // nothing to say before a scorecard exists — the Scorecard panel already prompts
   if (!data || !thresholdRows(data).length) return null;

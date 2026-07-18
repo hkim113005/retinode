@@ -15,6 +15,11 @@ import { Canvas } from "@react-three/fiber";
 import { useState } from "react";
 import type { CellMarker, ElectrodeMarker } from "../api/client";
 
+// The auto-spin is a rAF render loop, not a CSS animation, so the global
+// reduced-motion rule in tokens.css can't reach it — honour the OS setting here.
+const prefersReducedMotion = () =>
+  typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const CELL_DEPTH = 20; // µm below the array plane (matches app.scene)
 
 function cssVar(n: string): string {
@@ -88,7 +93,7 @@ function Scene({
         enablePan={false}
         enableZoom={active}
         enableRotate={active}
-        autoRotate={!active}
+        autoRotate={!active && !prefersReducedMotion()}
         autoRotateSpeed={0.8}
       />
     </>

@@ -7,6 +7,7 @@ import type { CompareResponse } from "../api/client";
 import { sampleGrid } from "../chart/contours";
 import { fieldScene } from "../chart/plots/field";
 import { drawScene } from "../chart/render";
+import { useResizeRedraw } from "../chart/useResizeRedraw";
 import { livePalette } from "../chart/scene";
 import { FigureExport } from "./FigureExport";
 
@@ -20,6 +21,7 @@ export function FieldCanvas({
   tier?: "analytical" | "fem";
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rtick = useResizeRedraw(ref);
   const [probe, setProbe] = useState<Probe | null>(null);
   const inked = tier === "fem"; // FEM results draw crisper (docs/phase-7-design.md)
 
@@ -43,7 +45,7 @@ export function FieldCanvas({
     const size = canvas.getBoundingClientRect().width || 520;
     const scene = fieldScene({ data, size, palette: livePalette(), inked });
     drawScene(canvas, scene, Math.min(window.devicePixelRatio || 1, 2));
-  }, [data, inked]);
+  }, [data, inked, rtick]);
 
   return (
     <div className={`card canvas-wrap${inked ? " inked" : ""}`}>

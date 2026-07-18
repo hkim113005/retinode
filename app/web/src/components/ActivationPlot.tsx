@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import type { AmplitudeSweep, Scorecard } from "../api/client";
 import { activationHeight, activationScene } from "../chart/plots/activation";
 import { drawScene } from "../chart/render";
+import { useResizeRedraw } from "../chart/useResizeRedraw";
 import { livePalette } from "../chart/scene";
 import type { Progress } from "../screens/Compare";
 import { FigureExport } from "./FigureExport";
@@ -23,6 +24,7 @@ export function ActivationPlot({
   onRun: () => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rtick = useResizeRedraw(ref);
   const height = data ? activationHeight(data) : 0;
   const threshold = scorecard?.activated ? scorecard.target_uA : null;
 
@@ -37,7 +39,7 @@ export function ActivationPlot({
       targetThreshold_uA: threshold,
     });
     drawScene(canvas, scene, Math.min(window.devicePixelRatio || 1, 2));
-  }, [data, threshold]);
+  }, [data, threshold, rtick]);
 
   if (progress) {
     return (

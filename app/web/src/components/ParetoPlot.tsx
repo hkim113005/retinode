@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { StudyPoint } from "../api/client";
 import { paretoGeom, paretoScene } from "../chart/plots/pareto";
 import { drawScene } from "../chart/render";
+import { useResizeRedraw } from "../chart/useResizeRedraw";
 import { livePalette } from "../chart/scene";
 import { FigureExport } from "./FigureExport";
 
@@ -36,6 +37,7 @@ export function ParetoPlot({
   onBrush?: (p: StudyPoint[]) => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const rtick = useResizeRedraw(ref);
   const [box, setBox] = useState<Box | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
   const dragging = useRef(false);
@@ -53,7 +55,7 @@ export function ParetoPlot({
       brush: box && dragging.current ? norm(box) : null,
     });
     drawScene(canvas, scene, Math.min(window.devicePixelRatio || 1, 2));
-  }, [points, selected, box]);
+  }, [points, selected, box, rtick]);
 
   // measure at event time rather than trusting state: after a window resize a
   // stored width is stale and every hit test would land off the marks

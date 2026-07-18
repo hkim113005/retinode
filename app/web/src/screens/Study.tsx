@@ -1,7 +1,7 @@
 // The Study screen: build a diameter × pitch sweep, run it as a job, and read the
 // selectivity-versus-cost Pareto frontier — the design-explorer payoff. Click a
 // frontier point to inspect its geometry and metrics.
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { getJob, postStudy } from "../api/client";
 import type { StudyControls, StudyPoint } from "../api/client";
 import { useCommands } from "../components/Commands";
@@ -48,7 +48,7 @@ export function Study({
     apply(next);
   };
 
-  const runStudy = () => {
+  const runStudy = useCallback(() => {
     const id = ++ticket.current;
     setSelected(null);
     setBrushed(null); // a new sweep invalidates the old selection
@@ -84,7 +84,7 @@ export function Study({
       .finally(() => {
         if (id === ticket.current) setProgress(null);
       });
-  };
+  }, [diameters, pitches, spread]);
 
   const nFrontier = points.filter((p) => p.on_frontier && p.safe).length;
 
