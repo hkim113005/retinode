@@ -5,15 +5,39 @@ build-backend = "hatchling.build"
 [project]
 name = "retinode"
 version = "0.0.1"
-description = "An epiretinal electrode-geometry selectivity testbed"
+description = "An epiretinal electrode-geometry selectivity testbed: score and compare electrode designs for RGC-population selectivity and safety."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "hkim113005" }]
+keywords = [
+    "retinal-prosthesis",
+    "epiretinal",
+    "electrode-geometry",
+    "neurostimulation",
+    "NEURON",
+    "finite-element",
+    "computational-neuroscience",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+]
 dependencies = [
     "numpy",
     "scipy",
 ]
+
+[project.urls]
+Repository = "https://github.com/hkim113005/retinode"
+Documentation = "https://github.com/hkim113005/retinode/blob/main/docs/user-guide.md"
+Issues = "https://github.com/hkim113005/retinode/issues"
 
 [project.optional-dependencies]
 # The engine core is numpy/scipy only, so the pure library stays importable
@@ -52,6 +76,29 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["engine", "api", "app"]
+
+# The sdist is an explicit allowlist — never a "everything not gitignored" sweep. That
+# would ship the copyrighted PDFs in papers/ and dev cruft (.hypothesis, .github,
+# .claude). Only the source needed to build, run, and understand the package ships.
+[tool.hatch.build.targets.sdist]
+include = [
+    "engine/",
+    "api/",
+    "app/",
+    "examples/",
+    "docs/",
+    "env/",
+    "tests/",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+exclude = [
+    "app/web/node_modules/",
+    "app/web/dist/",
+    "docs/mockups/",
+    "**/__pycache__/",
+]
 
 [tool.ruff]
 line-length = 100

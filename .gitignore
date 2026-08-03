@@ -74,3 +74,6 @@ Thumbs.db
 .claude/settings.local.json
 node_modules/
 app/web/dist/
+
+# Copyrighted reference PDFs — read locally, never committed or distributed.
+papers/
