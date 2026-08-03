@@ -362,11 +362,11 @@ const milestones = [
    steps:["Sweep geometry — return-ring radius, pitch, electrode size, layout — together with steering weights.","Produce the selectivity-versus-current Pareto frontier, reported with tier and trajectory sensitivity.","Identify which geometries dominate the frontier and explain why.","Complete the Validation dashboard: reproductions plus backend agreement."],
    deliverable:"A one-sentence, robust design finding backed by the frontier, and a complete trust panel.",
    done:"You can state a design finding in one sentence and back it with the frontier. This is the original contribution."},
-  {id:"P9", tag:"ambition", effort:"Fall · release", title:"Packaging, docs, and release",
+  {id:"P9", tag:"ambition", effort:"Release-ready · private", title:"Packaging, docs, and release",
    obj:"Make the engine and app installable, reproducible, and legible to a stranger.",
-   steps:["Make the engine and app pip-installable; clean the repo, README, environment, and license.","Make one headline result reproducible from its provenance with a single command.","Write the documentation and the reproducibility guarantees.","Publish a public repo with examples and have someone clone it cold."],
-   deliverable:"A public repo plus docs where a stranger installs, reproduces a headline result with one command, and learns to use it.",
-   done:"A stranger can install it, reproduce a headline result with one command, and read how to use it."}
+   steps:["S1 — Pip-installable: MIT LICENSE, polished pyproject metadata, and a clean sdist locked to an explicit allowlist (no copyrighted papers/ or dev cruft — was a 4.6 MB leak, now 448 KB). uv build → wheel + sdist; cold-installs into a fresh venv with only numpy + scipy.","S2 — One-command headline reproduction: examples/reproduce_headline.py scores a d10 vs d30 flat disk — byte-identical on the analytical point source, distinct on FEM (9.49 vs 10.20 µA). It checks the FEM numbers against the recorded provenance and EXITS NON-ZERO on drift — a guarantee, not a demo.","S3 — Docs + reproducibility guarantees: a README 'Reproduce the headline result' section (command, output, ±0.30 µA drift gate, provenance keys), mirrored in the user guide; CONTRIBUTING.md (two-env setup, test markers, the engine-imports-nothing boundary rule).","S4 (deferred) — Publish a public repo and have a stranger clone it cold. Held: the repo stays PRIVATE by decision, so P9 lands release-ready, not published."],
+   deliverable:"A pip-installable package with an MIT license, a one-command reproduction backed by provenance, and the docs a newcomer needs — release-ready. Public publication is held.",
+   done:"Release-ready, kept private: pip-installable (clean wheel + sdist, verified cold-install), a one-command headline reproduction that fails on drift, and front-to-end docs + CONTRIBUTING. Not marked complete — the defining deliverable, a public repo a stranger clones cold, is deferred by decision."}
 ];
 
 const weeks = [
