@@ -72,9 +72,44 @@ The phase plans record the build step by step, with decisions and findings:
 - [`docs/retinode-project-plan-revised.md`](docs/retinode-project-plan-revised.md) — full design and phased plan
 - [`docs/retinode-project-plan.md`](docs/retinode-project-plan.md) — earlier draft
 
+## Reproduce the headline result
+
+One command reproduces the tool's reason for existing: **electrode geometry changes
+selectivity, and only the FEM tier can see it.** Two flat disks (10 µm, 30 µm) score
+*byte-identically* on the analytical tier — a point source, blind to an electrode's
+extent — and *distinctly* on FEM. It checks the FEM numbers against the values recorded
+in [`docs/phase-8-findings.md`](docs/phase-8-findings.md) and **exits non-zero if the
+engine has drifted**, so it's a reproducibility guarantee, not a demo.
+
+It needs the conda `retinode-fem` env (FEM + NEURON); ~1–2 minutes.
+
+```bash
+/opt/homebrew/Caskroom/miniforge/base/envs/retinode-fem/bin/python examples/reproduce_headline.py
+```
+
+```
+  diameter |   analytical |        FEM
+-----------+--------------+-----------
+      10 µm |      8.31 µA |    9.49 µA
+      30 µm |      8.31 µA |   10.20 µA
+✓ analytical: d10 and d30 are identical (8.31 µA) — the point source is blind to diameter
+✓ FEM: d10 (9.49 µA) and d30 (10.20 µA) differ — the geometry effect the analytical tier can't see
+✓ provenance: FEM numbers match the recorded headline
+HEADLINE REPRODUCED ✓
+```
+
+**What "reproducible" guarantees here:** the FEM thresholds must land within ±0.30 µA of
+the recorded values or the command fails; the analytical pair must be identical (the
+point source is diameter-blind by construction). Results are identified by provenance
+(`result_key` / `offtarget_hash`) — the engine refuses to compare across differing
+off-target sets. The physical fidelity ceiling is unchanged: mouse RGC morphology,
+trend-not-magnitude validation ([validation.md](docs/validation.md)).
+
 ## Development
 
-Retinode uses [uv](https://docs.astral.sh/uv/) and Python 3.12.
+Contributor setup, the test markers, and the load-bearing `engine/` boundary rule live
+in [CONTRIBUTING.md](CONTRIBUTING.md). Retinode uses [uv](https://docs.astral.sh/uv/)
+and Python 3.12.
 
 ```bash
 # fast suite (no NEURON): arithmetic, evaluator logic, field, spec

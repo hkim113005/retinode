@@ -226,6 +226,22 @@ print(w.target_uA, w.usable_margin_uA, w.limiting)   # threshold, headroom, what
 The architecture boundary that makes this safe: **`engine/` never imports `api/` or
 `app/`** — the library is usable on its own, and the app is a re-skin over it.
 
+## Reproduce the headline result
+
+One command reproduces the tool's reason for existing — that geometry changes
+selectivity and only FEM sees it — and **fails if the engine has drifted** from the
+recorded numbers:
+
+```bash
+/opt/homebrew/Caskroom/miniforge/base/envs/retinode-fem/bin/python examples/reproduce_headline.py
+```
+
+It scores a 10 µm and a 30 µm flat disk: identical on the analytical tier (8.31 µA both
+— the point source is diameter-blind), distinct on FEM (9.49 vs 10.20 µA), and checks
+those FEM numbers against the values in [phase-8-findings.md](phase-8-findings.md)
+within ±0.30 µA. Needs the conda `retinode-fem` env; ~1–2 minutes. See the README for
+the full output and what "reproducible" guarantees.
+
 ## Reading the numbers honestly
 
 - **Operating window** — the usable headroom above the target's threshold before a
