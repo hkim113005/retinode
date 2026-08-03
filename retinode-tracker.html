@@ -357,7 +357,7 @@ const milestones = [
    deliverable:"A clean, keyboard- and mobile-respectful app with the full screen set, live analytical preview, async FEM/NEURON jobs, a Pareto frontier, a 3D scene, and figure-quality export — every result reproducible from provenance.",
    done:"The tool is polished and legible to a newcomer, pleasant enough to hand to a labmate. No new science (that's P8); it raises legibility and reach. Warranted and built. With the S9 extension, P6's 3D geometry is authorable end-to-end in the UI, not just from code.",
    note:"A re-skin, not a rewrite: the engine and specs are unchanged and the view data contracts are the fixed seam. The two-env reality is handled, not hidden — analytical is instant, FEM/NEURON are visibly async jobs. The custom-shape path (S9) makes the P6 3D engine authorable from the app — Compare body selector + CAD upload, FEM-scored, shown in the loupe; see docs/custom-electrode.md and docs/user-guide.md. Dash was retired once React reached parity."},
-  {id:"P8", tag:"ambition", effort:"Fall · in-lab", title:"Geometry study and validation dashboard",
+  {id:"P8", tag:"ambition", effort:"Done · in-lab", title:"Geometry study and validation dashboard",
    obj:"Use the accurate engine to compare geometries systematically and produce a defensible design finding.",
    steps:["Sweep geometry — return-ring radius, pitch, electrode size, layout — together with steering weights.","Produce the selectivity-versus-current Pareto frontier, reported with tier and trajectory sensitivity.","Identify which geometries dominate the frontier and explain why.","Complete the Validation dashboard: reproductions plus backend agreement."],
    deliverable:"A one-sentence, robust design finding backed by the frontier, and a complete trust panel.",
@@ -508,9 +508,9 @@ const gates = [
 const allIds = [...milestones.map(m=>m.id), ...weeks.flatMap(w=>w.papers.map(p=>p.id))];
 const paperIds = weeks.flatMap(w=>w.papers.map(p=>p.id));
 
-// Phases built so far (through Phase 7). Seeded so the tracker reflects real
+// Phases built so far (through Phase 8). Seeded so the tracker reflects real
 // progress on load; localStorage toggles still override per item.
-let state = {P0:true, P1:true, P2:true, P3:true, P4:true, P5:true, P6:true, P7:true};
+let state = {P0:true, P1:true, P2:true, P3:true, P4:true, P5:true, P6:true, P7:true, P8:true};
 let canPersist = false;
 (function probe(){
   try{
