@@ -108,6 +108,13 @@ def run_multisite(
     return MultisiteResult(n_active > 0, n_active, init_region, first_t)
 
 
+# The default ceiling of the threshold search. A cell that has not fired by here is
+# reported as "did not fire", NOT as "has no threshold" — callers must carry that
+# distinction (see PopulationThresholds.unfired_off_target_ids), because a bystander
+# above the cap is a real bystander whose threshold simply was not measured.
+DEFAULT_AMP_MAX_UA = 500.0
+
+
 def multisite_threshold(
     model: RGCModel,
     array: ElectrodeArray,
@@ -118,7 +125,7 @@ def multisite_threshold(
     backend: FieldBackend | None = None,
     monophasic: bool = True,
     amp_min: float = 1.0,
-    amp_max: float = 500.0,
+    amp_max: float = DEFAULT_AMP_MAX_UA,
     ladder: float = 1.5,
     rel_tol: float = 0.03,
     deactivated: frozenset[int] = frozenset(),
@@ -140,7 +147,17 @@ def multisite_threshold(
         wf = dataclasses.replace(config.waveform, amplitude_scale_uA=amp)
         scaled = dataclasses.replace(config, waveform=wf)
         return run_multisite(
-            model, array, scaled, conductivity, solved=solved, deactivated=deactivated
+            model,
+            array,
+            scaled,
+            conductivity,
+            solved=solved,
+            # Was omitted, so this function's own ``monophasic`` argument did nothing
+            # and run_multisite's default always won — a caller asking for a biphasic
+            # threshold silently got the monophasic one. ``extracellular_threshold``
+            # forwards it; this did not.
+            monophasic=monophasic,
+            deactivated=deactivated,
         ).activated
 
     return find_threshold(

@@ -37,15 +37,28 @@ def find_threshold(
     rel_tol: float = 0.02,
 ) -> ThresholdResult:
     # 1. climb a geometric ladder to bracket the first activating amplitude.
+    #
+    # The last rung is CLAMPED to amp_max — the same clamp step 3 below already uses.
+    # Climbing by bare multiplication instead left the band between the top rung and
+    # amp_max unprobed (at ladder=1.5 that is the top 33% of the declared range: with
+    # amp_min=2, amp_max=500 the highest amplitude ever tested was 389.2 µA). A cell
+    # whose threshold fell in that band returned None — which every caller reads as
+    # "never fires", not "not looked for" — and so dropped out of the off-target set
+    # entirely, taking the selective-window bound with it.
     last_inactive: float | None = None
     first_active: float | None = None
     a = amp_min
+    at_max = False
     while a <= amp_max * (1.0 + 1e-9):
+        if a >= amp_max * (1.0 - 1e-9):
+            a, at_max = amp_max, True
         if activates(a):
             first_active = a
             break
         last_inactive = a
-        a *= ladder
+        if at_max:
+            break
+        a = min(a * ladder, amp_max)
     if first_active is None:
         return ThresholdResult(None, None, 0.0, False, None)
 
