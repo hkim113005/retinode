@@ -10,15 +10,39 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, UploadFile
 
-from ..cad_store import CadUploadError, store_upload
+from ..cad_store import MAX_BYTES, CadUploadError, store_upload
 from ..models import CadUploadResponse
 
 router = APIRouter()
 
+_CHUNK = 1 << 20  # 1 MiB
+
+
+async def _read_capped(file: UploadFile) -> bytes:
+    """Read the upload, refusing it the moment it exceeds ``MAX_BYTES``.
+
+    ``await file.read()`` with no argument materialises the *whole* body in memory
+    before ``store_upload`` ever gets to check the size — so the 25 MB limit was no
+    protection at all: a multi-GB POST is a plain out-of-memory kill of the API.
+    Reading in chunks and bailing at the first byte over the cap bounds the cost of
+    a hostile (or fat-fingered) upload at ``MAX_BYTES`` + one chunk.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await file.read(_CHUNK):
+        total += len(chunk)
+        if total > MAX_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"CAD file too large (> {MAX_BYTES} bytes)",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
 
 @router.post("/cad", response_model=CadUploadResponse)
 async def upload_cad(file: UploadFile) -> CadUploadResponse:
-    content = await file.read()
+    content = await _read_capped(file)
     try:
         upload_id, name = store_upload(file.filename or "upload", content)
     except CadUploadError as exc:

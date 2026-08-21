@@ -28,9 +28,9 @@ from engine.study.geometry_sweep import (
     require_geometry_distinguishable,
 )
 from engine.study.spread import geometry_trajectory_spread
+from engine.study.sweep import ThresholdsProvider
 
 ProgressFn = Callable[[float, str], None]
-ThresholdsProvider = Callable[..., object]
 
 
 def _query_reach_um(patch) -> float:  # noqa: ANN001 - a RetinalPatch
@@ -124,8 +124,7 @@ def run_study(
             # the domain at the query reach (+margin), or the solve raises on a point
             # outside the mesh (found the hard way running this live).
             reach = _query_reach_um(patch)
-            backend = geometry_field_tier(conductivity)[0]
-            backend.min_half_width_um = reach * 1.15
+            backend = geometry_field_tier(conductivity, min_half_width_um=reach * 1.15)[0]
     # only the real field path can be fooled by a geometry-blind tier; a provider makes
     # the backend cosmetic, so the guard would be a false alarm there
     if thresholds_provider is None:
@@ -166,4 +165,12 @@ def run_study(
             backend=backend,
         )
 
-    return {"points": _frontier_points(sweep, spreads), "n_geometries": sweep.n_geometries}
+    return {
+        "points": _frontier_points(sweep, spreads),
+        "n_geometries": sweep.n_geometries,
+        # Derived from the backend that actually ran, not from which branch the route
+        # took, so an explicitly passed backend= is reported honestly too. Candidates
+        # exports this; it used to hardcode "analytical" while production sweeps have
+        # run on FEM since P8 S4b, so every exported shortlist claimed the wrong tier.
+        "tier": "analytical" if isinstance(backend, AnalyticalBackend) else "fem",
+    }

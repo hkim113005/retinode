@@ -98,6 +98,7 @@ def test_no_provider_dispatches_the_study_to_the_fem_env(monkeypatch):
                 )
             ],
             n_geometries=1,
+            tier="fem",  # this dispatch path IS the conda FEM env
         )
 
     monkeypatch.setattr("api.routes.study.run_study_job", fake_dispatch)

@@ -34,6 +34,7 @@ const SWEPT: JobStatus = {
   cached: false,
   study: {
     n_geometries: 3,
+    tier: "fem" as const,
     points: [
       { diameter_um: 12, pitch_um: 40, cost_uA: 9, selectivity_uA: 11, safe: true, on_frontier: true },
       { diameter_um: 16, pitch_um: 40, cost_uA: 7, selectivity_uA: 6, safe: true, on_frontier: true },

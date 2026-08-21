@@ -76,11 +76,11 @@ def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
         scene.array, scene.conductivity, points[outside]
     )
     ve[outside] = a @ current_vector(scene.array, scene.config)
-    ve = ve.reshape(n, n)
-    finite = ve[np.isfinite(ve)]
+    grid = ve.reshape(n, n)
+    finite = grid[np.isfinite(grid)]
     # Emit holes as JSON null, not NaN — NaN is not valid JSON and would break the
     # client's response parse. ``FieldGridResponse.ve_mV`` is ``float | None`` for this.
-    ve_grid = [[None if not np.isfinite(v) else float(v) for v in row] for row in ve]
+    ve_grid = [[None if not np.isfinite(v) else float(v) for v in row] for row in grid]
     return {
         "xs_um": xs.tolist(),
         "ys_um": ys.tolist(),

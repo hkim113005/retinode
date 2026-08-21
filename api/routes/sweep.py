@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from engine.field import AnalyticalBackend
 from engine.study.activation import amplitude_grid, amplitude_sweep
@@ -24,7 +24,13 @@ router = APIRouter()
 
 def _cache_key(c: SweepControls) -> str:
     """Keyed over the scene AND the grid — a different grid is a different answer,
-    unlike the field-only preview options (extent/n), which are excluded."""
+    unlike the field-only preview options (extent/n), which are excluded.
+
+    ``body`` and ``overlap_policy`` belong here for the same reason they do in
+    ``score._cache_key``: they change the answer, so two shapes must not collide on
+    one key. They were missing, which meant a bodied sweep was served the flat-disk
+    curves out of cache — instantly, and flagged ``cached: true``.
+    """
     return "sweep:" + json.dumps(
         {
             "layout": c.layout,
@@ -33,6 +39,8 @@ def _cache_key(c: SweepControls) -> str:
             "phase_width_us": c.phase_width_us,
             "neighbor_um": c.neighbor_um,
             "sigma_S_per_m": c.sigma_S_per_m,
+            "body": c.body.model_dump(),
+            "overlap_policy": c.overlap_policy,
             "amp_min_uA": c.amp_min_uA,
             "amp_max_uA": c.amp_max_uA,
             "n_amplitudes": c.n_amplitudes,
@@ -44,6 +52,20 @@ def _cache_key(c: SweepControls) -> str:
 
 @router.post("/sweep", response_model=JobStatus)
 def submit_sweep(controls: SweepControls, request: Request) -> JobStatus:
+    # The sweep runs on AnalyticalBackend, which is blind to electrode geometry. Given
+    # a 3D body it used to return the FLAT-DISK activation curves as though they were
+    # the body's — the exact silent-wrong-answer that ``require_geometry_distinguishable``
+    # exists to prevent in the study path. Refuse instead of lying.
+    if controls.body.kind != "none":
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "an amplitude sweep of a 3D electrode body is not available on the "
+                "analytical tier, which cannot see electrode geometry. Score the body "
+                "with POST /score (FEM), or clear the body to sweep the flat electrode."
+            ),
+        )
+
     def task(report: ProgressFn) -> dict[str, object]:
         patch, array, config, conductivity = build_scene_specs(controls)
         amps = amplitude_grid(

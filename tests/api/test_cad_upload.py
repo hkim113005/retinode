@@ -69,3 +69,18 @@ def test_post_cad_rejects_stl_with_422():
     r = client.post("/cad", files={"file": ("mesh.stl", b"solid", "model/stl")})
     assert r.status_code == 422
     assert "STL" in r.json()["detail"]
+
+
+def test_post_cad_refuses_oversize_without_buffering_it_all():
+    """The endpoint must bail *during* the read, not after materialising the body.
+
+    Guards the fix for the unbounded ``await file.read()``: the cap is enforced
+    chunk by chunk, so an oversize POST costs MAX_BYTES + one chunk, not the whole
+    body. 413 (not 422) — this is a size limit, not a malformed payload.
+    """
+    client = TestClient(create_app())
+    r = client.post(
+        "/cad", files={"file": ("big.step", b"x" * (MAX_BYTES + 1), "application/step")}
+    )
+    assert r.status_code == 413
+    assert "too large" in r.json()["detail"]

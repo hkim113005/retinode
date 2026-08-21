@@ -68,7 +68,16 @@ def run_score_job(
         # stderr read loop blocks until EOF (child exit), so a solve that hangs while
         # alive would never time out on its own — the timer kills it, closing stderr.
         timed_out = threading.Event()
-        watchdog = threading.Timer(timeout_s, lambda: (timed_out.set(), proc.kill()))
+
+        def _on_timeout() -> None:
+            # Flag BEFORE killing: the read loop unblocks the instant stderr closes,
+            # so if the kill landed first the main thread could reach the exit-code
+            # check while ``timed_out`` was still clear and report a generic crash
+            # instead of the timeout.
+            timed_out.set()
+            proc.kill()
+
+        watchdog = threading.Timer(timeout_s, _on_timeout)
         watchdog.start()
         try:
             proc.stdin.write(payload)
@@ -82,7 +91,11 @@ def run_score_job(
             code = proc.wait()
         finally:
             watchdog.cancel()
-            proc.kill()  # no-op if already dead; reaps an orphan on any error path
+            # kill() only *signals*; without a wait() the child stays a zombie on any
+            # path that leaves before the wait() above (a broken pipe on stdin, an
+            # exception in the read loop). Signal, then reap.
+            proc.kill()
+            proc.wait()
 
         if timed_out.is_set():
             raise RuntimeError(f"FEM scorecard timed out after {timeout_s:.0f}s")

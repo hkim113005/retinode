@@ -60,6 +60,9 @@ def test_streams_progress_and_returns_the_frontier():
             }
         ],
         "n_geometries": 2,
+        # run_study in the conda env emits this; the worker requires it, so a payload
+        # without it must fail loudly rather than default to a plausible tier.
+        "tier": "fem",
     }
     popen = _popen_factory(
         [
