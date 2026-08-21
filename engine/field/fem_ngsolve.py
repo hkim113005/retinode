@@ -46,11 +46,39 @@ class NGSolveBackend:
         domain: FieldDomain | None = None,
         degree: int = 1,
         margin_factor: float = 6.0,
+        min_half_width_um: float = 0.0,
     ) -> None:
         self.name = "fem_ngsolve"
         self._domain = domain
         self.degree = degree
         self.margin_factor = margin_factor
+        # Present for parity with FenicsxBackend: without it the two backends could
+        # auto-size DIFFERENT domains for the same array, contradicting the claim that
+        # they read the same mesh — which is the whole basis of the cross-check.
+        self.min_half_width_um = min_half_width_um
+
+    def _resolve_domain(
+        self, array: ElectrodeArray, conductivity: ConductivityModel
+    ) -> FieldDomain:
+        return self._domain or default_domain(
+            array,
+            conductivity,
+            margin_factor=self.margin_factor,
+            min_half_width_um=self.min_half_width_um,
+        )
+
+    def solve_params(self, array: ElectrodeArray, conductivity: ConductivityModel) -> str:
+        """The solve settings that change ``A`` beyond the array and conductivity.
+
+        ``backend_solve_params`` reads this by ``getattr``, so its absence was silent:
+        ``name`` is the constant "fem_ngsolve" whatever the degree or mesh, and
+        ``field_key``/``result_key`` only append ``solve_params`` when it is not None.
+        A degree-2 re-solve was therefore served the persisted degree-1 numbers, under
+        a key claiming to identify the finer solve — the exact hazard keys.py:78
+        documents for the FEM tier.
+        """
+        _reject_anisotropy(conductivity)
+        return f"deg={self.degree}|{self._resolve_domain(array, conductivity).descriptor()}"
 
     def transfer_matrix(
         self,
@@ -59,9 +87,7 @@ class NGSolveBackend:
         query_points_um: np.ndarray,
     ) -> np.ndarray:
         _reject_anisotropy(conductivity)
-        domain = self._domain or default_domain(
-            array, conductivity, margin_factor=self.margin_factor
-        )
+        domain = self._resolve_domain(array, conductivity)
         if domain.array is not array and domain.array.ids() != array.ids():
             raise ValueError("the backend's domain was built for a different array")
         return solve_transfer_matrix_ngsolve(domain, query_points_um, degree=self.degree)
