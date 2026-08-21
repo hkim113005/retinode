@@ -9,10 +9,11 @@ production, which S3 moves to a background job).
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.scene import body_from_spec, build_scene
 from engine.eval import evaluate
+from engine.eval.overlap import OverlapConflict
 from engine.field import AnalyticalBackend
 
 from ..models import CompareResponse, SceneControls
@@ -48,14 +49,35 @@ def compare(controls: SceneControls, request: Request) -> CompareResponse:
     )
     scorecard = None
     if controls.include_scorecard:
-        result = evaluate(
-            scene.patch,
-            scene.array,
-            scene.config,
-            scene.conductivity,
-            backend=AnalyticalBackend(),
-            thresholds_provider=request.app.state.thresholds_provider,
-        )
+        # This scorecard is analytical, and the analytical tier cannot see a body. It
+        # would have returned the FLAT-disk operating window for a 3D electrode — the
+        # same silent-wrong-answer /sweep had. ``POST /score`` already dispatches a
+        # bodied scene to the FEM env; send the caller there instead of answering wrong.
+        if controls.body.kind != "none":
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "a scorecard for a 3D electrode body is FEM-only — the analytical "
+                    "field this endpoint uses is blind to electrode geometry. Submit "
+                    "POST /score, which runs the bodied scene on FEM as a job."
+                ),
+            )
+        try:
+            result = evaluate(
+                scene.patch,
+                scene.array,
+                scene.config,
+                scene.conductivity,
+                backend=AnalyticalBackend(),
+                thresholds_provider=request.app.state.thresholds_provider,
+                overlap_policy=controls.overlap_policy,
+            )
+        except OverlapConflict as exc:
+            # The caller's own overlap_policy was being dropped on the floor here, so a
+            # request that already said "displace" still got the reject-path error --
+            # advice it had followed. Honour the policy, and surface a genuine conflict
+            # as the client error it is rather than a 500.
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         scorecard = scorecard_payload(result)
     return CompareResponse(
         field=field,

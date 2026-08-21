@@ -357,7 +357,7 @@
           },
           "top_radius_um": {
             "default": 2.0,
-            "exclusiveMinimum": 0.0,
+            "minimum": 0.0,
             "title": "Top Radius Um",
             "type": "number"
           }
@@ -819,6 +819,7 @@
         "properties": {
           "aperture_um": {
             "default": 120.0,
+            "maximum": 2000.0,
             "minimum": 0.0,
             "title": "Aperture Um",
             "type": "number"
@@ -836,6 +837,8 @@
             "items": {
               "type": "number"
             },
+            "maxItems": 16,
+            "minItems": 1,
             "title": "Diameters Um",
             "type": "array"
           },
@@ -855,6 +858,8 @@
             "items": {
               "type": "number"
             },
+            "maxItems": 16,
+            "minItems": 1,
             "title": "Pitches Um",
             "type": "array"
           },
@@ -945,11 +950,20 @@
             },
             "title": "Points",
             "type": "array"
+          },
+          "tier": {
+            "enum": [
+              "analytical",
+              "fem"
+            ],
+            "title": "Tier",
+            "type": "string"
           }
         },
         "required": [
           "points",
-          "n_geometries"
+          "n_geometries",
+          "tier"
         ],
         "title": "StudyResult",
         "type": "object"

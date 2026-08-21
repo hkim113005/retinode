@@ -598,6 +598,11 @@ export interface components {
             n_geometries: number;
             /** Points */
             points: components["schemas"]["StudyPoint"][];
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "analytical" | "fem";
         };
         /**
          * SweepControls

@@ -8,11 +8,28 @@ view produces.
 
 from __future__ import annotations
 
+import math
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 ConductiveFaces = Literal["tip", "sides", "all"]
+
+# Bounds on the geometry-study grid. These are not physics limits — they are the line
+# past which a request stops being a study and becomes a denial of service. The sweep
+# is a Cartesian product whose every point tiles the aperture with electrodes, so cost
+# grows as ``len(diameters) * len(pitches) * (aperture/pitch)**2``.
+MIN_PITCH_UM = 1.0
+MAX_DIAMETER_UM = 1000.0
+MAX_APERTURE_UM = 2000.0
+MAX_GRID_POINTS = 64  # len(diameters_um) * len(pitches_um)
 
 
 # --- 3D electrode body (the custom-shape UI path) ----------------------------------
@@ -28,12 +45,24 @@ class NoBody(BaseModel):
     kind: Literal["none"] = "none"
 
 
+# ``gt=0`` does not exclude inf, and pydantic's model_config is per-model — it is NOT
+# inherited from SceneControls into these nested body models. Without this, a body of
+# radius 1e400 passed validation, reached spec_hash, and raised
+# "Out of range float values are not JSON compliant" as a 500 from a request the
+# validator had declared clean.
+_FINITE = ConfigDict(allow_inf_nan=False)
+
+
 class HemisphereBody(BaseModel):
+    model_config = _FINITE
+
     kind: Literal["hemisphere"] = "hemisphere"
     radius_um: float = Field(10.0, gt=0)
 
 
 class CylinderBody(BaseModel):
+    model_config = _FINITE
+
     kind: Literal["cylinder"] = "cylinder"
     radius_um: float = Field(5.0, gt=0)
     height_um: float = Field(30.0, gt=0)
@@ -41,9 +70,12 @@ class CylinderBody(BaseModel):
 
 
 class FrustumBody(BaseModel):
+    model_config = _FINITE
+
     kind: Literal["frustum"] = "frustum"
     base_radius_um: float = Field(8.0, gt=0)
-    top_radius_um: float = Field(2.0, gt=0)  # < base is a penetrating tip; > base widens
+    # >= 0, not > 0: a zero top radius is a legitimate penetrating needle tip.
+    top_radius_um: float = Field(2.0, ge=0)  # < base is a penetrating tip; > base widens
     height_um: float = Field(20.0, gt=0)
     conductive_faces: ConductiveFaces = "all"
 
@@ -71,6 +103,12 @@ BodySpec = NoBody | HemisphereBody | CylinderBody | FrustumBody | CadBodySpec
 class SceneControls(BaseModel):
     """The Compare screen's inputs — the same handful of controls the Dash app
     exposes, translated to specs server-side via ``app.scene.build_scene``."""
+
+    # ``gt=0`` does not exclude inf: ``float("inf") > 0`` is True, and pydantic accepts
+    # inf/nan for a float unless told otherwise. An infinite ``extent_um`` sailed through
+    # every constraint and produced an all-NaN grid, which the JSON encoder then rendered
+    # as ``null`` in fields this schema declares non-nullable ``float``. Reject it here.
+    model_config = ConfigDict(allow_inf_nan=False)
 
     layout: Literal["single", "bipolar"] = "single"
     electrode_um: float = Field(10.0, gt=0)
@@ -229,8 +267,19 @@ class StudyControls(BaseModel):
     """A geometry sweep: the diameter × pitch grid to explore, plus the patch it is
     scored on. Combos with ``pitch < diameter`` (which would overlap) are dropped."""
 
-    diameters_um: list[float] = Field(default_factory=lambda: [8.0, 12.0, 16.0, 20.0])
-    pitches_um: list[float] = Field(default_factory=lambda: [30.0, 40.0, 55.0, 70.0])
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    # Bounded on BOTH axes. The grid is a Cartesian product, and each geometry then
+    # tiles the aperture: ``_lattice_points`` loops ``(2*ceil(aperture/pitch)+1)**2``
+    # times. A sub-micron pitch under the default 120 µm aperture is billions of
+    # electrodes — one small request that never returns, holding one of two worker
+    # slots forever. ``MIN_PITCH_UM`` floors the density; ``max_length`` the product.
+    diameters_um: list[float] = Field(
+        default_factory=lambda: [8.0, 12.0, 16.0, 20.0], min_length=1, max_length=16
+    )
+    pitches_um: list[float] = Field(
+        default_factory=lambda: [30.0, 40.0, 55.0, 70.0], min_length=1, max_length=16
+    )
     arrangement: Literal["grid", "hex"] = "hex"
     # How many axon trajectories to sample per geometry for the threshold spread.
     # 1 = OFF, and off is the default: the spread costs K extra threshold searches
@@ -238,10 +287,35 @@ class StudyControls(BaseModel):
     # >= 2 samples, so k=1 yields `spread_uA=None` by construction.
     trajectory_k: int = Field(1, ge=1, le=7)
     trajectory_jitter_deg: float = Field(15.0, gt=0.0, le=90.0)
-    aperture_um: float = Field(120.0, ge=0)
+    aperture_um: float = Field(120.0, ge=0, le=MAX_APERTURE_UM)
     phase_width_us: float = Field(200.0, gt=0)
     neighbor_um: float = Field(40.0, gt=0)
     sigma_S_per_m: float = Field(1.0, gt=0)
+
+    @field_validator("diameters_um", "pitches_um")
+    @classmethod
+    def _finite_and_sane(cls, v: list[float], info: ValidationInfo) -> list[float]:
+        for x in v:
+            if not math.isfinite(x) or x <= 0:
+                raise ValueError(f"{info.field_name} must be finite and > 0, got {x!r}")
+            if x > MAX_DIAMETER_UM:
+                raise ValueError(f"{info.field_name} entry {x} µm exceeds {MAX_DIAMETER_UM} µm")
+        if info.field_name == "pitches_um" and min(v) < MIN_PITCH_UM:
+            raise ValueError(
+                f"pitch below {MIN_PITCH_UM} µm would tile the aperture with an "
+                "unbounded number of electrodes; raise the pitch"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def _bounded_grid(self) -> StudyControls:
+        n = len(self.diameters_um) * len(self.pitches_um)
+        if n > MAX_GRID_POINTS:
+            raise ValueError(
+                f"the diameter × pitch grid is {n} geometries, over the "
+                f"{MAX_GRID_POINTS} cap — each one is a full FEM + NEURON solve"
+            )
+        return self
 
 
 class StudyPoint(BaseModel):
@@ -265,6 +339,10 @@ class StudyResult(BaseModel):
 
     points: list[StudyPoint]
     n_geometries: int
+    # The accuracy tier the sweep actually ran on. A property of the whole sweep (one
+    # backend is chosen once), so it lives here rather than on each point. No default:
+    # a missing value must be a loud error, not a plausible-looking "analytical".
+    tier: Literal["analytical", "fem"]
 
 
 class JobStatus(BaseModel):

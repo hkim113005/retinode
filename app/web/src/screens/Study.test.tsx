@@ -18,6 +18,7 @@ const DONE: JobStatus = {
   cached: false,
   study: {
     n_geometries: 3,
+    tier: "fem" as const,
     points: [
       { diameter_um: 12, pitch_um: 40, cost_uA: 8, selectivity_uA: 9, safe: true, on_frontier: true },
       { diameter_um: 16, pitch_um: 40, cost_uA: 7, selectivity_uA: 6, safe: true, on_frontier: true },

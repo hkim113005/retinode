@@ -229,7 +229,9 @@ class GeometryTierError(RuntimeError):
     """A geometry comparison was handed a geometry-blind field tier."""
 
 
-def geometry_field_tier(conductivity: ConductivityModel) -> BackendChoice:
+def geometry_field_tier(
+    conductivity: ConductivityModel, *, min_half_width_um: float = 0.0
+) -> BackendChoice:
     """The tier for *comparing electrode geometry*: always FEM.
 
     Only a field solve that resolves the electrode surface (FEM) distinguishes
@@ -237,8 +239,15 @@ def geometry_field_tier(conductivity: ConductivityModel) -> BackendChoice:
     :func:`resolve_field_tier`). This constructs a ``FenicsxBackend``, which is lazy:
     it imports DOLFINx only when it actually solves, so callers in the uv env can
     build it and hand it across to the FEM env to run.
+
+    ``min_half_width_um`` floors the FEM domain's lateral extent. Callers that sample
+    the field far from the array — the axon of passage reaches hundreds of µm toward
+    the optic disc — must pass their query reach, or the solve raises on a point
+    outside the mesh. It is a constructor argument rather than an attribute the
+    caller sets afterwards so the floor cannot be silently dropped by a backend that
+    has no such attribute.
     """
-    return FenicsxBackend(), conductivity
+    return FenicsxBackend(min_half_width_um=min_half_width_um), conductivity
 
 
 def geometry_varies(geometries: Iterable[ArrayGeometry]) -> bool:
