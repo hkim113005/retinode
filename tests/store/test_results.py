@@ -49,3 +49,35 @@ def test_corrupt_sidecar_raises_store_error(tmp_path, result_windowed):
     rs._json_path(result_windowed.result_key).write_text("{ not valid json")
     with pytest.raises(StoreError, match="corrupt result sidecar"):
         rs.get(result_windowed.result_key)
+
+
+def test_an_interrupted_index_write_leaves_the_store_usable(
+    tmp_path, result_windowed, result_unbounded, monkeypatch
+):
+    """The index was rewritten in place, and parquet writes its footer last — so an
+    interruption mid-flush left a truncated index. Because ``put`` reads the index
+    first, the store then became permanently UNWRITABLE as well as unreadable, with
+    every completed result still intact in its sidecar. Staging + os.replace means a
+    failed write leaves the previous good index in place."""
+    import pyarrow.parquet as pq
+
+    rs = ResultStore(tmp_path / "r")
+    rs.put(result_windowed)
+    good = rs.index().num_rows
+
+    real_write = pq.write_table
+
+    def explode(table, where, *a, **k):
+        real_write(table, where, *a, **k)  # write the staging file, then die
+        raise KeyboardInterrupt("interrupted mid-flush")
+
+    monkeypatch.setattr("engine.store.results.pq.write_table", explode)
+    with pytest.raises(KeyboardInterrupt):
+        rs.put(result_unbounded)
+    monkeypatch.undo()
+
+    # the store still opens, still has the prior row, and still accepts writes
+    assert rs.index().num_rows == good
+    rs.put(result_unbounded)
+    assert rs.index().num_rows == good + 1
+    assert not list((tmp_path / "r").glob(".tmp-*"))  # no staging files left behind

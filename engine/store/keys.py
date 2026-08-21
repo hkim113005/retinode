@@ -72,6 +72,7 @@ def result_key(
     backend_name: str,
     evaluator_version: str,
     solve_params: str | None = None,
+    eval_params: str | None = None,
 ) -> str:
     """Identity of a scored evaluation (the Phase-0 result-key formula).
 
@@ -80,11 +81,22 @@ def result_key(
     of mesh/degree/extent, so two FEM solves that differ only in resolution would
     otherwise collide on one result key and a persisted store would serve the coarse
     result for a fine re-solve. ``None`` (analytical, which has no mesh) reproduces the
-    previous key exactly, so analytical result keys are unchanged."""
-    return combine(
+    previous key exactly, so analytical result keys are unchanged.
+
+    ``eval_params`` (from :func:`engine.eval.safety.eval_params_digest`) carries the
+    scoring parameters that are not part of the scene — the safety limits and the
+    overlap policy/epsilon. They were absent, which broke the promise in this module's
+    own docstring that a result is identified by everything that could change it: the
+    same study re-run against one store with tighter safety limits was served the
+    permissive-limit numbers, ceiling and usability inverted, with no re-evaluation.
+    ``None`` (every parameter at its default) reproduces the previous key exactly."""
+    parts = [
         field_key(array, conductivity, backend_name, solve_params=solve_params),
         spec_hash(config),
         spec_hash(patch),
         evaluator_version,
         spec_hash(off_target_set),
-    )
+    ]
+    if eval_params is not None:
+        parts.append(eval_params)
+    return combine(*parts)

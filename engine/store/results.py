@@ -14,6 +14,8 @@ its index row rather than duplicating it.
 
 from __future__ import annotations
 
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -89,12 +91,45 @@ class ResultStore:
     def __contains__(self, result_key: str) -> bool:
         return self._json_path(result_key).exists()
 
+    def _atomic_write(self, dest: Path, write: Any) -> None:
+        """Run ``write(tmp_path)``, fsync, then ``os.replace`` onto ``dest``.
+
+        Both files here were written in place. Parquet puts its footer last, so an
+        interruption mid-flush (Ctrl-C on a long sweep, OOM kill, full disk) left a
+        truncated ``index.parquet`` — and because ``put`` itself reads the index
+        first, the store became permanently *unwritable* as well as unreadable, with
+        every completed geometry still intact in its sidecar. That directly
+        contradicts the resumability the runner promises. A torn JSON sidecar is
+        worse still: ``__contains__`` returns True while ``get`` raises.
+
+        The temp file is unique (``mkstemp``) rather than a fixed ``.tmp`` name, so
+        two processes sharing a project root cannot clobber each other's staging
+        file, and it lives in ``self.root`` so the rename stays on one filesystem.
+        ``os.replace`` alone survives a killed process but not a power loss, hence
+        the fsync first.
+        """
+        fd, tmp_name = tempfile.mkstemp(dir=self.root, prefix=".tmp-", suffix=dest.suffix)
+        os.close(fd)
+        tmp = Path(tmp_name)
+        try:
+            write(tmp)
+            with open(tmp, "rb") as fh:
+                os.fsync(fh.fileno())
+            os.replace(tmp, dest)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
+
     def put(self, result: EvaluationResult) -> None:
         """Persist a result: full JSON sidecar + an upserted parquet index row."""
-        self._json_path(result.result_key).write_text(serialize.dumps(result))
+        payload = serialize.dumps(result)
+        self._atomic_write(
+            self._json_path(result.result_key), lambda t: t.write_text(payload)
+        )
         rows = [r for r in self._index_rows() if r["result_key"] != result.result_key]
         rows.append(_scalar_row(result))
-        pq.write_table(pa.Table.from_pylist(rows, schema=_SCHEMA), self._index_path)
+        table = pa.Table.from_pylist(rows, schema=_SCHEMA)
+        self._atomic_write(self._index_path, lambda t: pq.write_table(table, t))
 
     def get(self, result_key: str) -> EvaluationResult | None:
         """Return the exact stored result, or ``None`` if this key is absent."""

@@ -20,6 +20,7 @@ from dataclasses import dataclass
 
 from engine.spec import ElectrodeArray, StimConfig
 from engine.spec.geometry import electrode_area_um2  # re-exported; single source of truth
+from engine.spec.hashing import combine
 
 _UM2_PER_CM2 = 1.0e8  # 1 cm^2 = 1e8 um^2
 
@@ -32,6 +33,44 @@ class SafetyLimits:
 
 
 DEFAULT_SAFETY_LIMITS = SafetyLimits()
+
+DEFAULT_OVERLAP_POLICY = "reject"
+DEFAULT_OVERLAP_EPS_UM = 1.0
+
+
+def eval_params_digest(
+    safety_limits: SafetyLimits = DEFAULT_SAFETY_LIMITS,
+    overlap_policy: str = DEFAULT_OVERLAP_POLICY,
+    overlap_eps_um: float = DEFAULT_OVERLAP_EPS_UM,
+) -> str | None:
+    """Digest of the evaluation parameters that change a result but are not part of
+    the scene — for :func:`engine.store.keys.result_key`.
+
+    ``safety_limits`` sets ``safety_ceiling_uA``, and through it ``window_hi_uA``,
+    ``usable_margin_uA``, ``limiting`` and ``safe_at_target``; ``overlap_eps_um``
+    selects which compartments are severed and so changes every threshold. None of
+    them were in the result key, so re-running a study against the same store with
+    tighter limits was served the permissive-limit numbers verbatim — a 20 µm disk at
+    200 µs scores a 49.8 µA ceiling under the defaults and 0.47 µA under
+    ``SafetyLimits(shannon_k=0.5, material_charge_density_uC_per_cm2=30.0)``, a 105x
+    difference under one identical key.
+
+    Returns ``None`` when every parameter is at its default, which reproduces the
+    pre-fix key exactly — so existing default-limit stores stay valid and only
+    non-default runs get a fresh key.
+    """
+    if (
+        safety_limits == DEFAULT_SAFETY_LIMITS
+        and overlap_policy == DEFAULT_OVERLAP_POLICY
+        and float(overlap_eps_um) == DEFAULT_OVERLAP_EPS_UM
+    ):
+        return None
+    return combine(
+        f"shannon_k={safety_limits.shannon_k!r}",
+        f"material={safety_limits.material_charge_density_uC_per_cm2!r}",
+        f"overlap_policy={overlap_policy}",
+        f"overlap_eps_um={float(overlap_eps_um)!r}",
+    )
 
 
 @dataclass(frozen=True)
