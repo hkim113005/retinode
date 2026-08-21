@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { StudyPoint } from "./api/client";
+import type { StudyPoint, StudyTier } from "./api/client";
 import { CommandProvider, useCommands } from "./components/Commands";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SCREENS } from "./nav";
@@ -23,6 +23,9 @@ function Screens() {
   const [screen, setScreen] = useState<Screen>("Compare");
   // the sweep's results live here so Study's frontier carries to Candidates
   const [studyPoints, setStudyPoints] = useState<StudyPoint[]>([]);
+  // The tier those points were solved on, carried so Candidates can state (and
+  // export) the real provenance instead of assuming one.
+  const [studyTier, setStudyTier] = useState<StudyTier>("fem");
   // a brushed subset of that sweep, when the user narrowed it on the Pareto (S7c).
   // null means "no narrowing" — Candidates ranks the whole sweep.
   const [focus, setFocus] = useState<StudyPoint[] | null>(null);
@@ -48,8 +51,9 @@ function Screens() {
     return (
       <Study
         onNavigate={setScreen}
-        onPoints={(p) => {
+        onPoints={(p, tier) => {
           setStudyPoints(p);
+          setStudyTier(tier);
           setFocus(null); // a fresh sweep retires the old brush
         }}
         onFocus={setFocus}
@@ -62,6 +66,7 @@ function Screens() {
       <Candidates
         onNavigate={setScreen}
         points={focus ?? studyPoints}
+        tier={studyTier}
         brushed={focus != null}
         onClearBrush={() => setFocus(null)}
       />

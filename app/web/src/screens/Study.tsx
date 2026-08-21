@@ -3,7 +3,7 @@
 // frontier point to inspect its geometry and metrics.
 import { useCallback, useMemo, useRef, useState } from "react";
 import { getJob, postStudy } from "../api/client";
-import type { StudyControls, StudyPoint } from "../api/client";
+import type { StudyControls, StudyPoint, StudyTier } from "../api/client";
 import { useCommands } from "../components/Commands";
 import { ParetoPlot } from "../components/ParetoPlot";
 import { Rail } from "../components/Rail";
@@ -21,7 +21,10 @@ export function Study({
   points: initialPoints = [],
 }: {
   onNavigate?: (s: Screen) => void;
-  onPoints?: (p: StudyPoint[]) => void; // lift the sweep so it carries to Candidates
+  // Lift the sweep so it carries to Candidates. The tier travels WITH the points:
+  // Candidates exports it, and it used to be hardcoded "analytical" there while
+  // production sweeps have run on FEM since P8 S4b.
+  onPoints?: (p: StudyPoint[], tier: StudyTier) => void;
   onFocus?: (p: StudyPoint[] | null) => void; // a brushed subset to shortlist
   points?: StudyPoint[];
 }) {
@@ -78,7 +81,7 @@ export function Study({
       if (job.status === "error") throw new Error(job.error ?? "study failed");
       const found = job.study?.points ?? [];
       setPoints(found);
-      onPoints?.(found); // carries to Candidates
+      onPoints?.(found, job.study?.tier ?? "fem"); // carries to Candidates
     })()
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "study failed"))
       .finally(() => {
