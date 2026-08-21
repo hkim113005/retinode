@@ -3,7 +3,9 @@
 from engine.eval import OffTargetSet
 from engine.spec.hashing import spec_hash
 from engine.store.project import Project
-from engine.store.provenance import ProvenanceLog, make_run_record
+from engine.store.provenance import ProvenanceLog, RunRecord, make_run_record
+
+from .conftest import ARR, COND
 
 
 def _record(result, ctx):
@@ -83,3 +85,34 @@ def test_record_run_persists_across_reopen(tmp_path, result_windowed, windowed_c
     assert reopened.get_result(result_windowed.result_key) == result_windowed
     assert reopened.provenance.find(result_windowed.result_key) is not None
     assert reopened.provenance.find("never_recorded_key") is None
+
+
+def test_a_fem_record_replays_its_own_field_key():
+    """``field_key`` appends ``solve_params`` whenever it is not None, and ``evaluate``
+    always passes it — a non-None mesh/degree string on any FEM backend. It was not
+    recorded at all, so a FEM record could never reproduce the key it claims to
+    describe, and two runs at different mesh resolutions logged identical provenance
+    lines. The existing coverage used backend_name="analytical", where it is None."""
+    from engine.store.keys import field_key
+
+    solve_params = "deg=2|hw=65;d=60;he=2;hf=16.25"
+    fkey = field_key(ARR, COND, "fem_fenicsx", solve_params=solve_params)
+    fields = dict(
+        result_key="r",
+        field_key=fkey,
+        array_hash=spec_hash(ARR),
+        conductivity_hash=spec_hash(COND),
+        config_hash="c",
+        patch_hash="p",
+        offtarget_hash="o",
+        off_target_set={},
+        evaluator_version="2",
+        backend_name="fem_fenicsx",
+        software={},
+        git_commit=None,
+        seeds={},
+        timestamp="t",
+    )
+    assert RunRecord(**fields, solve_params=solve_params).replay_field_key() == fkey
+    # and the un-recorded case is exactly the bug: it cannot replay
+    assert RunRecord(**fields).replay_field_key() != fkey

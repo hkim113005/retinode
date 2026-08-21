@@ -181,3 +181,43 @@ def test_evaluate_end_to_end(neuron_h):
         backend_name="analytical",
         evaluator_version=EVALUATOR_VERSION,
     )
+
+
+def test_truncated_off_target_search_does_not_report_an_unbounded_window():
+    """A bystander above the search cap used to vanish from the thresholds dict, so
+    ``evaluate`` scored the scene as having no off-targets and extended the usable
+    window all the way to the safety ceiling — over amplitudes at which the bystander
+    does in fact fire. The window must stop at what was actually probed, and say so.
+    """
+
+    def truncated(patch, array, config, conductivity, **_kw):
+        # 'n1' was selected and searched, and never fired below the 500 µA cap
+        return PopulationThresholds(
+            patch.target_id, 40.0, {}, unfired_off_target_ids=("n1",), searched_max_uA=500.0
+        )
+
+    # A big electrode on a short pulse, so the safety ceiling (~1993 µA) sits ABOVE the
+    # search cap and the cap is what actually binds. On the small default electrode the
+    # ceiling is 24.9 µA and binds first, which is a correct "safety" verdict, not this
+    # case — whichever bound is lower should win, and it does.
+    big = spec.ElectrodeArray(
+        electrodes=(spec.Electrode(id="e", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=200.0),)
+    )
+    cfg = spec.StimConfig.from_map({"e": -1.0}, waveform=spec.Waveform(phase_width_us=50.0))
+    assert max_safe_amplitude_uA(big, cfg) > 500.0  # the premise of this test
+    r = evaluate(_patch(), big, cfg, COND, thresholds_provider=truncated)
+    assert r.activated
+    assert r.sow is not None and r.window is not None
+    assert r.sow.off_min_is_lower_bound is True
+    assert r.sow.unreached_off_ids == ("n1",)
+    assert r.window.limiting == "search_cap"
+    assert r.window.window_hi_uA <= 500.0
+
+
+def test_a_genuinely_empty_off_target_set_is_still_unbounded():
+    """The distinction must cut both ways: no bystanders at all still means no
+    off-target bound, so this path must NOT be flagged as a truncated search."""
+    r = evaluate(_patch(), ARR, CFG, COND, thresholds_provider=_provider(40.0, {}))
+    assert r.sow is not None and r.window is not None
+    assert r.sow.off_min_is_lower_bound is False
+    assert r.window.limiting == "safety"  # only the safety ceiling binds

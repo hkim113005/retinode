@@ -127,6 +127,8 @@ class Project:
         conductivity: Any,
         backend_name: str = "analytical",
         seeds: dict[str, Any] | None = None,
+        solve_params: str | None = None,
+        eval_params: str | None = None,
     ) -> RunRecord:
         """Persist an evaluation completely: the result, the spec *values* behind
         its hashes, and an append-only provenance record that replays its keys.
@@ -140,6 +142,8 @@ class Project:
             self.put_spec(obj)
         record = make_run_record(
             result,
+            solve_params=solve_params,
+            eval_params=eval_params,
             array=array,
             conductivity=conductivity,
             off_target_set=off_target_set,

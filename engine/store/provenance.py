@@ -47,20 +47,39 @@ class RunRecord:
     git_commit: str | None
     seeds: dict[str, Any]  # empty until a stochastic layer (Phase 3) adds RNG
     timestamp: str  # ISO 8601, UTC
+    # Trailing + defaulted so `RunRecord(**json.loads(line))` still loads log lines
+    # written before this field existed.
+    #
+    # ``field_key`` appends solve_params whenever it is not None, and ``evaluate``
+    # always passes it — a non-None mesh/degree/extent string on any FEM backend. It
+    # was not recorded at all, so replay_field_key() could never reproduce a FEM
+    # record's own key, and two FEM runs of one array at different mesh resolutions
+    # logged provenance lines identical except for an opaque hash: nothing said which
+    # mesh produced which number.
+    solve_params: str | None = None
+    # Likewise for the scoring parameters (safety limits, overlap policy/epsilon)
+    # that result_key now carries — see engine.eval.safety.eval_params_digest.
+    eval_params: str | None = None
 
     def replay_field_key(self) -> str:
         """Recompute field_key from the recorded components — must equal field_key."""
-        return combine(self.backend_name, self.array_hash, self.conductivity_hash)
+        parts = [self.backend_name, self.array_hash, self.conductivity_hash]
+        if self.solve_params is not None:
+            parts.append(self.solve_params)
+        return combine(*parts)
 
     def replay_result_key(self) -> str:
         """Recompute result_key from the recorded components — must equal result_key."""
-        return combine(
+        parts = [
             self.field_key,
             self.config_hash,
             self.patch_hash,
             self.evaluator_version,
             self.offtarget_hash,
-        )
+        ]
+        if self.eval_params is not None:
+            parts.append(self.eval_params)
+        return combine(*parts)
 
 
 def software_versions() -> dict[str, str]:
@@ -107,8 +126,15 @@ def make_run_record(
     off_target_set: Any,
     backend_name: str,
     seeds: dict[str, Any] | None = None,
+    solve_params: str | None = None,
+    eval_params: str | None = None,
 ) -> RunRecord:
-    """Assemble a provenance record for one evaluation and its run environment."""
+    """Assemble a provenance record for one evaluation and its run environment.
+
+    Pass ``solve_params``/``eval_params`` exactly as they were passed to
+    ``field_key``/``result_key`` — use the same ``backend_solve_params`` and
+    ``eval_params_digest`` helpers — so the replayed keys match by construction.
+    """
     return RunRecord(
         result_key=result.result_key,
         field_key=result.field_key,
@@ -124,6 +150,8 @@ def make_run_record(
         git_commit=git_commit(),
         seeds=dict(seeds or {}),
         timestamp=datetime.now(UTC).isoformat(),
+        solve_params=solve_params,
+        eval_params=eval_params,
     )
 
 

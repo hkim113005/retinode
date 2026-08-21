@@ -30,7 +30,7 @@ from typing import Any
 
 from engine.eval import EVALUATOR_VERSION, OffTargetSet
 from engine.eval.result import EvaluationResult
-from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
+from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits, eval_params_digest
 from engine.field import FieldBackend, backend_solve_params
 from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimConfig
 from engine.store.keys import result_key
@@ -124,6 +124,11 @@ def parallel_geometry_sweep(
     """
     materialized = list(geometries)
     off_target_set = off_target_set or OffTargetSet()
+    # The store lookup must key on the same scoring parameters the workers evaluate
+    # with, or a run under non-default safety limits is served the default-limit
+    # results. This path uses the default overlap policy/epsilon (it exposes no
+    # parameters for them), so only safety_limits can vary here.
+    eval_params = eval_params_digest(safety_limits)
 
     prepared = [
         _prepare(geom, conductivity, backend, backend_selector, config_factory)
@@ -133,7 +138,7 @@ def parallel_geometry_sweep(
     cached: dict[int, GeometryOutcome] = {}
     jobs: dict[int, _GeometryJob] = {}
     for i, prep in enumerate(prepared):
-        served = _served_from_store(store, prep, patch, off_target_set)
+        served = _served_from_store(store, prep, patch, off_target_set, eval_params)
         if served is not None:
             cached[i] = GeometryOutcome(
                 prep.geometry,
@@ -171,6 +176,10 @@ def parallel_geometry_sweep(
                     off_target_set=off_target_set,
                     conductivity=prep.conductivity,
                     backend_name=prep.backend.name,
+                    solve_params=backend_solve_params(
+                        prep.backend, prep.array, prep.conductivity
+                    ),
+                    eval_params=eval_params,
                 )
 
     # assemble in geometry order + emit progress + Pareto
@@ -226,7 +235,11 @@ def _prepare(
 
 
 def _served_from_store(
-    store: Project | None, prep: _Prepared, patch: RetinalPatch, off_target_set: OffTargetSet
+    store: Project | None,
+    prep: _Prepared,
+    patch: RetinalPatch,
+    off_target_set: OffTargetSet,
+    eval_params: str | None,
 ) -> list[EvaluationResult] | None:
     """The geometry's stored results if *every* config is present (a geometry is
     the unit of caching here), else None -> recompute the whole geometry."""
@@ -243,6 +256,7 @@ def _served_from_store(
             backend_name=prep.backend.name,
             evaluator_version=EVALUATOR_VERSION,
             solve_params=backend_solve_params(prep.backend, prep.array, prep.conductivity),
+            eval_params=eval_params,
         )
         result = store.get_result(key)
         if result is None:

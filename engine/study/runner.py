@@ -23,7 +23,7 @@ from dataclasses import dataclass
 
 from engine.eval import EVALUATOR_VERSION, OffTargetSet
 from engine.eval.overlap import OverlapPolicy
-from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
+from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits, eval_params_digest
 from engine.field import FieldBackend, backend_solve_params
 from engine.spec import ConductivityModel, RetinalPatch
 from engine.store.keys import result_key
@@ -100,11 +100,16 @@ def study_status(
     backend: FieldBackend | None = None,
     backend_selector: BackendSelector | None = None,
     evaluator_version: str = EVALUATOR_VERSION,
+    safety_limits: SafetyLimits = DEFAULT_SAFETY_LIMITS,
+    overlap_policy: OverlapPolicy = "reject",
+    overlap_eps_um: float = 1.0,
 ) -> StudyStatus:
     """How much of this geometry study is already in ``store`` — no field solve,
     no threshold search, just the same ``result_key`` the sweep would compute,
     checked for membership. Use the same arguments you would pass to the sweep so
-    the keys line up exactly."""
+    the keys line up exactly — including ``safety_limits`` and the overlap
+    parameters, which are part of the key. Omitting them here while the sweep ran
+    with non-default limits would report every geometry as pending (and vice versa)."""
     off_target_set = off_target_set or OffTargetSet()
     statuses: list[GeometryStatus] = []
     for geometry in geometries:
@@ -124,6 +129,9 @@ def study_status(
                     backend_name=chosen_backend.name,
                     evaluator_version=evaluator_version,
                     solve_params=backend_solve_params(chosen_backend, array, solve_conductivity),
+                    eval_params=eval_params_digest(
+                        safety_limits, overlap_policy, overlap_eps_um
+                    ),
                 )
             )
             for config in configs

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from engine.cable.morphology import RGCModel
-from engine.cable.multisite import multisite_threshold
+from engine.cable.multisite import DEFAULT_AMP_MAX_UA, multisite_threshold
 from engine.cable.placement import place_cell
 from engine.cable.population import PopulationThresholds, severed_segments
 from engine.cable.solved import SolvedField, solve_field
@@ -27,7 +27,7 @@ from engine.eval import EVALUATOR_VERSION, OffTargetSet, evaluate
 from engine.eval.offtarget import select_off_targets
 from engine.eval.overlap import OverlapConflict, OverlapPolicy
 from engine.eval.result import EvaluationResult
-from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits
+from engine.eval.safety import DEFAULT_SAFETY_LIMITS, SafetyLimits, eval_params_digest
 from engine.field import AnalyticalBackend, FieldBackend, backend_solve_params
 from engine.spec import (
     ConductivityModel,
@@ -172,6 +172,7 @@ class SolvedPopulation:
             solved=self._target_solved, deactivated=self._target_severed,
         ).threshold_uA
         off: dict[str, float] = {}
+        unfired: list[str] = []
         for cid, cell, solved, severed in self._offs:
             if overlap_policy == "reject" and severed:
                 raise OverlapConflict(
@@ -184,7 +185,19 @@ class SolvedPopulation:
             ).threshold_uA
             if thr is not None:
                 off[cid] = thr
-        return PopulationThresholds(patch.target_id, target_thr, off)
+            else:
+                # Same rule as population_thresholds: a bystander that never fired in
+                # the searched range is NOT an absent bystander. Record it, or the
+                # sweep path keeps reporting an unbounded selective window for a scene
+                # whose off-targets were merely never reached.
+                unfired.append(cid)
+        return PopulationThresholds(
+            patch.target_id,
+            target_thr,
+            off,
+            unfired_off_target_ids=tuple(unfired),
+            searched_max_uA=DEFAULT_AMP_MAX_UA,
+        )
 
 
 def sweep(
@@ -226,6 +239,7 @@ def sweep(
             backend_name=backend.name,
             evaluator_version=EVALUATOR_VERSION,
             solve_params=backend_solve_params(backend, array, conductivity),
+            eval_params=eval_params_digest(safety_limits, overlap_policy, overlap_eps_um),
         )
         if store is not None:
             cached = store.get_result(rkey)  # None means a miss to evaluate
@@ -264,6 +278,9 @@ def sweep(
                 off_target_set=off_target_set,
                 conductivity=conductivity,
                 backend_name=backend.name,
+                # the same helpers that built the keys, so the replay matches exactly
+                solve_params=backend_solve_params(backend, array, conductivity),
+                eval_params=eval_params_digest(safety_limits, overlap_policy, overlap_eps_um),
             )
         results.append(result)
 

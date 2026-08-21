@@ -32,7 +32,7 @@ from engine.spec import ConductivityModel, ElectrodeArray, RetinalPatch, StimCon
 
 from .drive import segment_coords
 from .morphology import RGCModel
-from .multisite import multisite_threshold
+from .multisite import DEFAULT_AMP_MAX_UA, multisite_threshold
 from .placement import place_cell
 
 if TYPE_CHECKING:
@@ -63,6 +63,13 @@ class PopulationThresholds:
     target_id: str
     target_threshold_uA: float | None
     off_target_thresholds_uA: dict[str, float]  # id -> threshold (cells that fired)
+    # Off-targets that did NOT fire anywhere in the searched range, and the cap that
+    # range stopped at. Without these, a bystander whose threshold sits above the cap
+    # is simply absent from the dict — indistinguishable from a patch that has no
+    # bystanders at all, which is how the evaluator came to report an unbounded
+    # selective window for a scene whose bystanders had merely never been reached.
+    unfired_off_target_ids: tuple[str, ...] = ()
+    searched_max_uA: float | None = None
 
 
 def population_thresholds(
@@ -76,7 +83,7 @@ def population_thresholds(
     overlap_policy: OverlapPolicy = "reject",
     overlap_eps_um: float = 1.0,
     amp_min: float = 1.0,
-    amp_max: float = 500.0,
+    amp_max: float = DEFAULT_AMP_MAX_UA,
     ladder: float = 1.5,
     rel_tol: float = 0.04,
 ) -> PopulationThresholds:
@@ -123,9 +130,18 @@ def population_thresholds(
     target_threshold = threshold_of(target)
 
     off_thresholds: dict[str, float] = {}
+    unfired: list[str] = []
     for rgc in select_off_targets(patch, array, off_target_set):
         thr = threshold_of(rgc)
         if thr is not None:
             off_thresholds[rgc.id] = thr
+        else:
+            unfired.append(rgc.id)
 
-    return PopulationThresholds(target.id, target_threshold, off_thresholds)
+    return PopulationThresholds(
+        target.id,
+        target_threshold,
+        off_thresholds,
+        unfired_off_target_ids=tuple(unfired),
+        searched_max_uA=amp_max,
+    )

@@ -32,10 +32,15 @@ from .safety import (
     SafetyLimits,
     SafetyReport,
     assess_safety,
+    eval_params_digest,
     max_safe_amplitude_uA,
 )
 
-EVALUATOR_VERSION = "1"
+# Bumped to "2": a truncated off-target search is no longer scored as "no off-targets"
+# (SOW.off_min_is_lower_bound, limiting="search_cap"). Scores computed under "1" for a
+# scene with unreached bystanders overstate the selective window, so they must not be
+# served from cache for the new semantics — this constant feeds ``result_key``.
+EVALUATOR_VERSION = "2"
 
 
 class ThresholdsProvider(Protocol):
@@ -97,6 +102,7 @@ def evaluate(
         backend_name=backend.name,
         evaluator_version=EVALUATOR_VERSION,
         solve_params=backend_solve_params(backend, array, conductivity),
+        eval_params=eval_params_digest(safety_limits, overlap_policy, overlap_eps_um),
     )
     fkey = field_key(
         array, conductivity, backend.name,
@@ -128,11 +134,23 @@ def evaluate(
     if target_uA is None:  # the target never fired in the searched range
         return build(activated=False, sow=None, window=None, safety_at_target=None)
 
-    sow = selective_operating_window(target_uA, thresholds.off_target_thresholds_uA)
+    sow = selective_operating_window(
+        target_uA,
+        thresholds.off_target_thresholds_uA,
+        unreached_off_ids=thresholds.unfired_off_target_ids,
+        searched_max_uA=thresholds.searched_max_uA,
+    )
     ceiling = max_safe_amplitude_uA(array, config, safety_limits)
     window_hi = min(sow.off_min_uA, ceiling)
     if math.isinf(window_hi):
         limiting = "none"
+    elif sow.off_min_is_lower_bound and sow.off_min_uA <= ceiling:
+        # The window stops at the amplitude the off-target search actually reached.
+        # Calling this "off_target" would imply a bystander was measured there; it
+        # was not — the range simply ran out. The safety ceiling is NOT a valid stand-in
+        # either: it routinely sits far above the cap (~1993 µA for a 200 µm disk at
+        # 50 µs), and the amplitudes between are unprobed, not clean.
+        limiting = "search_cap"
     elif sow.off_min_uA <= ceiling:
         limiting = "off_target"
     else:
