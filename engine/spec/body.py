@@ -217,7 +217,14 @@ def _cad_min_surface_distance(body: CadBody, p: tuple[float, float, float]) -> f
 
 
 def _frustum_radius_at(body: Frustum, z: float) -> float:
-    """The frustum's radius at depth ``z`` (linear taper), clamped to its height."""
+    """The frustum's radius at depth ``z`` (linear taper), clamped to its height.
+
+    ``height_um == 0`` is degenerate and rejected by validation, but this is reached
+    from ``engine.eval.overlap`` and ``api.fem_job`` with no ``validate()`` in
+    between, so it must not raise ZeroDivisionError on the way through.
+    """
+    if body.height_um == 0.0:
+        return body.base_radius_um
     zc = max(0.0, min(z, body.height_um))
     t = zc / body.height_um
     return body.base_radius_um + (body.top_radius_um - body.base_radius_um) * t
