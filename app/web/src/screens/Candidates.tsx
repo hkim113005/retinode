@@ -3,7 +3,7 @@
 // verdict, accuracy tier, and a one-line rationale — exportable for the lab. It reads
 // the study's points, so the flow is: sweep on Study → hand this list to someone.
 import { useMemo, useState } from "react";
-import type { StudyPoint } from "../api/client";
+import type { StudyPoint, StudyTier } from "../api/client";
 import { downloadText as download } from "../chart/export";
 import { Rail } from "../components/Rail";
 import type { Screen } from "../nav";
@@ -18,6 +18,17 @@ const SORTS: Record<Sort, (p: StudyPoint) => number> = {
   selectivity: (p) => -p.selectivity_uA, // widest window first
   threshold: (p) => p.cost_uA, // cheapest first
   robustness: (p) => p.spread_uA ?? Number.POSITIVE_INFINITY, // tightest error bar first
+};
+
+// What each sort actually ranks by. The prose has to follow the sort: the crumb, the
+// Recommended card and the "How to read this" panel all used to hardcode the
+// selective-window wording, so clicking "threshold" left the top card announcing "the
+// widest selective window (5.0 µA)" about the NARROWEST one, with the 4x wider design
+// sitting at rank 2 directly below it.
+const RANK_LABEL: Record<Sort, string> = {
+  selectivity: "selective window",
+  threshold: "target threshold",
+  robustness: "trajectory spread",
 };
 
 // Every superlative here is relative to what was ranked, so the scope has to be
@@ -37,15 +48,24 @@ function rationale(p: StudyPoint, all: StudyPoint[], scope = "this study"): stri
 
 export function Candidates({
   points,
+  tier,
   onNavigate,
   brushed = false,
   onClearBrush,
 }: {
   points: StudyPoint[];
+  // The tier the sweep ACTUALLY ran on, carried from Study. This screen used to
+  // hardcode "analytical" in the badge, the rail, the footer and — worst — the
+  // exported JSON/CSV, while a production sweep has run in the conda FEM env since
+  // P8 S4b. A collaborator reading candidates.json would conclude the shortlist came
+  // from the diameter-blind point source and redo work that was already done.
+  tier: StudyTier;
   onNavigate?: (s: Screen) => void;
   brushed?: boolean; // these points are a brushed subset, not the whole sweep
   onClearBrush?: () => void;
 }) {
+  const isFem = tier === "fem";
+  const tierLabel = isFem ? "FEM" : "analytical";
   const [sort, setSort] = useState<Sort>("selectivity");
   // the spread is opt-in on the study, so the Robustness sort only exists when it
   // was actually measured
@@ -74,7 +94,7 @@ export function Candidates({
       selective_window_uA: Number(p.selectivity_uA.toFixed(2)),
       charge_safe: p.safe,
       on_frontier: p.on_frontier,
-      tier: "analytical",
+      tier,
       // null, not 0: an unmeasured error bar is absent, never confidently zero
       trajectory_spread_uA: p.spread_uA == null ? null : Number(p.spread_uA.toFixed(3)),
       rationale: rationale(p, ranked, scope),
@@ -94,7 +114,7 @@ export function Candidates({
     <div className="app">
       <Rail
         active="Candidates"
-        tier="Analytical"
+        tier={isFem ? "FEM" : "Analytical"}
         safe={ranked.length ? "filtered" : "—"}
         onNavigate={onNavigate}
       />
@@ -104,7 +124,7 @@ export function Candidates({
             <h1>Candidates · worth testing in tissue</h1>
             <div className="crumb">
               {ranked.length
-                ? `${ranked.length} charge-safe designs · ranked by selective window`
+                ? `${ranked.length} charge-safe designs · ranked by ${RANK_LABEL[active]}`
                 : "the payoff — a ranked shortlist to hand to the lab"}
             </div>
           </div>
@@ -157,9 +177,28 @@ export function Candidates({
                     d{best.diameter_um} · pitch {best.pitch_um} µm
                   </div>
                   <div className="say">
-                    The widest selective window (<b>{best.selectivity_uA.toFixed(1)} µA</b>) among
-                    the charge-safe designs in {scope}, at <b>{best.cost_uA.toFixed(1)} µA</b> on
-                    the target — the one to take to tissue first.
+                    {active === "threshold" ? (
+                      <>
+                        The lowest target threshold (<b>{best.cost_uA.toFixed(1)} µA</b>) among the
+                        charge-safe designs in {scope}, with a{" "}
+                        <b>{best.selectivity_uA.toFixed(1)} µA</b> selective window — the one to
+                        take to tissue first.
+                      </>
+                    ) : active === "robustness" && best.spread_uA != null ? (
+                      <>
+                        The tightest trajectory spread (<b>±{best.spread_uA.toFixed(1)} µA</b>)
+                        among the charge-safe designs in {scope}, at{" "}
+                        <b>{best.cost_uA.toFixed(1)} µA</b> on the target — the one to take to
+                        tissue first.
+                      </>
+                    ) : (
+                      <>
+                        The widest selective window (<b>{best.selectivity_uA.toFixed(1)} µA</b>)
+                        among the charge-safe designs in {scope}, at{" "}
+                        <b>{best.cost_uA.toFixed(1)} µA</b> on the target — the one to take to
+                        tissue first.
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -195,7 +234,7 @@ export function Candidates({
                     </div>
                   </div>
                   <div className="tags">
-                    <span className="tag ana">analytical</span>
+                    <span className="tag ana">{tierLabel}</span>
                     <span className="tag ok">charge-safe</span>
                     {p.on_frontier && <span className="tag front">frontier</span>}
                   </div>
@@ -225,12 +264,24 @@ export function Candidates({
           <h2>How to read this</h2>
           <p className="empty">
             Every row is charge-safe by construction — unsafe designs never reach this
-            list. Ranked by the selective window: how much current headroom you have
-            above the target’s threshold before a bystander fires.
+            list. Ranked by the <b>{RANK_LABEL[active]}</b> — the column you picked
+            above. The selective window is how much current headroom you have above the
+            target’s threshold before a bystander fires.
           </p>
           <div className="foot">
-            Tier is <b>analytical</b> — the sweep’s field. Confirm a shortlisted design
-            with “Run accurately (FEM)” on Compare before committing to fabrication.
+            {isFem ? (
+              <>
+                Tier is <b>FEM</b> — the sweep resolved each electrode’s surface, which
+                is what makes one diameter distinguishable from another. These numbers
+                are the accurate ones; no Compare re-run is needed before fabrication.
+              </>
+            ) : (
+              <>
+                Tier is <b>analytical</b> — a point source, blind to electrode diameter.
+                Confirm a shortlisted design with “Run accurately (FEM)” on Compare
+                before committing to fabrication.
+              </>
+            )}
           </div>
         </div>
       </aside>

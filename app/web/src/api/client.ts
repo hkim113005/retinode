@@ -13,6 +13,8 @@ export type JobStatus = components["schemas"]["JobStatus"];
 export type StudyControls = components["schemas"]["StudyControls"];
 export type StudyPoint = components["schemas"]["StudyPoint"];
 export type StudyResult = components["schemas"]["StudyResult"];
+// The accuracy tier a sweep ran on, straight off the wire contract.
+export type StudyTier = StudyResult["tier"];
 export type SweepControls = components["schemas"]["SweepControls"];
 export type AmplitudeSweep = components["schemas"]["AmplitudeSweepResponse"];
 export type ActivationCurve = components["schemas"]["ActivationCurve"];
