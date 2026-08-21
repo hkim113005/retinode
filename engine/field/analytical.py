@@ -10,6 +10,14 @@ lives — so it is not a cosmetic correction.
 Only a homogeneous isotropic conductivity has this closed form; layered or
 anisotropic models must use a FEM backend (raised as UnsupportedByBackend).
 
+The array's :class:`ArrayPlacement` is honoured here, as it is by the FEM mesh
+(``mesh.build_mesh``) and the overlap check: the tier solves for the *posed*
+electrode positions, not the authored ones. What stays orientation-free — and so
+still requires FEM — is an electrode's ``normal`` and its 3D ``body``, which a
+point source cannot represent. Before this, the analytical tier read
+``array.electrodes`` directly while every other consumer posed first, so an array
+with a placement was solved at different coordinates by the two tiers.
+
 Units: A is returned in mV/uA (see spec/conventions.py), derived from SI by
 mV/uA = 1e3 * V/A and r_m = 1e-6 * r_um, giving A[i,j] = 1e3 / (4*pi*sigma*r_um)
 per source, so ``Ve[mV] = A @ I[uA]``.
@@ -22,7 +30,7 @@ import math
 import numpy as np
 
 from engine.spec import ConductivityModel, ElectrodeArray, HomogeneousConductivity
-from engine.spec.geometry import radius_um
+from engine.spec.geometry import apply_placement, radius_um
 
 from .backend import UnsupportedByBackend
 
@@ -63,8 +71,12 @@ class AnalyticalBackend:
             )
         sigma = conductivity.sigma_S_per_m
         q = np.asarray(query_points_um, dtype=float).reshape(-1, 3)  # (m, 3)
-        p = np.array([e.pos_um for e in array.electrodes], dtype=float).reshape(-1, 3)  # (n, 3)
-        radii = np.array([radius_um(e) for e in array.electrodes], dtype=float)  # (n,)
+        # Pose the array first — same as mesh.build_mesh and eval.overlap. A point
+        # source is orientation-free, but a placement's TRANSLATION and in-plane
+        # rotation move the source, and those it must follow.
+        placed = apply_placement(array)
+        p = np.array([e.pos_um for e in placed], dtype=float).reshape(-1, 3)  # (n, 3)
+        radii = np.array([radius_um(e) for e in placed], dtype=float)  # (n,)
 
         # coef / r_um yields mV/uA; see module docstring.
         coef = 1.0e3 / (4.0 * math.pi * sigma)
