@@ -46,3 +46,25 @@ def test_first_amplitude_active_brackets_from_zero():
     r = find_threshold(lambda a: True, amp_min=5.0, amp_max=100.0)
     assert r.bracket_uA is not None and r.bracket_uA[0] == 0.0
     assert r.threshold_uA <= 5.0
+
+
+def test_the_ladder_probes_the_full_declared_range_up_to_amp_max():
+    """The climb used to stop at the last rung <= amp_max, leaving the top of the range
+    unprobed — at ladder=1.5 with amp_min=2/amp_max=500 the highest amplitude ever
+    tested was 389.2 µA. A cell with a real 420 µA threshold came back as None, which
+    every caller reads as "never fires", so it silently left the off-target set."""
+    r = find_threshold(lambda a: a >= 420.0, amp_min=2.0, amp_max=500.0, ladder=1.5)
+    assert r.threshold_uA is not None
+    assert r.threshold_uA == pytest.approx(420.0, rel=0.05)
+
+
+def test_amp_max_itself_is_probed():
+    r = find_threshold(lambda a: a >= 500.0, amp_min=2.0, amp_max=500.0, ladder=1.5)
+    assert r.threshold_uA == pytest.approx(500.0, rel=1e-6)
+
+
+def test_none_still_means_genuinely_above_amp_max():
+    """The distinction the fix protects: None must mean 'above the cap', never
+    'inside the range but never looked at'."""
+    r = find_threshold(lambda a: a >= 501.0, amp_min=2.0, amp_max=500.0, ladder=1.5)
+    assert r.threshold_uA is None

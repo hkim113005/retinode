@@ -128,6 +128,16 @@ def leading_scale(waveform: Any, monophasic: bool) -> float:
     return 1.0 if (monophasic or waveform.cathodic_first) else -1.0
 
 
+def applied_phase_width_us(phase_width_us: float, dt_ms: float = 0.025) -> float:
+    """The phase width :func:`apply_field_pulse` will actually deliver.
+
+    Phase timing is quantized to whole integration steps, so a requested width that
+    is not a multiple of ``dt_ms`` is rounded to the nearest step. Use this to report
+    a threshold against the width that was applied rather than the one asked for.
+    """
+    return int(round(phase_width_us * 1e-3 / dt_ms)) * dt_ms * 1e3
+
+
 def apply_field_pulse(
     model: RGCModel,
     ve: np.ndarray,
@@ -144,12 +154,40 @@ def apply_field_pulse(
 
     Caller installs any spike recorders before calling — they populate during the
     run. Ve is the field during phase 1; the second phase applies its reverse.
+
+    **Phase timing is quantized to whole ``dt_ms`` steps**, and both phases are given
+    the *same* step count, so the biphasic pulse is charge balanced by construction.
+    Advancing each phase to a nominal wall-clock target instead (what this used to do)
+    silently broke that: ``h.t`` overshoots phase 1's target by up to one step, and
+    phase 2's target is measured from the nominal time, so phase 2 got fewer steps than
+    phase 1. At ``phase_width_us=60`` with the default ``dt_ms=0.025`` that delivered
+    75 µs cathodic against 50 µs anodic; at 10 µs the interphase gap and the entire
+    recovery phase ran zero steps — a monophasic pulse reported as balanced biphasic.
+
+    A phase width below one timestep cannot be delivered at all, so it raises rather
+    than rounding up to a full step and misattributing the result to the width asked
+    for. ``phase_width_us`` that is not a whole multiple of the timestep is rounded to
+    the nearest step; :func:`applied_phase_width_us` reports what was actually applied.
     """
     h = model.h
     for sec in model.all_sections():
         sec.insert("extracellular")
     pw = waveform.phase_width_us * 1e-3  # ms
     gap = waveform.interphase_gap_us * 1e-3
+
+    n_phase = int(round(pw / dt_ms))
+    if n_phase < 1:
+        raise ValueError(
+            f"phase_width_us={waveform.phase_width_us:g} is shorter than one "
+            f"integration step (dt_ms={dt_ms:g} = {dt_ms * 1e3:g} µs), so no drive "
+            "would be delivered. Raise the phase width or lower dt_ms."
+        )
+    n_gap = int(round(gap / dt_ms))
+    if gap > 0.0 and n_gap < 1:
+        raise ValueError(
+            f"interphase_gap_us={waveform.interphase_gap_us:g} rounds to zero "
+            f"integration steps (dt_ms={dt_ms:g}); it would be silently dropped."
+        )
 
     def set_field(scale: float) -> None:
         for seg, value in zip(segs, ve, strict=True):
@@ -159,18 +197,22 @@ def apply_field_pulse(
         while h.t < t_target - 1e-9:
             h.fadvance()
 
+    def advance_steps(n: int) -> None:
+        for _ in range(n):
+            h.fadvance()
+
     lead = leading_scale(waveform, monophasic)  # +1 cathodic-first, -1 anodic-first
     h.dt = dt_ms
     h.finitialize(v_init_mV)
     set_field(0.0)
     advance_to(delay_ms)
     set_field(lead)  # phase 1: the imposed field Ve (reversed if anodic-first)
-    advance_to(delay_ms + pw)
+    advance_steps(n_phase)
     if not monophasic:
         set_field(0.0)  # interphase gap
-        advance_to(delay_ms + pw + gap)
+        advance_steps(n_gap)
         set_field(-lead)  # phase 2: charge recovery (reversed relative to phase 1)
-        advance_to(delay_ms + pw + gap + pw)
+        advance_steps(n_phase)  # same count as phase 1 => balanced by construction
     set_field(0.0)
     advance_to(t_stop_ms)
 
