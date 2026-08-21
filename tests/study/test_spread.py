@@ -104,9 +104,18 @@ def test_an_empty_protocol_is_not_a_zero_spread(monkeypatch):
 
 @pytest.mark.neuron
 @pytest.mark.slow
-def test_spread_is_a_real_positive_error_bar_on_the_target():
-    """End to end: jittering the axon really does move the threshold, and the spread
-    is a positive number of the right order — small next to the threshold itself."""
+def test_spread_is_a_finite_well_formed_number_on_the_target():
+    """End to end: the spread pipeline runs on a real scene and yields a finite,
+    non-negative number rather than NaN, inf, or None.
+
+    Deliberately NOT named "a real positive error bar": in this scene it is exactly
+    0.0, and provably so — the next test pins why (one driven electrode's field is
+    rotationally symmetric about z, and the target sits on that axis, so every
+    jittered axon traces a congruent path). The old name and docstring claimed the
+    jitter "really does move the threshold", which is false here, and the `>= 0.0`
+    assertion passed on the zero without ever checking it. A test that measures 0.0
+    while its name promises a positive error bar overstates what is validated.
+    """
     from app.scene import build_patch
     from engine.spec import HomogeneousConductivity
     from engine.study.geometry_sweep import monopolar_center

@@ -30,7 +30,10 @@ jobs:
         run: uv run mypy engine
 
       - name: Test (fast suite)
-        run: uv run pytest -m "not slow and not neuron"
+        # `not fem` too: README and CONTRIBUTING both document the fast suite as
+        # excluding all three markers. It passed either way only because every
+        # fem test importorskips dolfinx — relying on that made the marker a lie.
+        run: uv run pytest -m "not slow and not neuron and not fem"
 
   test-neuron:
     runs-on: ubuntu-latest
