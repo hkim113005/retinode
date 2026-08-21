@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from functools import singledispatch
 from typing import Literal
 
+from .body import CadBody, Cylinder, Frustum, Hemisphere
 from .conductivity import HomogeneousConductivity, LayeredConductivity
 from .conventions import CHARGE_BALANCE_ATOL, GEOMETRY_OVERLAP_ATOL_UM
 from .geometry import Electrode, ElectrodeArray, radius_um
@@ -49,6 +50,65 @@ def _all_finite(values: Iterable[float]) -> bool:
     return all(math.isfinite(v) for v in values)
 
 
+def _body_dims(body: object) -> tuple[tuple[str, float, bool], ...]:
+    """``(name, value, must_be_strictly_positive)`` for a body's dimensions.
+
+    ``>= 0`` entries are deliberate: a frustum's ``top_radius_um`` of 0 is a real
+    penetrating needle tip, and a CAD body's tip/sides areas default to 0.0 for
+    solids loaded before P6 S8 — requiring ``> 0`` would invalidate existing specs.
+    """
+    if isinstance(body, Hemisphere):
+        return (("radius_um", body.radius_um, True),)
+    if isinstance(body, Cylinder):
+        return (("radius_um", body.radius_um, True), ("height_um", body.height_um, True))
+    if isinstance(body, Frustum):
+        return (
+            ("base_radius_um", body.base_radius_um, True),
+            ("top_radius_um", body.top_radius_um, False),
+            ("height_um", body.height_um, True),
+        )
+    if isinstance(body, CadBody):
+        return (
+            ("bounding_radius_um", body.bounding_radius_um, True),
+            ("bounding_height_um", body.bounding_height_um, True),
+            ("surface_area_um2", body.surface_area_um2, False),
+            ("tip_area_um2", body.tip_area_um2, False),
+            ("sides_area_um2", body.sides_area_um2, False),
+        )
+    return ()
+
+
+def _body_problems(body: object, e_id: str, where: str) -> list[Problem]:
+    """Dimension checks for a 3D electrode body.
+
+    These were absent entirely: ``validate()`` inspected only ``size_um`` and
+    ``pos_um``, so a body with a non-finite dimension passed the documented gate and
+    then raised "Out of range float values are not JSON compliant" inside
+    ``spec_hash``, and a negative ``radius_um`` made the overlap test compute a
+    *widened* gap and report two touching electrodes as clear.
+    """
+    problems: list[Problem] = []
+    for name, value, strict in _body_dims(body):
+        if not _all_finite((value,)):
+            problems.append(
+                Problem(
+                    "non-finite-value",
+                    f"electrode {e_id!r} body has a non-finite {name}",
+                    where=where,
+                )
+            )
+        elif value < 0 or (strict and value == 0):
+            bound = "> 0" if strict else ">= 0"
+            problems.append(
+                Problem(
+                    "nonpositive-body-dimension",
+                    f"electrode {e_id!r} body has {name}={value:g}, which must be {bound}",
+                    where=where,
+                )
+            )
+    return problems
+
+
 def _electrode_problems(e: Electrode, where: str) -> list[Problem]:
     problems: list[Problem] = []
     if not _all_finite((e.size_um, *e.pos_um)):
@@ -69,15 +129,31 @@ def _electrode_problems(e: Electrode, where: str) -> list[Problem]:
                 "poly-missing-boundary", f"polygon electrode {e.id!r} has no boundary", where=where
             )
         )
+    if e.body is not None:
+        problems += _body_problems(e.body, e.id, where)
     return problems
 
 
 def _patch_depth_um(patch: RetinalPatch) -> float:
-    """Deepest tissue point below the array plane (z = 0), in microns."""
+    """How far into the tissue the patch reaches from the array plane (z = 0), in µm.
+
+    Measured as the largest |z|, which is what makes this check work for both signs.
+    The project convention is **+z into the tissue** (Phase-6 D8; see
+    ``spec/geometry.py`` and ``field/mesh.py``, which meshes the slab 0 <= z <= depth),
+    and ``app.scene`` builds patches at +z. But this returned ``-min(zs)``, so under
+    the real convention every z was positive, the result was always 0.0, and the
+    ``layers-do-not-span-depth`` check below could never fire in production — a cell
+    15 µm outside the meshed slab was sampled outside the solution domain and returned
+    a silently wrong selectivity instead of a validation error.
+
+    Negative z is still accepted rather than flipped: the analytical field is exactly
+    mirror-symmetric across z = 0 (method of images), so legacy -z patches are valid
+    on that tier, and taking the magnitude keeps them checked too.
+    """
     zs = [c.soma_um[2] for c in patch.cells]
     for c in patch.cells:
         zs.extend(p[2] for p in c.axon_um)
-    return max(0.0, -min(zs)) if zs else 0.0
+    return max((abs(z) for z in zs), default=0.0)
 
 
 # --- per-object validation (dispatch on type) ------------------------------
@@ -93,12 +169,23 @@ def _validate_electrode(e: Electrode) -> list[Problem]:
     return _electrode_problems(e, where=e.id)
 
 
+def _placement_problems(array: ElectrodeArray) -> list[Problem]:
+    """A non-finite offset/rotation passed validation and then made ``spec_hash``
+    raise — the placement was never inspected at all."""
+    p = array.placement
+    if p is None or _all_finite((*p.offset_um, *p.rotation_deg)):
+        return []
+    return [
+        Problem("non-finite-value", "array placement has a non-finite value", where="placement")
+    ]
+
+
 @validate.register(ElectrodeArray)
 def _validate_array(array: ElectrodeArray) -> list[Problem]:
     if not array.electrodes:
         return [Problem("empty-array", "electrode array has no electrodes")]
 
-    problems: list[Problem] = []
+    problems: list[Problem] = _placement_problems(array)
     seen: set[str] = set()
     for e in array.electrodes:
         if e.id in seen:
