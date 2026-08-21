@@ -23,6 +23,10 @@ dependencies:
   - gmsh                    # neutral mesh front-end (D6)
   - python-gmsh             # gmsh Python API (the `import gmsh` module)
   - numpy
+  # scipy is a declared core dependency in pyproject.toml, and this env installs the
+  # project with `pip install -e . --no-deps` — so nothing else pulls it in. Without
+  # it `engine.study.surrogate` cannot even be imported in the FEM env.
+  - scipy
   - pytest
   - hypothesis   # some tests/field modules import it at collection time
   - pip

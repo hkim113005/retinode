@@ -112,14 +112,16 @@ in [CONTRIBUTING.md](CONTRIBUTING.md). Retinode uses [uv](https://docs.astral.sh
 and Python 3.12.
 
 ```bash
-# fast suite (no NEURON): arithmetic, evaluator logic, field, spec
-uv sync --extra dev
+# fast suite (no NEURON): arithmetic, evaluator logic, field, spec.
+# store + api are needed even here: pytest imports EVERY module under tests/ during
+# collection, before -m deselects anything, so tests/api and tests/store must import.
+uv sync --extra dev --extra store --extra api
 uv run ruff check .
 uv run mypy engine
 uv run pytest -m "not slow and not neuron and not fem"
 
 # NEURON tests: install the cable engine and compile the FM mechanisms first
-uv sync --extra cable --extra dev
+uv sync --extra cable --extra dev --extra store --extra api
 (cd engine/cable/mechanisms && uv run nrnivmodl .)
 uv run pytest -m neuron
 ```

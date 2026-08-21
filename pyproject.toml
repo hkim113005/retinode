@@ -90,6 +90,7 @@ include = [
     "env/",
     "tests/",
     "README.md",
+    "CONTRIBUTING.md",  # README links to it; shipping one without the other dangles
     "LICENSE",
     "pyproject.toml",
 ]
