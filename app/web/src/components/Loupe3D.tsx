@@ -74,6 +74,13 @@ function Scene({
           the tissue (−y = +z into tissue); a flat electrode is a thin disk on the plane. */}
       {electrodes.map((e, i) => {
         const b = e.body;
+        // Key on the SHAPE, not just the index. Switching Flat -> Pillar keeps the
+        // same <mesh> element in the same slot and only changes <cylinderGeometry
+        // args>, which relies on r3f rebuilding the geometry object in place; keying
+        // by shape remounts instead, so the new solid cannot be missed. (The mesh has
+        // no test coverage — the Canvas is stubbed in jsdom — so this path is belt
+        // and braces rather than a reproduced fix.)
+        const shapeKey = b ? `${b.kind}:${b.radius_um}:${b.height_um}:${b.top_radius_um ?? ""}` : "flat";
         const mat = (
           <meshStandardMaterial
             color={ink}
@@ -85,7 +92,7 @@ function Scene({
         );
         if (!b) {
           return (
-            <mesh key={`e${i}`} position={[e.x_um * LAT, 0.2, e.y_um * LAT]}>
+            <mesh key={`e${i}-${shapeKey}`} position={[e.x_um * LAT, 0.2, e.y_um * LAT]}>
               <cylinderGeometry args={[e.radius_um * EL, e.radius_um * EL, 0.4, 28]} />
               {mat}
             </mesh>
@@ -94,7 +101,7 @@ function Scene({
         if (b.kind === "hemisphere") {
           // lower half-sphere: a dome pushing into the tissue from the plane
           return (
-            <mesh key={`e${i}`} position={[e.x_um * LAT, 0, e.y_um * LAT]}>
+            <mesh key={`e${i}-${shapeKey}`} position={[e.x_um * LAT, 0, e.y_um * LAT]}>
               <sphereGeometry args={[b.radius_um * EL, 24, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
               {mat}
             </mesh>
@@ -106,7 +113,7 @@ function Scene({
         const rBase = b.radius_um * EL;
         const rTip = b.kind === "frustum" && b.top_radius_um != null ? b.top_radius_um * EL : rBase;
         return (
-          <mesh key={`e${i}`} position={[e.x_um * LAT, -h / 2, e.y_um * LAT]}>
+          <mesh key={`e${i}-${shapeKey}`} position={[e.x_um * LAT, -h / 2, e.y_um * LAT]}>
             <cylinderGeometry args={[rBase, rTip, h, 28]} />
             {mat}
           </mesh>
@@ -140,12 +147,31 @@ export default function Loupe3D({
   electrodes,
   cells,
   tier = "analytical",
+  bodyKind,
 }: {
   electrodes: ElectrodeMarker[];
   cells: CellMarker[];
   tier?: "analytical" | "fem";
+  // What the user actually selected. /compare cannot send a marker body for a CAD
+  // solid — reading it needs gmsh, which lives in the FEM env — so the marker comes
+  // back bodyless and the loupe would draw, and caption, a flat disk. Drawing the
+  // wrong shape is bad; calling it "flat disk" is worse, because that is a claim.
+  bodyKind?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // Name the solid being drawn. The 3D view is WebGL, so when it is wrong (or blank)
+  // there is nothing to read; this caption says in text what the loupe was handed, so
+  // a stale or missing body is visible without a working canvas.
+  const b0 = electrodes[0]?.body;
+  const drawn = !b0 && bodyKind === "cad"
+    ? "CAD solid \u2014 shape needs FEM"
+    : !b0
+    ? "flat disk"
+    : b0.kind === "hemisphere"
+      ? `dome r${b0.radius_um}`
+      : b0.kind === "frustum"
+        ? `taper ${b0.radius_um}\u2192${b0.top_radius_um ?? "?"} \u00d7 ${b0.height_um}`
+        : `${b0.kind === "cad" ? "CAD" : "pillar"} r${b0.radius_um} \u00d7 ${b0.height_um}`;
   const scene = (active: boolean) => (
     <Canvas camera={{ position: [3.4, 4.8, 5.2], fov: 42 }} dpr={[1, 2]} gl={{ alpha: true }}>
       <Scene electrodes={electrodes} cells={cells} inked={tier === "fem"} active={active} />
@@ -157,7 +183,7 @@ export default function Loupe3D({
       <div className="loupe-overlay" role="dialog" aria-label="Array in 3D">
         <div className="loupe-expanded card">
           <div className="loupe-head">
-            <span className="lab">Array · 3D · tissue &amp; cells</span>
+            <span className="lab">Array · 3D · tissue &amp; cells · {drawn}</span>
             <button className="btn small" onClick={() => setExpanded(false)}>
               Close
             </button>
@@ -169,7 +195,7 @@ export default function Loupe3D({
   }
   return (
     <div className="loupe card">
-      <span className="lab">Array · 3D</span>
+      <span className="lab">Array · 3D · {drawn}</span>
       <button
         className="loupe-expand"
         onClick={() => setExpanded(true)}
