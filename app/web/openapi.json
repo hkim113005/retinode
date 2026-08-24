@@ -128,8 +128,30 @@
         "type": "object"
       },
       "CadUploadResponse": {
-        "description": "The id ``POST /cad`` hands back for a stored solid, plus its original name.",
+        "description": "The id ``POST /cad`` hands back for a stored solid, plus its original name.\n\nThe bounding dimensions are measured once at upload, in the FEM env (reading a\nSTEP needs gmsh). They are ``None`` when that env is unavailable \u2014 the upload\nstill succeeds; only the shape preview is unavailable, and the client says so\nrather than drawing a flat disk and letting it pass for the real solid.",
         "properties": {
+          "bounding_height_um": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bounding Height Um"
+          },
+          "bounding_radius_um": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bounding Radius Um"
+          },
           "filename": {
             "title": "Filename",
             "type": "string"

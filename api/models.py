@@ -90,10 +90,18 @@ class CadBodySpec(BaseModel):
 
 
 class CadUploadResponse(BaseModel):
-    """The id ``POST /cad`` hands back for a stored solid, plus its original name."""
+    """The id ``POST /cad`` hands back for a stored solid, plus its original name.
+
+    The bounding dimensions are measured once at upload, in the FEM env (reading a
+    STEP needs gmsh). They are ``None`` when that env is unavailable — the upload
+    still succeeds; only the shape preview is unavailable, and the client says so
+    rather than drawing a flat disk and letting it pass for the real solid.
+    """
 
     upload_id: str
     filename: str
+    bounding_radius_um: float | None = None
+    bounding_height_um: float | None = None
 
 
 # Discriminated on ``kind`` so the client (and openapi-typescript) get a clean union.

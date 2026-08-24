@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, UploadFile
 
+from ..cad_measure import measure_upload
 from ..cad_store import MAX_BYTES, CadUploadError, store_upload
 from ..models import CadUploadResponse
 
@@ -47,4 +48,13 @@ async def upload_cad(file: UploadFile) -> CadUploadResponse:
         upload_id, name = store_upload(file.filename or "upload", content)
     except CadUploadError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return CadUploadResponse(upload_id=upload_id, filename=name)
+    # Measure the solid now, in the FEM env, and cache it beside the file: the API
+    # process has no gmsh, so this is the only moment the shape can be learned without
+    # a full FEM job. Returns None if that env is absent — never fails the upload.
+    dims = measure_upload(upload_id) or {}
+    return CadUploadResponse(
+        upload_id=upload_id,
+        filename=name,
+        bounding_radius_um=dims.get("bounding_radius_um"),
+        bounding_height_um=dims.get("bounding_height_um"),
+    )

@@ -13,6 +13,7 @@ idempotent and the loader still sees the format. The store lives under a temp di
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import pathlib
 import tempfile
@@ -79,3 +80,44 @@ def resolve_body(body_spec: dict[str, Any]) -> Any:  # an engine.spec ElectrodeB
             conductive_faces=body_spec.get("conductive_faces", "all"),
         )
     return body_from_spec(body_spec)
+
+
+# --- cached dimensions, so the gmsh-free API can describe the solid ----------------
+#
+# Reading a STEP needs gmsh, which lives only in the conda FEM env — so ``POST
+# /compare`` (uv env) could not describe an uploaded solid at all, and the 3D loupe
+# fell back to drawing a flat disk for it. Measuring once at upload and caching the
+# result next to the file lets every later gmsh-free request describe the shape.
+#
+# Content-addressed like the solid itself: the id already includes the file's hash, so
+# a cached measurement can never belong to different bytes.
+
+_DIMS_SUFFIX = ".dims.json"
+
+
+def dims_path(upload_id: str) -> str:
+    """Sidecar path for an upload's cached dimensions (same traversal guard)."""
+    return resolve_upload(upload_id) + _DIMS_SUFFIX
+
+
+def store_dims(upload_id: str, dims: dict[str, float]) -> None:
+    """Cache an upload's measured dimensions. Best-effort: a failure here must never
+    fail the upload, which has already succeeded."""
+    try:
+        pathlib.Path(dims_path(upload_id)).write_text(json.dumps(dims))
+    except (OSError, CadUploadError):
+        pass
+
+
+def read_dims(upload_id: str) -> dict[str, float] | None:
+    """An upload's cached dimensions, or None if it was never measured (no FEM env at
+    upload time, or an older upload). Callers must degrade rather than fail."""
+    try:
+        raw = pathlib.Path(dims_path(upload_id)).read_text()
+    except (OSError, CadUploadError):
+        return None
+    try:
+        d = json.loads(raw)
+    except ValueError:
+        return None
+    return d if isinstance(d, dict) else None
