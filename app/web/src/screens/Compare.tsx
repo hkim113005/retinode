@@ -39,6 +39,21 @@ const DEFAULTS: Controls = {
   overlap_policy: "reject",
 };
 
+// Every failure used to render as "Couldn't reach the field engine (...). Is the API
+// running on :8000?" — including an OverlapConflict, which is a perfectly ordinary
+// answer from a reachable engine that already tells you what to do about it. Asking
+// whether the server is up buries that advice under a wrong diagnosis.
+const isOffline = (msg: string): boolean =>
+  /failed to fetch|networkerror|load failed|err_connection|fetch failed/i.test(msg);
+
+/** Strip the worker's traceback so the engine's own sentence is what the user reads. */
+const engineMessage = (msg: string): string => {
+  // e.g. `FEM scorecard failed:   File "...", line 110, in threshold_of /     raise
+  // OverlapConflict( / engine.eval.overlap.OverlapConflict: cell 'target' has 1 ...`
+  const m = msg.match(/(?:\w+\.)*(\w*(?:Error|Conflict|Exception)):\s*([\s\S]+)$/);
+  return m ? m[2].trim() : msg;
+};
+
 const asRequest = (c: Controls, includeScorecard: boolean): SceneControls => ({
   ...c,
   extent_um: 130,
@@ -293,9 +308,13 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
         </div>
         {error && (
           <div className="card panel" role="alert">
-            <p className="empty">
-              Couldn’t reach the field engine ({error}). Is the API running on :8000?
-            </p>
+            {isOffline(error) ? (
+              <p className="empty">
+                Couldn’t reach the field engine ({error}). Is the API running on :8000?
+              </p>
+            ) : (
+              <p className="empty">{engineMessage(error)}</p>
+            )}
           </div>
         )}
         <div className="fieldbar card">
@@ -332,7 +351,12 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
           </ErrorBoundary>
           <ErrorBoundary what="The 3D loupe">
             <Suspense fallback={null}>
-              <Loupe3D electrodes={scene?.electrodes ?? []} cells={scene?.cells ?? []} tier={tier} />
+              <Loupe3D
+                electrodes={scene?.electrodes ?? []}
+                cells={scene?.cells ?? []}
+                tier={tier}
+                bodyKind={controls.body.kind}
+              />
             </Suspense>
           </ErrorBoundary>
         </div>
