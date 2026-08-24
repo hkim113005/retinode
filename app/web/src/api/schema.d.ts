@@ -223,8 +223,17 @@ export interface components {
         /**
          * CadUploadResponse
          * @description The id ``POST /cad`` hands back for a stored solid, plus its original name.
+         *
+         *     The bounding dimensions are measured once at upload, in the FEM env (reading a
+         *     STEP needs gmsh). They are ``None`` when that env is unavailable — the upload
+         *     still succeeds; only the shape preview is unavailable, and the client says so
+         *     rather than drawing a flat disk and letting it pass for the real solid.
          */
         CadUploadResponse: {
+            /** Bounding Height Um */
+            bounding_height_um?: number | null;
+            /** Bounding Radius Um */
+            bounding_radius_um?: number | null;
             /** Filename */
             filename: string;
             /** Upload Id */

@@ -163,15 +163,19 @@ export default function Loupe3D({
   // there is nothing to read; this caption says in text what the loupe was handed, so
   // a stale or missing body is visible without a working canvas.
   const b0 = electrodes[0]?.body;
+  // A measured CAD solid arrives as a raw float (5.000100000000001); the caption is a
+  // label, not a readout, so round it rather than showing the solver's noise.
+  const um = (v: number | null | undefined) =>
+    v == null ? "?" : Number(v.toFixed(1)).toString();
   const drawn = !b0 && bodyKind === "cad"
     ? "CAD solid \u2014 shape needs FEM"
     : !b0
     ? "flat disk"
     : b0.kind === "hemisphere"
-      ? `dome r${b0.radius_um}`
+      ? `dome r${um(b0.radius_um)}`
       : b0.kind === "frustum"
-        ? `taper ${b0.radius_um}\u2192${b0.top_radius_um ?? "?"} \u00d7 ${b0.height_um}`
-        : `${b0.kind === "cad" ? "CAD" : "pillar"} r${b0.radius_um} \u00d7 ${b0.height_um}`;
+        ? `taper ${um(b0.radius_um)}\u2192${um(b0.top_radius_um)} \u00d7 ${um(b0.height_um)}`
+        : `${b0.kind === "cad" ? "CAD" : "pillar"} r${um(b0.radius_um)} \u00d7 ${um(b0.height_um)}`;
   const scene = (active: boolean) => (
     <Canvas camera={{ position: [3.4, 4.8, 5.2], fov: 42 }} dpr={[1, 2]} gl={{ alpha: true }}>
       <Scene electrodes={electrodes} cells={cells} inked={tier === "fem"} active={active} />

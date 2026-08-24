@@ -16,7 +16,8 @@ from engine.eval import evaluate
 from engine.eval.overlap import OverlapConflict
 from engine.field import AnalyticalBackend
 
-from ..models import CompareResponse, SceneControls
+from ..cad_store import read_dims
+from ..models import CompareResponse, MarkerBody, SceneControls
 from ..service import (
     cell_markers,
     electrode_markers,
@@ -81,7 +82,37 @@ def compare(controls: SceneControls, request: Request) -> CompareResponse:
         scorecard = scorecard_payload(result)
     return CompareResponse(
         field=field,
-        electrodes=electrode_markers(scene.array),
+        electrodes=_with_cad_marker(electrode_markers(scene.array), controls),
         cells=cell_markers(scene.patch),
         scorecard=scorecard,
     )
+
+
+def _with_cad_marker(markers: list, controls: SceneControls) -> list:
+    """Attach the CAD solid's bounding cylinder to the driven electrode's marker.
+
+    ``build_scene`` above is handed ``body=None`` for a CAD electrode, because
+    resolving one needs gmsh and this process has none — so its marker comes back
+    bodyless and the 3D loupe drew a flat disk for it. That is a claim the tool cannot
+    support: a flat disk is a specific shape, and the uploaded solid is not it.
+
+    The dimensions were measured once at upload and cached beside the file, so they
+    are readable here without gmsh. ``MarkerBody(kind="cad")`` is exactly the case its
+    own docstring already describes ("A CAD solid is drawn as its bounding cylinder"),
+    and the loupe's cylinder branch already renders it. Still ``None`` when the solid
+    was never measured (no FEM env at upload) — the loupe then says the shape needs
+    FEM rather than inventing one.
+    """
+    if controls.body.kind != "cad" or not markers:
+        return markers
+    dims = read_dims(controls.body.upload_id)
+    if not dims:
+        return markers
+    r, h = dims.get("bounding_radius_um"), dims.get("bounding_height_um")
+    if not r or not h:
+        return markers
+    # e0 is the driven electrode the body shapes (see build_scene).
+    markers[0] = markers[0].model_copy(
+        update={"body": MarkerBody(kind="cad", radius_um=float(r), height_um=float(h))}
+    )
+    return markers

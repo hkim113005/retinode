@@ -84,3 +84,69 @@ def test_post_cad_refuses_oversize_without_buffering_it_all():
     )
     assert r.status_code == 413
     assert "too large" in r.json()["detail"]
+
+
+# --- the measured bounding cylinder (so the loupe can draw the solid) --------------
+
+
+def test_upload_returns_the_measured_bounding_cylinder(monkeypatch):
+    """Reading a STEP needs gmsh, which the API process does not have — so the upload
+    dispatches one short measurement to the FEM env and caches it. Without this the
+    3D loupe had no dimensions and drew a flat disk for an arbitrary solid."""
+    import api.routes.upload as route
+
+    monkeypatch.setattr(
+        route, "measure_upload", lambda _id: {"bounding_radius_um": 5.0, "bounding_height_um": 30.0}
+    )
+    client = TestClient(create_app())
+    r = client.post("/cad", files={"file": ("p.step", b"ISO-10303-21;", "application/step")})
+    assert r.status_code == 200
+    assert r.json()["bounding_radius_um"] == 5.0
+    assert r.json()["bounding_height_um"] == 30.0
+
+
+def test_an_unmeasurable_solid_still_uploads(monkeypatch):
+    """No FEM env, an unreadable solid, a timeout — the upload must still succeed with
+    the dimensions simply absent. A CAD upload must never fail because the *preview*
+    could not be measured; the loupe then says the shape needs FEM."""
+    import api.routes.upload as route
+
+    monkeypatch.setattr(route, "measure_upload", lambda _id: None)
+    client = TestClient(create_app())
+    r = client.post("/cad", files={"file": ("p.step", b"ISO-10303-21;", "application/step")})
+    assert r.status_code == 200
+    assert r.json()["bounding_radius_um"] is None
+    assert r.json()["bounding_height_um"] is None
+
+
+def test_compare_draws_the_cad_solid_as_its_bounding_cylinder(monkeypatch):
+    """/compare cannot resolve a CAD body (no gmsh), so its marker came back bodyless
+    and the loupe drew a flat disk — a specific shape the upload is not. The cached
+    measurement lets it emit a MarkerBody(kind='cad'), which is exactly the case
+    MarkerBody's own docstring describes."""
+    from api import cad_store
+
+    client = TestClient(create_app())
+    upload_id, _ = store_upload("pillar.step", b"ISO-10303-21;\n...solid...")
+    cad_store.store_dims(upload_id, {"bounding_radius_um": 5.0, "bounding_height_um": 30.0})
+
+    r = client.post(
+        "/compare",
+        json={"n": 9, "body": {"kind": "cad", "upload_id": upload_id, "conductive_faces": "all"}},
+    )
+    assert r.status_code == 200
+    body = r.json()["electrodes"][0]["body"]
+    assert body == {"kind": "cad", "radius_um": 5.0, "height_um": 30.0, "top_radius_um": None}
+
+
+def test_compare_says_nothing_rather_than_flat_for_an_unmeasured_solid():
+    """Never invent a shape: with no cached measurement the marker stays bodyless and
+    the client reports 'shape needs FEM' instead of drawing a disk."""
+    client = TestClient(create_app())
+    upload_id, _ = store_upload("un.step", b"ISO-10303-21;\n...unmeasured...")
+    r = client.post(
+        "/compare",
+        json={"n": 9, "body": {"kind": "cad", "upload_id": upload_id, "conductive_faces": "all"}},
+    )
+    assert r.status_code == 200
+    assert r.json()["electrodes"][0]["body"] is None
