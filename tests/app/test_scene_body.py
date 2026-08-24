@@ -1,8 +1,9 @@
 """A UI path for custom shapes: the scene builder attaching a 3D body to e0.
 
 The body is what makes an electrode FEM-only (the analytical tier is a point source
-blind to it). These tests cover the pure uv-env translation — a contract body dict to
-an ``engine.spec`` primitive, attached to the driven electrode — with no gmsh/FEM."""
+blind to it). These tests cover the pure uv-env translation, with no gmsh or FEM:
+a contract body dict becomes an ``engine.spec`` primitive attached to the driven
+electrode."""
 
 import pytest
 

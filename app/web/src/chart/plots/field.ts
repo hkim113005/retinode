@@ -1,6 +1,6 @@
 // The field plot: the diverging Ve heatmap (blue negative / warm positive, centred
 // on zero) with electrode footprints and soma markers overlaid. A pure Scene
-// builder — see chart/scene.ts for why the plots live outside the components.
+// builder; see chart/scene.ts for why the plots live outside the components.
 import type { CompareResponse } from "../../api/client";
 import { isoContours, niceLevels } from "../contours";
 import type { Item, Palette, Scene } from "../scene";
@@ -11,7 +11,7 @@ export type FieldOpts = {
   size: number; // square, in CSS px
   palette: Palette;
   inked?: boolean; // FEM results draw crisper (docs/phase-7-design.md)
-  background?: boolean; // opaque paper — on for export, off on screen
+  background?: boolean; // opaque paper: on for export, off on screen
   contours?: boolean; // labeled isopotential rings (default on)
 };
 
@@ -20,8 +20,8 @@ function trim(v: number): string {
   return String(Number(v.toFixed(2)));
 }
 
-/** The largest round number (1/2/5 × 10ⁿ) that fits in `max` — scale-bar lengths a
- *  reader can do arithmetic with, rather than "43 µm". */
+/** The largest round number (1/2/5 × 10ⁿ) that fits in `max`, giving scale-bar
+ *  lengths a reader can do arithmetic with, rather than "43 µm". */
 function niceLength(max: number): number {
   const pow = 10 ** Math.floor(Math.log10(Math.max(max, 1)));
   for (const m of [5, 2, 1]) if (m * pow <= max) return m * pow;
@@ -53,7 +53,7 @@ export function fieldScene({
     const cols = Math.min(xs_um.length, row.length);
     for (let j = 0; j < cols; j++) {
       const v = row[j];
-      if (v == null) continue; // a hole where a 3D body occupies the plane — draw nothing
+      if (v == null) continue; // a hole where a 3D body occupies the plane: draw nothing
       const t = v / (vmax_mV || 1);
       const a = Math.min(1, Math.abs(t));
       if (a < 0.02) continue; // near-zero cells would only muddy the paper

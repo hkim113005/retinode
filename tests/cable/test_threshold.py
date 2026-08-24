@@ -14,7 +14,7 @@ def test_monotone_threshold():
 
 
 def test_non_monotone_window_detects_upper_block():
-    # Fires only in [5, 20]; blocks above — the classic upper-threshold case.
+    # Fires only in [5, 20] and blocks above: the classic upper-threshold case.
     r = find_threshold(lambda a: 5.0 <= a <= 20.0, amp_min=0.1, amp_max=100.0)
     assert r.threshold_uA == pytest.approx(5.0, abs=1.0)
     assert r.activates_above is False
@@ -50,7 +50,7 @@ def test_first_amplitude_active_brackets_from_zero():
 
 def test_the_ladder_probes_the_full_declared_range_up_to_amp_max():
     """The climb used to stop at the last rung <= amp_max, leaving the top of the range
-    unprobed — at ladder=1.5 with amp_min=2/amp_max=500 the highest amplitude ever
+    unprobed. At ladder=1.5 with amp_min=2/amp_max=500 the highest amplitude ever
     tested was 389.2 µA. A cell with a real 420 µA threshold came back as None, which
     every caller reads as "never fires", so it silently left the off-target set."""
     r = find_threshold(lambda a: a >= 420.0, amp_min=2.0, amp_max=500.0, ladder=1.5)

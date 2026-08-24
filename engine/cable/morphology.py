@@ -3,7 +3,7 @@
 The dendrites and soma come from a vendored reconstruction (see
 `morphologies/PROVENANCE.md`), loaded via NEURON's Import3D. Retinal SWC
 reconstructions rarely trace the axon, so the **axon hillock**, the
-**sodium-channel band (AIS)** — where the spike initiates — and the intraretinal
+**sodium-channel band (AIS)** (where the spike initiates) and the intraretinal
 **axon** are appended here. Channel densities and temperature are applied
 separately (S2c, `channels.py`); this module builds geometry only.
 """
@@ -51,7 +51,7 @@ class RGCModel:
     them. Region section lists are exposed via `regions()`.
     """
 
-    # Assigned by Import3D's gui.instantiate(self) — SectionLists per region.
+    # Assigned by Import3D's gui.instantiate(self): one SectionList per region.
     soma: Any
     dend: Any
 
@@ -100,7 +100,7 @@ class RGCModel:
 
     def _append_axon(self) -> None:
         # Give the appended sections explicit 3D coordinates (pt3dadd), so the
-        # extracellular field can be evaluated at them (S3) — the AIS especially,
+        # extracellular field can be evaluated at them (S3). The AIS especially,
         # since it is where the spike initiates. They run along `axon_direction`
         # from the soma (toward the optic disc when placed; +x nominal).
         h, p = self.h, self.params

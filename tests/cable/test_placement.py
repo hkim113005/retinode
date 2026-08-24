@@ -1,4 +1,4 @@
-"""S6a: placing a cell in the patch — position + axon orientation."""
+"""S6a: placing a cell in the patch. Position + axon orientation."""
 
 import pytest
 

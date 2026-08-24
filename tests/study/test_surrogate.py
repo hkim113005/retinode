@@ -1,4 +1,4 @@
-"""P5 S6: surrogate-guided geometry search — GP, acquisition, active search."""
+"""P5 S6: surrogate-guided geometry search (GP, acquisition, active search)."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def test_propose_index_picks_top_ucb_and_skips_sampled():
 
 
 def _bump(g):
-    # a broad optimum near (12, 30) — a stand-in for the selectivity surface
+    # a broad optimum near (12, 30), a stand-in for the selectivity surface
     return float(np.exp(-((g.diameter_um - 12) ** 2 / 50 + (g.pitch_um - 30) ** 2 / 200)))
 
 

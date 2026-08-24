@@ -1,6 +1,6 @@
 // Isopotential contours by marching squares (P7 S7b). Colour gives the gestalt of a
 // field; a contour carrying its own mV value is what lets a reader take a *number*
-// off it (docs/phase-7-design.md). Pure grid maths — no canvas, no DOM.
+// off it (docs/phase-7-design.md). Pure grid maths: no canvas, no DOM.
 
 export type Poly = Array<[number, number]>;
 
@@ -54,7 +54,7 @@ export function isoContours(
       const b = r0[j + 1];
       const c = r1[j + 1];
       const d = r1[j];
-      // a cell touching a hole (null corner) has no well-defined contour — skip it
+      // a cell touching a hole (null corner) has no well-defined contour, so skip it
       if (a == null || b == null || c == null || d == null) continue;
       const x0 = xs[j];
       const x1 = xs[j + 1];
@@ -110,7 +110,7 @@ export function isoContours(
 }
 
 // Segments come out of the grid unordered. Stitching them into polylines is what
-// makes the contour a single stroked object — smooth joins on screen, one <path>
+// makes the contour a single stroked object: smooth joins on screen, one <path>
 // per ring in the exported figure rather than hundreds of disjoint sticks.
 function joinSegments(segs: Seg[]): Poly[] {
   const key = (p: [number, number]) => `${p[0].toFixed(4)},${p[1].toFixed(4)}`;
@@ -141,7 +141,7 @@ function joinSegments(segs: Seg[]): Poly[] {
 }
 
 /**
- * Round contour levels spanning (`lo`, `hi`) — 1/2/5 × 10ⁿ steps, so a reader sees
+ * Round contour levels spanning (`lo`, `hi`), in 1/2/5 × 10ⁿ steps, so a reader sees
  * "-4 mV" and not "-3.87 mV". Levels at or near zero are dropped: the zero
  * isopotential of a symmetric field is a meaningless line through everything.
  */

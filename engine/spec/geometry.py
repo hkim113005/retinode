@@ -1,4 +1,4 @@
-"""ElectrodeArray — the physical geometry. Carries NO current, by construction."""
+"""ElectrodeArray: the physical geometry. Carries NO current, by construction."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ class ArrayPlacement:
 
     Convention (Phase-6 D8): z = 0 is the array plane, +z is into the tissue (the
     default electrode normal direction); the tissue and any FEM-driven cell
-    population live at z >= 0. Rotation is a **FEM-tier** concept — the field for a
+    population live at z >= 0. Rotation is a **FEM-tier** concept: the field for a
     tilted body must be FEM, since the analytical tier is an orientation-free point
     source (it sees only ``pos_um``)."""
 
@@ -33,7 +33,7 @@ class ArrayPlacement:
 
 @dataclass(frozen=True)
 class Electrode:
-    """A single electrode: where it is and what it looks like — never how much
+    """A single electrode: where it is and what it looks like, never how much
     current it carries. Current lives in StimConfig, keyed by ``id``."""
 
     id: str
@@ -139,8 +139,8 @@ _IDENTITY3: Mat3 = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 
 
 def rotation_matrix(rotation_deg: Vec3) -> Mat3:
-    """The 3x3 rotation for ``rotation_deg`` — extrinsic rotations about x, then y,
-    then z (``R = Rz @ Ry @ Rx``), degrees. Pure Python (no numpy) so the spec layer
+    """The 3x3 rotation for ``rotation_deg``: extrinsic rotations about x, then y,
+    then z (``R = Rz @ Ry @ Rx``), in degrees. Pure Python (no numpy) so the spec layer
     stays dependency-free; the field/overlap layers apply it to positions and, via
     its transpose, map a world point into a body's local frame."""
     ax, ay, az = (math.radians(a) for a in rotation_deg)
@@ -165,7 +165,7 @@ def apply_matrix(m: Mat3, v: Vec3) -> Vec3:
 
 
 def transpose3(m: Mat3) -> Mat3:
-    """Transpose of a 3x3 (the inverse of a rotation) — maps world into local."""
+    """Transpose of a 3x3 (the inverse of a rotation), which maps world into local."""
     return (
         (m[0][0], m[1][0], m[2][0]),
         (m[0][1], m[1][1], m[2][1]),

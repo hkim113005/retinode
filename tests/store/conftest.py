@@ -39,7 +39,7 @@ def result_windowed():
 
 @pytest.fixture
 def windowed_context():
-    """The exact inputs behind result_windowed — for Project.record_run."""
+    """The exact inputs behind result_windowed, for Project.record_run."""
     return {
         "array": ARR,
         "config": CFG,

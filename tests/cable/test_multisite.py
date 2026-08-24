@@ -1,4 +1,4 @@
-"""S6b: multi-site activation — a spike at any compartment (NEURON-marked)."""
+"""S6b: multi-site activation. A spike at any compartment (NEURON-marked)."""
 
 import pytest
 
@@ -54,7 +54,7 @@ def test_multisite_activation_and_ais_initiation(cell, soma_threshold):
 
 
 def test_initiation_site_follows_the_electrode(cell, soma_threshold):
-    # Over the distal axon, the spike initiates at the axon — the any-compartment
+    # Over the distal axon, the spike initiates at the axon: the any-compartment
     # property that makes an off-target axon of passage first-class.
     array, config = _scene(cell, 200.0, soma_threshold * 1.03)
     r = run_multisite(cell, array, config, COND, dt_ms=0.005)

@@ -1,7 +1,7 @@
 """Lazy NEURON access and on-demand mechanism compilation.
 
 Importing this module does NOT import NEURON, so ``import engine.cable`` stays
-light — NEURON is pulled in only when ``load()`` is called. The Fohlmeister-Miller
+light: NEURON is pulled in only when ``load()`` is called. The Fohlmeister-Miller
 mechanisms are compiled on demand with ``nrnivmodl`` and cached in a platform arch
 directory beside the ``.mod`` files, so tests and scripts work without a manual
 build step. See ``mechanisms/PROVENANCE.md`` for the model source and license.
@@ -17,7 +17,7 @@ from typing import Any
 MECHANISMS_DIR = Path(__file__).resolve().parent / "mechanisms"
 
 # The macOS NEURON.pkg installer prepends this to PYTHONPATH, which shadows the
-# pip/conda NEURON in the active environment — often a build for a different
+# pip/conda NEURON in the active environment, often a build for a different
 # Python, giving a cryptic "No module named 'neuron.hoc'".
 _SHADOW_PATH_MARKER = "/Applications/NEURON"
 

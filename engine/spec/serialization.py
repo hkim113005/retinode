@@ -4,10 +4,10 @@ Round-trip contract: ``from_json(to_json(x)) == x`` for every spec object.
 
 - **Canonical**: keys sorted, tight separators, ``allow_nan=False`` (NaN/Inf are
   validation errors, not serializable), so equal specs produce byte-identical
-  JSON — which is what makes the content hash (see hashing.py) stable.
+  JSON, which is what makes the content hash (see hashing.py) stable.
 - **Self-describing**: each object carries a ``__type__`` tag, so the decoder
-  rebuilds the exact class — including which arm of the ConductivityModel union
-  a value is — without the caller passing the type in.
+  rebuilds the exact class (including which arm of the ConductivityModel union
+  a value is) without the caller passing the type in.
 - **Type-directed decode**: JSON arrays become tuples (not lists) and nested
   objects become dataclasses, driven by each field's annotation, so the decoded
   value compares equal to the original frozen dataclass.

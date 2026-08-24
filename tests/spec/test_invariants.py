@@ -1,4 +1,4 @@
-"""Structural invariants — the contract the whole system forks from.
+"""Structural invariants: the contract the whole system forks from.
 
 These lock the *shape* of the spec, so any drift (a renamed field, a stray
 current on geometry) fails in CI instead of silently invalidating cached

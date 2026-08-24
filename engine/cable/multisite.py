@@ -1,6 +1,6 @@
 """Multi-site activation: a spike at ANY compartment counts (S6b).
 
-The cell is activated if *any* compartment fires — this is why multi-electrode
+The cell is activated if *any* compartment fires. This is why multi-electrode
 currents combine nonlinearly (two subthreshold electrodes can each depolarize a
 different region and jointly cross threshold somewhere; Vilkhu 2025) and why an
 axon of passage is a first-class off-target. A NetCon on every segment records
@@ -50,12 +50,12 @@ def run_multisite(
     """Drive the field and detect a spike at any compartment.
 
     Pass ``solved`` (a pre-solved field for this cell + array + medium) to reuse
-    the transfer matrix instead of re-solving it — the caller does this to sweep
+    the transfer matrix instead of re-solving it, which is how a caller sweeps
     configs or amplitudes cheaply. Without it, the field is solved for this call.
 
     ``deactivated`` are segment indices severed by the ``displace`` overlap policy
     (they lie inside an electrode body): no detector is placed on them, so a spike
-    there cannot count as activation — the cell is scored on its surviving
+    there cannot count as activation, and the cell is scored on its surviving
     compartments. A caller passing ``solved`` must have built it with the same
     ``deactivated`` set (so ``Ve`` is zero there); without ``solved`` we solve it
     here consistently.
@@ -96,7 +96,7 @@ def run_multisite(
     first_idx: int | None = None
     n_active = 0
     for i, vec in enumerate(vecs):
-        if vec is None:  # severed compartment — never monitored
+        if vec is None:  # severed compartment, never monitored
             continue
         if vec.size() > 0:
             n_active += 1
@@ -109,7 +109,7 @@ def run_multisite(
 
 
 # The default ceiling of the threshold search. A cell that has not fired by here is
-# reported as "did not fire", NOT as "has no threshold" — callers must carry that
+# reported as "did not fire", NOT as "has no threshold". Callers must carry that
 # distinction (see PopulationThresholds.unfired_off_target_ids), because a bystander
 # above the cap is a real bystander whose threshold simply was not measured.
 DEFAULT_AMP_MAX_UA = 500.0
@@ -130,11 +130,11 @@ def multisite_threshold(
     rel_tol: float = 0.03,
     deactivated: frozenset[int] = frozenset(),
 ) -> ThresholdResult:
-    """Threshold (µA) using multi-site activation — a spike anywhere counts.
+    """Threshold (µA) using multi-site activation: a spike anywhere counts.
 
     The transfer matrix is solved **once** (or taken from ``solved``) and reused
-    across every amplitude the search probes — the field is fixed; only the
-    current scale changes. Pass ``solved`` to also reuse it across configurations.
+    across every amplitude the search probes, because the field is fixed and only
+    the current scale changes. Pass ``solved`` to also reuse it across configurations.
 
     ``deactivated`` (the ``displace`` policy's severed segments) is applied to both
     the field solve and spike detection; a caller-supplied ``solved`` must already
@@ -153,7 +153,7 @@ def multisite_threshold(
             conductivity,
             solved=solved,
             # Was omitted, so this function's own ``monophasic`` argument did nothing
-            # and run_multisite's default always won — a caller asking for a biphasic
+            # and run_multisite's default always won: a caller asking for a biphasic
             # threshold silently got the monophasic one. ``extracellular_threshold``
             # forwards it; this did not.
             monophasic=monophasic,

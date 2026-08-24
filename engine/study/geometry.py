@@ -1,4 +1,4 @@
-"""Parametric array geometry — the axis a geometry sweep moves along (P5 S1).
+"""Parametric array geometry: the axis a geometry sweep moves along (P5 S1).
 
 A geometry study varies the *array*, not just the stimulus: electrode diameter,
 center-to-center pitch, and lattice arrangement. This module turns those few
@@ -9,8 +9,8 @@ so a sweep can enumerate geometries, hash them, and cache their fields.
 function of it. Electrodes fill a disk of radius ``aperture_um`` on the z=0 plane,
 on a square (``"grid"``) or hexagonal (``"hex"``) lattice with nearest-neighbour
 spacing ``pitch_um``. ``pitch_um >= diameter_um`` is required so the disks never
-overlap — the same condition ``engine.spec.validate`` enforces, caught here early
-with a clear error rather than as a downstream overlap problem.
+overlap. That is the same condition ``engine.spec.validate`` enforces, caught here
+early with a clear error rather than as a downstream overlap problem.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ _APERTURE_ATOL_UM = 1e-9  # include a centre sitting exactly on the aperture cir
 class ArrayGeometry:
     """A parametric electrode array: what a geometry sweep iterates over.
 
-    Frozen, so it hashes and compares by value — a geometry is a stable key. The
+    Frozen, so it hashes and compares by value: a geometry is a stable key. The
     array itself is produced by :func:`build_array`; two equal ``ArrayGeometry``
     always build the identical array (same ids, same positions).
     """
@@ -43,7 +43,7 @@ class ArrayGeometry:
     body: ElectrodeBody | None = None  # a 3D body applied to every electrode (P6 S5)
 
     def label(self) -> str:
-        """Short human label for logs/plots (not a cache key — the array hash is)."""
+        """Short human label for logs/plots (not a cache key; the array hash is)."""
         tag = f"/{type(self.body).__name__}" if self.body is not None else ""
         return (
             f"{self.arrangement}/d{self.diameter_um:g}/p{self.pitch_um:g}/"
@@ -75,8 +75,8 @@ def build_array(geometry: ArrayGeometry, *, id_prefix: str = "e") -> ElectrodeAr
 
 
 def validate_geometry(geometry: ArrayGeometry) -> None:
-    """Cheap sanity checks — positive sizes, a real arrangement, and no electrode
-    overlap (``pitch >= diameter``) — raised here rather than surfacing later."""
+    """Cheap sanity checks (positive sizes, a real arrangement, and no electrode
+    overlap where ``pitch >= diameter``), raised here rather than surfacing later."""
     if geometry.diameter_um <= 0:
         raise ValueError("diameter_um must be positive")
     if geometry.pitch_um <= 0:

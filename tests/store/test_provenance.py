@@ -48,7 +48,7 @@ def test_log_round_trips_and_is_append_only(tmp_path, result_windowed, windowed_
     assert log.records() == [] and len(log) == 0
     rec = _record(result_windowed, windowed_context)
     log.append(rec)
-    log.append(rec)  # a re-run appends again — history is not mutated
+    log.append(rec)  # a re-run appends again; history is not mutated
     records = log.records()
     assert len(records) == 2
     assert records[0] == rec  # exact JSONL round-trip
@@ -89,7 +89,7 @@ def test_record_run_persists_across_reopen(tmp_path, result_windowed, windowed_c
 
 def test_a_fem_record_replays_its_own_field_key():
     """``field_key`` appends ``solve_params`` whenever it is not None, and ``evaluate``
-    always passes it — a non-None mesh/degree string on any FEM backend. It was not
+    always passes it: a non-None mesh/degree string on any FEM backend. It was not
     recorded at all, so a FEM record could never reproduce the key it claims to
     describe, and two runs at different mesh resolutions logged identical provenance
     lines. The existing coverage used backend_name="analytical", where it is None."""

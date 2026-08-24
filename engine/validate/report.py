@@ -22,7 +22,7 @@ REPORT_PATH = Path(__file__).resolve().parents[2] / "app" / "validation_report.j
 
 
 def run_all() -> list[Reproduction]:
-    """Every validation reproduction — field physics, single cell, and selectivity."""
+    """Every validation reproduction: field physics, single cell, and selectivity."""
     from engine.cable.channels import build_active_rgc
 
     from . import axon_avoidance, nonlinearity, physics, selectivity, single_cell

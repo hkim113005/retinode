@@ -2,21 +2,21 @@
 
 A physical electrode is solid metal; tissue and neurons cannot occupy its volume.
 So when a 3D electrode body is planted into the tissue, a cell compartment falling
-*inside* the body is a **geometry conflict**, not a field to compute — and a
+*inside* the body is a **geometry conflict**, not a field to compute. A
 compartment pressed right against a conductive surface (**near-contact**) is where
 the standard passive-probe field approximation (the neuron does not perturb the
 field) starts to fray.
 
-This module detects both from pure geometry -- ``point_in_body`` /
-``surface_distance_um`` in :mod:`engine.spec.body`, the same solids the mesh cuts
--- and applies the policy (Phase-6 D9):
+This module detects both from pure geometry (``point_in_body`` /
+``surface_distance_um`` in :mod:`engine.spec.body`, the same solids the mesh cuts)
+and applies the policy (Phase-6 D9):
 
 - **reject** (default): raise on any conflict, naming the cell / electrode /
   compartment, so a scene that puts a neuron inside metal fails loudly.
 - **displace**: report which compartments to deactivate (they lie in the metal, so
   the inserted electrode has displaced or severed the cell there); the cable model
-  then runs on the surviving compartments -- still no change to NEURON itself, only
-  to *which* compartments are simulated.
+  then runs on the surviving compartments. NEURON itself is unchanged; only
+  *which* compartments are simulated changes.
 
 Nothing here touches NEURON or the field solve; it is geometry + a policy decision.
 ``evaluate`` / ``population_thresholds`` consume that decision: they recompute the
@@ -43,7 +43,7 @@ Point = tuple[float, float, float]
 
 
 class OverlapConflict(Exception):
-    """A neuron compartment lies inside an electrode body -- a geometry conflict a
+    """A neuron compartment lies inside an electrode body: a geometry conflict a
     ``reject`` policy refuses rather than compute a meaningless field for."""
 
 
@@ -95,7 +95,7 @@ def check_overlap(
     bodies = [e for e in apply_placement(array) if e.body is not None]
     # The body primitives live in their own local frame (axis along +z). A tilted
     # array rotates them by R, so map each world point into the body-local frame with
-    # R^T before testing — identity when the array is untilted.
+    # R^T before testing; that is the identity when the array is untilted.
     r_t = transpose3(placement_rotation(array))
     flags: list[CompartmentFlag] = []
     for cell_id, compartments in cell_compartments.items():

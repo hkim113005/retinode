@@ -1,4 +1,4 @@
-"""P5 S3: resumable runner — study status, structured progress, interrupt/resume."""
+"""P5 S3: resumable runner (study status, structured progress, interrupt/resume)."""
 
 from __future__ import annotations
 
@@ -117,7 +117,7 @@ def test_interrupt_mid_study_then_resume_recomputes_nothing_completed(tmp_path):
         if p.index == 0:
             raise RuntimeError("simulated crash after the first geometry")
 
-    # the run dies after geometry 0 — whose result the sweep already persisted
+    # the run dies after geometry 0, whose result the sweep already persisted
     with pytest.raises(RuntimeError, match="simulated crash"):
         _run(store, progress=crash_after_first)
 

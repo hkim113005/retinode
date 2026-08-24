@@ -1,4 +1,4 @@
-"""P5 S1: parametric array geometry — pure spec, no field/NEURON."""
+"""P5 S1: parametric array geometry. Pure spec, no field/NEURON."""
 
 from __future__ import annotations
 

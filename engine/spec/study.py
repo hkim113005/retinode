@@ -1,4 +1,4 @@
-"""StudyDefinition — a parameter sweep over the other specs."""
+"""StudyDefinition: a parameter sweep over the other specs."""
 
 from __future__ import annotations
 

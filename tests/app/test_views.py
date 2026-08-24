@@ -1,4 +1,4 @@
-"""P2b: the view data contract — field grid and scorecard payload.
+"""P2b: the view data contract (field grid and scorecard payload).
 
 These survive the Dash app's retirement (P7 S8) as the API's independent oracle:
 tests/api/test_compare asserts /compare returns the same numbers by another route.

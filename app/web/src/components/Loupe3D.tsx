@@ -1,13 +1,13 @@
 // The 3D loupe (docs/phase-7-design.md): a small, always-available corner view of
-// the array's true 3D form — the tissue slab, the electrodes on the array plane, and
-// the cell population at depth — orbitable, secondary to the 2D field. Click to
+// the array's true 3D form (the tissue slab, the electrodes on the array plane, and
+// the cell population at depth), orbitable and secondary to the 2D field. Click to
 // expand full-bleed. Rendered with react-three-fiber; lazy-loaded so three.js stays
 // off the main chunk.
 //
 // Scope: this draws each electrode's true solid when the marker carries a body
-// (ElectrodeMarker.body — a pillar, dome, taper, or a CAD solid's bounding cylinder),
+// (ElectrodeMarker.body: a pillar, dome, taper, or a CAD solid's bounding cylinder),
 // and a flat disk otherwise. Array tilt/rotation is still not represented (the marker
-// has no orientation); a tilted body draws upright. The body is schematic — lateral
+// has no orientation); a tilted body draws upright. The body is schematic: lateral
 // and depth share one scale so proportions read true, but the whole view exaggerates
 // the ~20 µm layer separation so the cell plane is legible.
 import { OrbitControls } from "@react-three/drei";
@@ -16,7 +16,7 @@ import { useState } from "react";
 import type { CellMarker, ElectrodeMarker } from "../api/client";
 
 // The auto-spin is a rAF render loop, not a CSS animation, so the global
-// reduced-motion rule in tokens.css can't reach it — honour the OS setting here.
+// reduced-motion rule in tokens.css can't reach it, so honour the OS setting here.
 const prefersReducedMotion = () =>
   typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -50,7 +50,7 @@ function Scene({
   );
   const LAT = 2.2 / (reach + 15);
   const DEPTH = LAT * 5; // exaggerate depth so the ~20 µm layer separation reads
-  const EL = LAT * 4; // electrode lateral+depth scale — a body draws at true aspect
+  const EL = LAT * 4; // electrode lateral+depth scale, so a body draws at true aspect
   const grid = 2.4 * reach * LAT;
   const slabH = (CELL_DEPTH + 10) * DEPTH;
   return (
@@ -77,8 +77,8 @@ function Scene({
         // Key on the SHAPE, not just the index. Switching Flat -> Pillar keeps the
         // same <mesh> element in the same slot and only changes <cylinderGeometry
         // args>, which relies on r3f rebuilding the geometry object in place; keying
-        // by shape remounts instead, so the new solid cannot be missed. (The mesh has
-        // no test coverage — the Canvas is stubbed in jsdom — so this path is belt
+        // by shape remounts instead, so the new solid cannot be missed. (The Canvas
+        // is stubbed in jsdom, so the mesh has no test coverage; this path is belt
         // and braces rather than a reproduced fix.)
         const shapeKey = b ? `${b.kind}:${b.radius_um}:${b.height_um}:${b.top_radius_um ?? ""}` : "flat";
         const mat = (
@@ -153,9 +153,9 @@ export default function Loupe3D({
   cells: CellMarker[];
   tier?: "analytical" | "fem";
   // What the user actually selected. /compare cannot send a marker body for a CAD
-  // solid — reading it needs gmsh, which lives in the FEM env — so the marker comes
-  // back bodyless and the loupe would draw, and caption, a flat disk. Drawing the
-  // wrong shape is bad; calling it "flat disk" is worse, because that is a claim.
+  // solid, because reading it needs gmsh, which lives in the FEM env. So the marker
+  // comes back bodyless and the loupe would draw, and caption, a flat disk. Drawing
+  // the wrong shape is bad; calling it "flat disk" is worse, because that is a claim.
   bodyKind?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -168,7 +168,7 @@ export default function Loupe3D({
   const um = (v: number | null | undefined) =>
     v == null ? "?" : Number(v.toFixed(1)).toString();
   const drawn = !b0 && bodyKind === "cad"
-    ? "CAD solid \u2014 shape needs FEM"
+    ? "CAD solid: shape needs FEM"
     : !b0
     ? "flat disk"
     : b0.kind === "hemisphere"

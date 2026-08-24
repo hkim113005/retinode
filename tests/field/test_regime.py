@@ -82,12 +82,12 @@ def test_the_analytical_tier_is_blind_to_electrode_diameter():
 
     `AnalyticalBackend` is a point source: it reads an electrode's position, never its
     extent. So two disks of different diameter produce a byte-identical transfer
-    matrix, and any sweep over diameter is degenerate on this tier — every geometry
+    matrix, and any sweep over diameter is degenerate on this tier: every geometry
     yields the same Ve, hence the same threshold and the same selective window. Only
     the *safety* ceiling varies with diameter (via charge density over area).
 
     Electrode geometry is FEM-only (docs/electrode-geometry.md). `resolve_field_tier`
-    does NOT know this — it chooses a tier from the conductivity alone — so a caller
+    does NOT know this: it chooses a tier from the conductivity alone. So a caller
     sweeping geometry on the analytical tier gets a frontier that is flat by
     construction. See docs/phase-8 for the consequence.
     """

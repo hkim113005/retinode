@@ -1,4 +1,4 @@
-<title>Retinode — Candidates (design mockup)</title>
+<title>Retinode: Candidates (design mockup)</title>
 <style>
   :root{
     --bg1:#eef2f8; --bg2:#e6ecf5;
@@ -179,7 +179,7 @@
         <h1>Candidates · worth testing in tissue</h1>
         <div class="crumb">6 designs · from study <b>2c9f</b> · charge-safe · ranked</div>
       </div>
-      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ cand·5e1b</div>
+      <div class="chip" id="hashChip" title="Copy a shareable link (the link is the hash)">◇ cand·5e1b</div>
     </div>
 
     <!-- the one-sentence finding -->
@@ -241,7 +241,7 @@
 
   const cands=[
     {d:12,pitch:40,ret:"local", sel:9.5, thr:8.4, sens:0.9, byst:17.9, ceil:24, tier:"fem",  safe:"safe",
-      say:"Widest selective window at the lowest safe current — the recommendation.", hash:"8f3ac1"},
+      say:"Widest selective window at the lowest safe current: the recommendation.", hash:"8f3ac1"},
     {d:8, pitch:40,ret:"local", sel:8.8, thr:11.2,sens:1.6, byst:20.0, ceil:20, tier:"ana",  safe:"margin",
       say:"High selectivity, but the small disk runs close to the charge limit.", hash:"a1d904"},
     {d:16,pitch:40,ret:"local", sel:8.1, thr:7.1, sens:0.7, byst:15.2, ceil:27, tier:"fem",  safe:"safe",
@@ -319,7 +319,7 @@
         </div>`;
       list.appendChild(el);
       fieldThumb(c, el.querySelector("canvas"));
-      el.querySelector(".hash").addEventListener("click",e=>{e.stopPropagation(); toast("Link copied — reopens d"+c.d+"·p"+c.pitch+"·"+c.ret+" at its exact design + result");});
+      el.querySelector(".hash").addEventListener("click",e=>{e.stopPropagation(); toast("Link copied. Reopens d"+c.d+"·p"+c.pitch+"·"+c.ret+" at its exact design + result");});
     });
     renderReco(rows[0]);
   }
@@ -333,7 +333,7 @@
       </div>
       <div class="body">
         <div class="name">d${c.d} · pitch ${c.pitch} · ${c.ret} return</div>
-        <div class="say">The <b>widest selective window</b> (${c.sel.toFixed(1)} µA) at the <b>lowest safe current</b> (${c.thr.toFixed(1)} µA), FEM-confirmed — the design to take to tissue first.</div>
+        <div class="say">The <b>widest selective window</b> (${c.sel.toFixed(1)} µA) at the <b>lowest safe current</b> (${c.thr.toFixed(1)} µA), FEM-confirmed: the design to take to tissue first.</div>
         <div class="nums">
           <div class="n"><div class="big" style="color:var(--warm-strong)">${c.sel.toFixed(1)} µA</div><div class="lab">selective window</div></div>
           <div class="n"><div class="big">${c.thr.toFixed(1)} <span style="font-size:12px;color:var(--muted)">±${c.sens.toFixed(1)}</span></div><div class="lab">target threshold</div></div>
@@ -351,10 +351,10 @@
     toast("Ranked "+({sel:"by selectivity",thr:"by lowest threshold",rob:"by robustness"})[sortK]);});
   document.getElementById("filt").addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return;
     b.classList.toggle("on"); filters[b.dataset.f]=b.classList.contains("on"); render();});
-  document.getElementById("expReport").addEventListener("click",()=>toast("Report exported — PDF with figures, bands, and rationale for all 6"));
-  document.getElementById("expList").addEventListener("click",()=>toast("Machine-readable list exported — candidates.json"));
-  document.getElementById("expCsv").addEventListener("click",()=>toast("Metrics table exported — candidates.csv"));
-  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied — reopens this shortlist at this exact state (link = hash)"));
+  document.getElementById("expReport").addEventListener("click",()=>toast("Report exported: PDF with figures, bands, and rationale for all 6"));
+  document.getElementById("expList").addEventListener("click",()=>toast("Machine-readable list exported: candidates.json"));
+  document.getElementById("expCsv").addEventListener("click",()=>toast("Metrics table exported: candidates.csv"));
+  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied. Reopens this shortlist at this exact state (link = hash)"));
 
   let toastT; function toast(m){const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show");
     clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2300);}

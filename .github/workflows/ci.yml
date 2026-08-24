@@ -32,7 +32,7 @@ jobs:
       - name: Test (fast suite)
         # `not fem` too: README and CONTRIBUTING both document the fast suite as
         # excluding all three markers. It passed either way only because every
-        # fem test importorskips dolfinx — relying on that made the marker a lie.
+        # fem test importorskips dolfinx, and relying on that made the marker a lie.
         run: uv run pytest -m "not slow and not neuron and not fem"
 
   test-neuron:
@@ -81,7 +81,7 @@ jobs:
       - name: FEM tests (DOLFINx Poisson gate + gmsh mesh)
         run: pytest tests/field -m fem
 
-  # The React client (Phase 7 S2). Node-only; no Python here — the API contract
+  # The React client (Phase 7 S2). Node-only; no Python here. The API contract
   # reaches the client through the committed OpenAPI snapshot + generated TS types.
   web:
     runs-on: ubuntu-latest
@@ -107,7 +107,7 @@ jobs:
         run: |
           npm run gen:types
           if [ -n "$(git status --porcelain -- src/api/schema.d.ts)" ]; then
-            echo "::error::src/api/schema.d.ts is stale — run 'npm run gen:types' and commit."
+            echo "::error::src/api/schema.d.ts is stale. Run 'npm run gen:types' and commit."
             git --no-pager diff -- src/api/schema.d.ts
             exit 1
           fi

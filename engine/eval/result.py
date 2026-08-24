@@ -3,7 +3,7 @@
 An :class:`EvaluationResult` carries the operating window (safe *and* selective),
 the underlying SOW and thresholds, the per-electrode safety at the operating
 amplitude, and the provenance hashes that key it. Everything needed to interpret
-or reproduce the score travels with it — nothing is implicit in the caller.
+or reproduce the score travels with it; nothing is implicit in the caller.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ class OperatingWindow:
     ``[target_uA, window_hi_uA)`` where ``window_hi_uA = min(selective_hi_uA,
     safety_ceiling_uA)``. ``limiting`` names what caps it: an off-target's
     threshold, the safety ceiling, or neither (unbounded). The window is usable
-    only when ``usable_margin_uA > 0`` — the target fires below whatever binds.
+    only when ``usable_margin_uA > 0``, meaning the target fires below whatever binds.
     """
 
     target_uA: float

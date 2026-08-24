@@ -1,6 +1,6 @@
 """The project store: content-addressed persistence and provenance.
 
-Kept import-light on purpose — importing ``engine.store`` (and ``engine.store.keys``,
+Kept import-light on purpose: importing ``engine.store`` (and ``engine.store.keys``,
 which the evaluator uses) must not pull in the heavy ``store`` extra (``h5py`` /
 ``pyarrow``). The on-disk pieces live in submodules (``fields``, ``results``,
 ``project``) that are imported explicitly by store users, so the numpy-only core

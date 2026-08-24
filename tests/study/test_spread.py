@@ -109,7 +109,7 @@ def test_spread_is_a_finite_well_formed_number_on_the_target():
     non-negative number rather than NaN, inf, or None.
 
     Deliberately NOT named "a real positive error bar": in this scene it is exactly
-    0.0, and provably so — the next test pins why (one driven electrode's field is
+    0.0, and provably so. The next test pins why (one driven electrode's field is
     rotationally symmetric about z, and the target sits on that axis, so every
     jittered axon traces a congruent path). The old name and docstring claimed the
     jitter "really does move the threshold", which is false here, and the `>= 0.0`
@@ -137,7 +137,7 @@ def test_spread_is_a_finite_well_formed_number_on_the_target():
 
 @pytest.mark.neuron
 def test_spread_is_exactly_zero_when_the_field_is_symmetric_about_the_target():
-    """Not a bug — the physics. `trajectory_spread` rotates the axon about +z, and a
+    """Not a bug: the physics. `trajectory_spread` rotates the axon about +z, and a
     single driven electrode's field IS rotationally symmetric about z. With the
     target sitting directly under it, every rotated axon traces a congruent path
     through a congruent field, so all K thresholds are identical and the spread is
@@ -154,7 +154,7 @@ def test_spread_is_exactly_zero_when_the_field_is_symmetric_about_the_target():
     geoms = [ArrayGeometry(diameter_um=10.0, pitch_um=40.0, arrangement="hex", aperture_um=0.0)]
     out = geometry_trajectory_spread(
         geoms,
-        build_patch(40.0),  # target at (0, 0, depth) — on the axis
+        build_patch(40.0),  # target at (0, 0, depth), on the axis
         lambda a: monopolar_center(a, phase_width_us=200.0),
         HomogeneousConductivity(sigma_S_per_m=1.0),
         k=3,

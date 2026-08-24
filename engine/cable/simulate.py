@@ -1,6 +1,6 @@
 """Drive a single RGC with injected current and detect spikes (S2d sanity).
 
-Intracellular current injection (IClamp) at the soma — the basic check that the
+Intracellular current injection (IClamp) at the soma: the basic check that the
 assembled cell fires action potentials correctly. Extracellular *field* drive is
 S3. Spike detection is at the soma for now; multi-site detection (a spike at any
 compartment) is S6. Integration is fixed-step (the FM mod is CVODE-incompatible).

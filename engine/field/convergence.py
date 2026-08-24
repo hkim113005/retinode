@@ -4,11 +4,11 @@ A single FEM number means nothing without evidence the mesh was fine enough to
 resolve it. This module solves the transfer matrix on a base domain and on
 progressively refined versions of it (``FieldDomain.refined``), and records how
 much the sampled field changes between refinements. When the change between the
-two finest meshes falls below a tolerance, the field has *converged* — the mesh
-is no longer the thing setting the answer.
+two finest meshes falls below a tolerance, the field has *converged*: the mesh is
+no longer the thing setting the answer.
 
 The convergence metric is the relative change of the whole transfer matrix at the
-(fixed) query points between successive levels, ``||A_k - A_{k-1}|| / ||A_k||`` —
+(fixed) query points between successive levels, ``||A_k - A_{k-1}|| / ||A_k||``,
 i.e. how much the field the cable model would see still moves as the mesh sharpens.
 The full curve (mesh size, field norm, relative change per level) is returned so
 the convergence claim is auditable, not asserted.

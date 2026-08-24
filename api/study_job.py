@@ -2,8 +2,8 @@
 
 Runs in the conda ``retinode-fem`` env (the only one with DOLFINx *and* NEURON),
 invoked by :mod:`api.study_worker` from the uv API env. Reads the study controls as
-JSON on stdin and writes ``{points, n_geometries}`` to the file named in ``argv[1]``
-— NOT stdout, because gmsh/PETSc scribble banners there and would corrupt the JSON.
+JSON on stdin and writes ``{points, n_geometries}`` to the file named in ``argv[1]``.
+NOT stdout: gmsh/PETSc scribble banners there and would corrupt the JSON.
 
 Progress streams to **stderr** as ``@@P <fraction> <message>`` lines, which the uv
 worker parses to move the job's progress bar (a study is minutes long); any other

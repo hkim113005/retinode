@@ -27,7 +27,7 @@ function Screens() {
   // export) the real provenance instead of assuming one.
   const [studyTier, setStudyTier] = useState<StudyTier>("fem");
   // a brushed subset of that sweep, when the user narrowed it on the Pareto (S7c).
-  // null means "no narrowing" — Candidates ranks the whole sweep.
+  // null means "no narrowing", so Candidates ranks the whole sweep.
   const [focus, setFocus] = useState<StudyPoint[] | null>(null);
 
   // navigation is always available in the palette, whatever screen is up

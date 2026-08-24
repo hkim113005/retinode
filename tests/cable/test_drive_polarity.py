@@ -1,7 +1,7 @@
 """cathodic_first is a real waveform parameter: the leading edge of a biphasic pulse.
 
 Regression for the audit finding that it was defined, hashed, serialized and
-variant-tested but silently inert — apply_field_pulse hard-coded the phase order.
+variant-tested but silently inert, because apply_field_pulse hard-coded the phase order.
 `leading_scale` is the pure knob it now drives; tested without NEURON."""
 
 from dataclasses import dataclass
@@ -26,7 +26,7 @@ def test_anodic_first_reverses_the_leading_edge():
 
 
 def test_monophasic_ignores_cathodic_first():
-    # one edge only: polarity is the field/weight sign, not this flag — honouring it
+    # one edge only: polarity is the field/weight sign, not this flag. Honouring it
     # would double the weight-sign control
     assert leading_scale(_WF(cathodic_first=False), monophasic=True) == 1.0
     assert leading_scale(_WF(cathodic_first=True), monophasic=True) == 1.0
@@ -37,16 +37,16 @@ def test_monophasic_ignores_cathodic_first():
 def test_cathodic_first_changes_where_the_spike_initiates(neuron_h):
     """The flag is real end to end: reversing a biphasic pulse's order changes the
     outcome. At a fixed supra-threshold amplitude the two orders initiate the spike in
-    a different region (soma for cathodic-first, AIS for anodic-first) — the
+    a different region (soma for cathodic-first, AIS for anodic-first), the
     axon-avoidance-relevant observable.
 
     Note it is the initiation *site/timing* that differs, not the threshold amplitude:
     at these phase widths each phase acts near-independently, so the depolarizing phase
-    reaches threshold at the same amplitude regardless of order (verified — both land
+    reaches threshold at the same amplitude regardless of order (verified: both land
     on the same search bracket). cathodic_first is only meaningful for BIPHASIC pulses;
     the tool's threshold search defaults to monophasic, where `leading_scale` ignores
     it (one edge, polarity is the weight sign). The DEFAULT cathodic-first path is
-    unchanged — every other NEURON test asserts the old numbers, and they pass."""
+    unchanged: every other NEURON test asserts the old numbers, and they pass."""
     import dataclasses
 
     from app.scene import build_scene

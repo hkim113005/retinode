@@ -3,9 +3,9 @@
 Because the array (geometry) is fixed, every configuration reuses one transfer
 matrix per cell (P2 S1): the population is placed and solved *once*, and each
 configuration is then just a threshold search over the already-solved field. The
-sweep caches through a project store (P2 S2) — a configuration whose ``result_key``
-is already present is served from disk, no re-solve — and records provenance for
-every fresh evaluation (P2 S3). What comes back is the collected results plus
+sweep caches through a project store (P2 S2), so a configuration whose ``result_key``
+is already present is served from disk with no re-solve, and it records provenance
+for every fresh evaluation (P2 S3). What comes back is the collected results plus
 helpers to rank them into a shortlist.
 
 Geometry sweeps (a new field per array) and parallel/cluster execution are Phase
@@ -101,12 +101,12 @@ class SolvedPopulation:
     sweep of configurations reuses the transfer matrices (the P2 S1 payoff).
 
     Public because the amplitude sweep (``engine.study.activation``) needs exactly
-    this placement — including the overlap severing — and a second copy of that logic
+    this placement, including the overlap severing, and a second copy of that logic
     is how the two would drift apart on the question of where the metal is.
 
     It lives here rather than in ``engine.cable.population`` (its more natural home)
     because it needs ``select_off_targets`` from ``engine.eval``, and ``engine.eval``
-    already imports ``cable.population`` — moving it down would close an import
+    already imports ``cable.population``, so moving it down would close an import
     cycle. ``study`` sits above both, so it is the honest place for it.
     """
 
@@ -143,7 +143,7 @@ class SolvedPopulation:
 
     def cells(self) -> list[tuple[str, bool, RGCModel, SolvedField, frozenset[int]]]:
         """``(id, is_target, model, solved_field, severed)`` for the whole placed
-        population, target first — so a caller can drive each cell at an amplitude of
+        population, target first, so a caller can drive each cell at an amplitude of
         its choosing against the field that was already solved for it."""
         return [
             (self._target_id, True, self._target, self._target_solved, self._target_severed),

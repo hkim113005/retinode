@@ -10,9 +10,9 @@ scalar threshold cannot show:
   the curve shows the shape.
 - **Order of recruitment.** Which bystander joins next, and how much headroom is
   really there, read directly off the traces.
-- **Where the spike starts.** ``initiation_region`` comes back free from each run —
-  soma versus axon initiation as amplitude rises is the axon-avoidance premise made
-  visible.
+- **Where the spike starts.** ``initiation_region`` comes back free from each run,
+  and soma versus axon initiation as amplitude rises is the axon-avoidance premise
+  made visible.
 
 Cost is the same order as one scorecard: the field is solved ONCE per cell and
 reused across every amplitude (each is then a matvec), so an N-amplitude sweep over
@@ -63,7 +63,7 @@ class CellActivation:
         return None
 
     def blocks(self) -> bool:
-        """Whether the cell stops firing again at higher current — depolarization
+        """Whether the cell stops firing again at higher current, i.e. depolarization
         block. True only if activation goes on and then off across the grid."""
         seen_on = False
         for on in self.activated:

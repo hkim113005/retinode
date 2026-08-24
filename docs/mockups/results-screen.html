@@ -1,4 +1,4 @@
-<title>Retinode — Results (design mockup)</title>
+<title>Retinode: Results (design mockup)</title>
 <style>
   :root {
     --bg1:#eef2f8; --bg2:#e6ecf5;
@@ -203,12 +203,12 @@
         <h1>Monopolar · 12&nbsp;µm disk</h1>
         <div class="crumb">hex patch · 41 cells · target <b>t-19</b></div>
       </div>
-      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ 8f3ac1</div>
+      <div class="chip" id="hashChip" title="Copy a shareable link (the link is the hash)">◇ 8f3ac1</div>
     </div>
 
     <div class="card canvas-wrap">
       <canvas id="field" width="1120" height="760" aria-label="Extracellular potential field with the retinal cell population; firing cells light as amplitude rises"></canvas>
-      <div class="loupe" id="loupe" title="The array in 3D — click to expand">
+      <div class="loupe" id="loupe" title="The array in 3D (click to expand)">
         <span class="lab">Array · 3D</span>
         <canvas id="loupeC" width="236" height="192"></canvas>
       </div>
@@ -217,7 +217,7 @@
 
     <div class="card dial">
       <div class="dial-head">
-        <span class="lab">Stimulus amplitude — drag to sweep</span>
+        <span class="lab">Stimulus amplitude (drag to sweep)</span>
         <span class="amp"><span id="ampVal">0</span> <small>µA</small></span>
       </div>
       <div class="track" id="track" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="60"
@@ -238,7 +238,7 @@
     <div class="card panel">
       <h2>Scorecard</h2>
       <div class="verdict">
-        <span class="big" id="selVal">—</span>
+        <span class="big" id="selVal">n/a</span>
         <span class="pill win" id="selPill">selective</span>
       </div>
       <div class="sub" id="selSub">target fires alone up to the first bystander</div>
@@ -264,7 +264,7 @@
         <button class="on" data-tier="analytical">Analytical</button>
         <button data-tier="fem">FEM</button>
       </div>
-      <div class="foot" id="tierFoot" style="margin-top:9px;">Live point-source preview. Switch to FEM to solve the exact tissue-minus-electrode field — runs as a job.</div>
+      <div class="foot" id="tierFoot" style="margin-top:9px;">Live point-source preview. Switch to FEM to solve the exact tissue-minus-electrode field. It runs as a job.</div>
     </div>
 
     <div class="card panel">
@@ -377,7 +377,7 @@
       ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx-70*s, sy+150*s); ctx.stroke();
     }
 
-    // electrode (cathode) — a disk, glass ring
+    // electrode (cathode): a disk, glass ring
     const er = (diam/2)*s*1.7+2;
     ctx.fillStyle=withA(field,0.16); ctx.beginPath(); ctx.arc(cx,cy,er+3,0,7); ctx.fill();
     ctx.fillStyle=withA(ink,0.55); ctx.beginPath(); ctx.arc(cx,cy,er,0,7); ctx.fill();
@@ -490,7 +490,7 @@
     if(win>3){ selPill.textContent="selective"; selPill.className="pill win";
       document.getElementById("selSub").textContent="target fires alone across a "+sel+" µA window"; }
     else { selPill.textContent="tight"; selPill.className="pill lost";
-      document.getElementById("selSub").textContent="bystanders fire close to the target — little margin"; }
+      document.getElementById("selSub").textContent="bystanders fire close to the target: little margin"; }
     // charge gauge
     const cd = chargeDensity(), lim=0.35;
     const fill=document.getElementById("chFill");
@@ -537,14 +537,14 @@
     document.getElementById("tierBadge").textContent = tier==="fem"?"FEM":"Analytical";
     document.getElementById("tierFoot").textContent = tier==="fem"
       ? "Exact tissue-minus-electrode field. Solved as a job; here it settles from draft to inked."
-      : "Live point-source preview. Switch to FEM to solve the exact field — runs as a job.";
-    toast(tier==="fem"?"FEM job complete — field settled to inked":"Back to live analytical preview");
+      : "Live point-source preview. Switch to FEM to solve the exact field. It runs as a job.";
+    toast(tier==="fem"?"FEM job complete: field settled to inked":"Back to live analytical preview");
     refresh();
   });
 
   document.getElementById("hashChip").addEventListener("click",()=>{
-    toast("Link copied — reopening it restores this exact state (link = hash)");});
-  document.getElementById("loupe").addEventListener("click",()=>toast("3D scene — expands to full-bleed (bodies · tilt · CAD · overlap)"));
+    toast("Link copied. Reopening it restores this exact state (link = hash)");});
+  document.getElementById("loupe").addEventListener("click",()=>toast("3D scene: expands to full-bleed (bodies · tilt · CAD · overlap)"));
 
   let toastT;
   function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");

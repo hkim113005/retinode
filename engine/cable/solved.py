@@ -1,12 +1,12 @@
 """A solved field: the transfer matrix over one placed cell, reusable across configs.
 
-The expensive step in driving a cell is the field solve — building the transfer
+The expensive step in driving a cell is the field solve: building the transfer
 matrix ``A`` (mV/µA) from the electrode array to the cell's segment centers. ``A``
 is fixed for a given (placed cell, array, conductivity, backend); only the current
-vector changes when the configuration (weights, amplitude) changes. So a
-configuration sweep on a fixed array — and even a single threshold search, which
-sweeps amplitude — should solve ``A`` once and reuse it, turning each subsequent
-Ve into a cheap matrix-vector product. This is the geometry/configuration split
+vector changes when the configuration (weights, amplitude) changes. A configuration
+sweep on a fixed array should therefore solve ``A`` once and reuse it, turning each
+subsequent Ve into a cheap matrix-vector product; so should a single threshold
+search, which only sweeps amplitude. This is the geometry/configuration split
 (project plan §6, §9) made concrete: touch geometry and ``A`` is rebuilt; touch
 only the configuration and ``A`` is reused.
 """
@@ -30,7 +30,7 @@ class SolvedField:
 
     ``a[i, j]`` is Ve (mV) at segment ``i`` per unit current (µA) on electrode
     ``j``, in the array's electrode order. ``ve(config)`` is the cheap reuse
-    ``A @ I`` — no field solve, just a weighted sum of already-solved columns.
+    ``A @ I``: no field solve, just a weighted sum of already-solved columns.
     """
 
     a: np.ndarray  # (n_segments, n_electrodes), mV/µA
@@ -38,7 +38,7 @@ class SolvedField:
     array: ElectrodeArray  # fixes the electrode/column order for current_vector
 
     def ve(self, config: StimConfig) -> np.ndarray:
-        """Ve (mV) at every segment for this configuration — a weighted sum of ``A``."""
+        """Ve (mV) at every segment for this configuration: a weighted sum of ``A``."""
         return self.a @ current_vector(self.array, config)
 
 
@@ -53,10 +53,11 @@ def solve_field(
     """Solve the transfer matrix once for a placed cell under an array + medium.
 
     ``deactivated`` are segment indices (in ``segment_coords`` order) that the
-    ``displace`` overlap policy has severed — they lie inside an electrode body. The
-    field is **not** queried there (that point is inside the metal, cut out of the
-    FEM mesh, and would raise), and their rows in ``A`` are left zero, so ``Ve`` is
-    zero at those segments and the surviving segments key and solve unchanged.
+    ``displace`` overlap policy has severed because they lie inside an electrode
+    body. The field is **not** queried there (that point is inside the metal, cut out
+    of the FEM mesh, and would raise), and their rows in ``A`` are left zero, so
+    ``Ve`` is zero at those segments and the surviving segments key and solve
+    unchanged.
     """
     backend = backend or AnalyticalBackend()
     coords, segs = segment_coords(model)

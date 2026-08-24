@@ -1,15 +1,15 @@
 """Axon-trajectory distribution: threshold spread over K perturbed paths (S6d).
 
-An epiretinal threshold depends strongly on the *ascending axon* — how the axon of
-passage runs relative to the electrode — but the true 3D path of any one cell's
-axon is uncertain. So instead of trusting a single guessed trajectory we sample K
+An epiretinal threshold depends strongly on the *ascending axon*, meaning how the
+axon of passage runs relative to the electrode, but the true 3D path of any one
+cell's axon is uncertain. So instead of trusting a single guessed trajectory we sample K
 of them (the nominal direction rotated by small angular jitters about the array
 normal) and report the threshold spread. That spread is the honest error bar on a
 per-cell threshold.
 
 Small K here by design: this is the machinery and its sanity check. Full
 trajectory × population sweeps (every cell × K paths) are deliberately a Phase-5
-concern — see population.py. The direction sampling is deterministic (evenly
+concern; see population.py. The direction sampling is deterministic (evenly
 spaced angles, no RNG) so a spread is reproducible.
 """
 
@@ -36,7 +36,7 @@ def perturbed_directions(nominal: Vec3, k: int, jitter_deg: float) -> list[Vec3]
     For k=1 the angle set is {0}; for k≥2 it spans [-jitter, +jitter] inclusive, so
     the nominal path is always among the samples when k is odd. Rotation is about
     the array normal (+z), which reorients the in-plane axon run while keeping its
-    depth — the degree of freedom that actually moves an axon across an electrode.
+    depth, the degree of freedom that actually moves an axon across an electrode.
     """
     if k < 1:
         raise ValueError("k must be >= 1")
@@ -60,7 +60,7 @@ class TrajectorySpread:
     directions: tuple[Vec3, ...]  # the sampled axon directions (all k)
     mean_uA: float | None
     std_uA: float | None
-    cv: float | None  # coefficient of variation std/mean — the dimensionless spread
+    cv: float | None  # coefficient of variation std/mean: the dimensionless spread
 
     @property
     def n(self) -> int:

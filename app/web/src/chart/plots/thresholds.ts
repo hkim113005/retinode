@@ -1,6 +1,6 @@
 // The threshold plot: every cell's threshold on one current axis, with the safety
 // ceiling and the selective window drawn over them. This is the scorecard's numbers
-// laid out in the dimension they actually live in — µA — so "the window is 4 µA
+// laid out in the dimension they actually live in (µA), so "the window is 4 µA
 // wide" stops being a figure to trust and becomes a distance you can see.
 //
 // Nothing here costs a NEURON run: the per-cell vector was already computed by the
@@ -35,7 +35,7 @@ export type ThresholdOpts = {
   background?: boolean;
 };
 
-/** Height this plot needs for `data` — it grows with the cell count. */
+/** Height this plot needs for `data`; it grows with the cell count. */
 export function thresholdHeight(data: Scorecard): number {
   return PAD.t + PAD.b + Math.max(1, thresholdRows(data).length) * ROW;
 }
@@ -60,7 +60,7 @@ export function thresholdScene({ data, width, palette, background }: ThresholdOp
     return { width, height, background: bg, title: "Thresholds (unscored)", items };
   }
 
-  // The axis spans 0 to a little past whatever is furthest out — including the
+  // The axis spans 0 to a little past whatever is furthest out, including the
   // ceiling, so a design whose safety limit sits inside its bystanders still shows
   // the ceiling rather than silently cropping it.
   const ceiling = data.safety_ceiling_uA;

@@ -1,5 +1,5 @@
 // The SVG renderer: serialises a Scene to a standalone .svg document. This is the
-// vector half of figure-quality export (P7 S7 / D8) — the output opens in
+// vector half of figure-quality export (P7 S7 / D8). The output opens in
 // Illustrator or Inkscape with every mark still an editable object, and converts to
 // PDF/EPS from there without a rasterisation step.
 import type { Item, Scene } from "./scene";

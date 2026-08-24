@@ -1,4 +1,4 @@
-"""StimConfig — the current delivery. References electrode ids only, NO geometry."""
+"""StimConfig: the current delivery. References electrode ids only, NO geometry."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .conventions import SCHEMA_VERSION
 @dataclass(frozen=True)
 class Waveform:
     """A biphasic pulse. Amplitude is signed by convention: cathodic (the
-    excitatory leading phase) is negative current — see conventions.py."""
+    excitatory leading phase) is negative current; see conventions.py."""
 
     phase_width_us: float
     amplitude_scale_uA: float = 1.0  # multiplies the per-electrode weights
@@ -28,9 +28,9 @@ class StimConfig:
     returns < 0. The actual current is ``weight * waveform.amplitude_scale_uA``.
 
     ``distant_return`` distinguishes the two return regimes:
-      * False (default) — a fully on-array config (e.g. Fan 2019 local return);
+      * False (default): a fully on-array config (e.g. Fan 2019 local return);
         the weights must charge-balance (sum ~ 0), checked in validation.
-      * True — monopolar: the balancing current returns through a far ground
+      * True: monopolar. The balancing current returns through a far ground
         that is not an array electrode, so on-array weights need not sum to 0.
     """
 

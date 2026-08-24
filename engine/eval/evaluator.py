@@ -3,7 +3,7 @@
 ``evaluate`` is the whole Gate-1 pipeline: find per-cell thresholds (the cable
 engine), form the selective operating window, intersect it with the charge-safety
 ceiling, and package the result with the provenance hashes that key it. It is
-*fixed* — its behavior is pinned by ``EVALUATOR_VERSION``, bumped whenever the
+*fixed*: its behavior is pinned by ``EVALUATOR_VERSION``, bumped whenever the
 scoring changes so old and new scores never silently mix.
 
 The threshold computation is injected (``thresholds_provider``) so the scoring
@@ -39,7 +39,7 @@ from .safety import (
 # Bumped to "2": a truncated off-target search is no longer scored as "no off-targets"
 # (SOW.off_min_is_lower_bound, limiting="search_cap"). Scores computed under "1" for a
 # scene with unreached bystanders overstate the selective window, so they must not be
-# served from cache for the new semantics — this constant feeds ``result_key``.
+# served from cache for the new semantics, and this constant feeds ``result_key``.
 EVALUATOR_VERSION = "2"
 
 
@@ -147,9 +147,9 @@ def evaluate(
     elif sow.off_min_is_lower_bound and sow.off_min_uA <= ceiling:
         # The window stops at the amplitude the off-target search actually reached.
         # Calling this "off_target" would imply a bystander was measured there; it
-        # was not — the range simply ran out. The safety ceiling is NOT a valid stand-in
-        # either: it routinely sits far above the cap (~1993 µA for a 200 µm disk at
-        # 50 µs), and the amplitudes between are unprobed, not clean.
+        # was not; the range simply ran out. The safety ceiling is NOT a valid
+        # stand-in either: it routinely sits far above the cap (~1993 µA for a 200 µm
+        # disk at 50 µs), and the amplitudes between are unprobed, not clean.
         limiting = "search_cap"
     elif sow.off_min_uA <= ceiling:
         limiting = "off_target"

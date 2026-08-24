@@ -8,7 +8,7 @@ from app.views import load_validation_report
 
 def test_validation_serves_the_committed_report():
     body = TestClient(create_app()).get("/validation").json()
-    # the API must serve exactly what the Dash view reads — one report, one truth
+    # the API must serve exactly what the Dash view reads: one report, one truth
     assert body == load_validation_report()
     assert body["n_total"] >= 1
     assert body["n_pass"] == sum(1 for r in body["reproductions"] if r["passed"])

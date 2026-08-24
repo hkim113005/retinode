@@ -1,6 +1,6 @@
 """P7 S3b (fem): the conda-side FEM field solver the API dispatches to.
 
-Runs in the ``retinode-fem`` env (DOLFINx). Imports ``api.fem_job`` — which works
+Runs in the ``retinode-fem`` env (DOLFINx). Imports ``api.fem_job``, which works
 here only because ``api/__init__`` is lazy (it doesn't pull FastAPI, absent from
 this env). Verifies the solver produces a sane field grid for a Compare scene.
 """
@@ -45,7 +45,7 @@ def test_fem_job_solves_a_flat_disk_field_grid():
 
 
 def test_a_body_changes_the_fem_field():
-    """A 3D body shapes the field the accurate pass solves — the geometry effect the
+    """A 3D body shapes the field the accurate pass solves: the geometry effect the
     analytical preview can't show. A tip-only pillar concentrates injection at depth,
     so its field grid is measurably different from a flat disk of the same footprint."""
     base = {
@@ -69,6 +69,6 @@ def test_a_body_changes_the_fem_field():
     # the 30 µm pillar occupies the cell plane near the axis: those cells are metal,
     # rendered as null holes (no tissue potential inside the electrode)
     assert np.isnan(pillar).any()
-    # where there IS tissue, the fields differ — the deep tip reshapes the potential
+    # where there IS tissue, the fields differ, because the deep tip reshapes the potential
     both = np.isfinite(flat) & np.isfinite(pillar)
     assert not np.allclose(flat[both], pillar[both], rtol=0.05)

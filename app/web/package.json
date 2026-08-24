@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Retinode React client (Phase 7) — the instrument-panel UI over the FastAPI engine.",
+  "description": "Retinode React client (Phase 7): the instrument-panel UI over the FastAPI engine.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

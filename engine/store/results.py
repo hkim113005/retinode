@@ -2,7 +2,7 @@
 
 Two representations, each for a different job (project plan §10):
 
-- **JSON sidecar** (``results/<result_key>.json``) is the source of truth — the
+- **JSON sidecar** (``results/<result_key>.json``) is the source of truth: the
   complete ``EvaluationResult`` tree, so ``get`` round-trips it exactly.
 - **parquet index** (``results/index.parquet``) is the flat scalar table one row
   per result, for querying and ranking across a sweep (P2 S4) without opening
@@ -96,7 +96,7 @@ class ResultStore:
 
         Both files here were written in place. Parquet puts its footer last, so an
         interruption mid-flush (Ctrl-C on a long sweep, OOM kill, full disk) left a
-        truncated ``index.parquet`` — and because ``put`` itself reads the index
+        truncated ``index.parquet``. Because ``put`` itself reads the index
         first, the store became permanently *unwritable* as well as unreadable, with
         every completed geometry still intact in its sidecar. That directly
         contradicts the resumability the runner promises. A torn JSON sidecar is

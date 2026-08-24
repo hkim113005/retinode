@@ -1,7 +1,7 @@
 """The Validation trust panel (P7 S6).
 
 Which published/physics reproductions currently pass. This is the **committed**
-report CI regenerates — the API serves it, it never recomputes the science on
+report CI regenerates. The API serves it and never recomputes the science on
 request, so a skeptical reader sees exactly what the test suite last proved.
 """
 

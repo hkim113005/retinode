@@ -70,7 +70,7 @@ const FEM_DONE: JobStatus = {
   field: {
     xs_um: [-1, 0, 1],
     ys_um: [-1, 0, 1],
-    // (n, n) as the contract requires — a ragged grid is not a thing the API emits
+    // (n, n) as the contract requires: a ragged grid is not a thing the API emits
     ve_mV: [
       [-1, -2, -1],
       [-2, -3, -2],
@@ -107,7 +107,7 @@ describe("Compare", () => {
     expect(client.getJob).toHaveBeenCalledWith("j1"); // it polled the running job
   });
 
-  it("clears a running job's progress when a control is edited — no permanent lock", async () => {
+  it("clears a running job's progress when a control is edited, so nothing locks", async () => {
     // regression: editing a control mid-job used to orphan the progress state (the
     // job's ticket goes stale so its own `.finally` declines to clear it), leaving
     // the Run action gone forever. The [controls] effect must clear it.

@@ -40,7 +40,7 @@ def test_temperature_and_reversals(active_rgc):
 
 def test_cell_is_electrically_stable_at_rest(active_rgc):
     # With no stimulus the membrane must settle near rest and stay bounded
-    # (not NaN, not runaway) — the FM resting potential is ~ -66 mV.
+    # (not NaN, not runaway). The FM resting potential is ~ -66 mV.
     h = active_rgc.h
     h.finitialize(-65)
     for _ in range(800):  # 20 ms at dt = 0.025

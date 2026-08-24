@@ -1,5 +1,5 @@
 // The Study screen: build a diameter × pitch sweep, run it as a job, and read the
-// selectivity-versus-cost Pareto frontier — the design-explorer payoff. Click a
+// selectivity-versus-cost Pareto frontier, the design-explorer payoff. Click a
 // frontier point to inspect its geometry and metrics.
 import { useCallback, useMemo, useRef, useState } from "react";
 import { getJob, postStudy } from "../api/client";
@@ -195,8 +195,8 @@ export function Study({
             </div>
             <p className="foot">
               The true axon path is unknown, so a threshold has a band. Sampling
-              measures it — but reruns the FEM field per path, so it multiplies the
-              already-minutes sweep cost several-fold.
+              measures that band, but it reruns the FEM field per path, which
+              multiplies the already-minutes sweep cost several-fold.
             </p>
           </div>
           <div className="cost">
@@ -207,7 +207,7 @@ export function Study({
             </span>
           </div>
           <p className="foot">
-            Comparing electrode geometry needs the FEM field — the analytical tier is a
+            Comparing electrode geometry needs the FEM field: the analytical tier is a
             point source and cannot tell one diameter from another. So this runs
             accurately, in the FEM env, in minutes rather than seconds.
           </p>

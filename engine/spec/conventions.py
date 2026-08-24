@@ -1,9 +1,9 @@
-"""Units, sign conventions, and tolerances — fixed once, asserted in tests.
+"""Units, sign conventions, and tolerances: fixed once, asserted in tests.
 
 Retinode pins these conventions everywhere so that a whole class of stimulation
 bugs (unit and sign errors) cannot occur silently:
 
-    length        micrometers (um)      field names carry the unit, e.g. pos_um
+    length         micrometers (um)      field names carry the unit, e.g. pos_um
     current        microamps (uA)        signed: cathodic (excitatory) current is NEGATIVE
     conductivity   siemens / meter (S/m)
     time           microseconds (us)     waveform phase widths

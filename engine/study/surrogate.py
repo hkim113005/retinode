@@ -6,14 +6,14 @@ population of NEURON threshold searches. This module fits a **Gaussian-process
 emulator** over ``geometry -> score`` from the geometries evaluated so far and uses
 it to **propose the next geometry to evaluate** (upper-confidence-bound active
 learning), so the search spends its evaluations where the score is high or the
-model is uncertain — converging on the Pareto-relevant region without touching most
+model is uncertain, converging on the Pareto-relevant region without touching most
 of the grid.
 
 The GP is a plain RBF-kernel regressor in numpy/scipy (no new dependency): it
 standardises the inputs (so one length scale works across diameter ~10 µm and
 pitch ~30 µm), and returns a posterior mean and standard deviation. The search is
-**deterministic** — seeds are an even spread of the candidate set and every step is
-an ``argmax`` — so a run is reproducible and testable.
+**deterministic**: seeds are an even spread of the candidate set and every step is
+an ``argmax``, so a run is reproducible and testable.
 
 The expensive evaluation is injected (`evaluate(index) -> score`): a synthetic
 function in tests, a real geometry sweep's selectivity in use. What "score" means
@@ -87,7 +87,7 @@ def predict(model: GPModel, x_star: np.ndarray) -> tuple[np.ndarray, np.ndarray]
 
 
 def upper_confidence_bound(mean: np.ndarray, std: np.ndarray, kappa: float = 2.0) -> np.ndarray:
-    """The UCB acquisition: ``mean + kappa * std`` — higher ``kappa`` explores more."""
+    """The UCB acquisition: ``mean + kappa * std``. Higher ``kappa`` explores more."""
     return mean + kappa * std
 
 
@@ -167,7 +167,7 @@ def active_search(
 
 
 def geometry_params(geometries: Sequence[ArrayGeometry]) -> np.ndarray:
-    """The (diameter, pitch) matrix a surrogate optimises over — the continuous
+    """The (diameter, pitch) matrix a surrogate optimises over: the continuous
     geometry knobs. Arrangement/aperture are held fixed within one search."""
     return np.array([[g.diameter_um, g.pitch_um] for g in geometries], dtype=float)
 

@@ -1,7 +1,7 @@
 """CAD upload: the content-addressed store + the POST /cad endpoint.
 
 The gmsh load is conda-only (covered by the load_cad_body fem tests); here we cover
-the uv-side gate — accept STEP/BREP, reject STL/oversize/empty, round-trip the id, and
+the uv-side gate: accept STEP/BREP, reject STL/oversize/empty, round-trip the id, and
 refuse path traversal."""
 
 import pytest
@@ -76,7 +76,7 @@ def test_post_cad_refuses_oversize_without_buffering_it_all():
 
     Guards the fix for the unbounded ``await file.read()``: the cap is enforced
     chunk by chunk, so an oversize POST costs MAX_BYTES + one chunk, not the whole
-    body. 413 (not 422) — this is a size limit, not a malformed payload.
+    body. 413 (not 422), because this is a size limit, not a malformed payload.
     """
     client = TestClient(create_app())
     r = client.post(
@@ -90,7 +90,7 @@ def test_post_cad_refuses_oversize_without_buffering_it_all():
 
 
 def test_upload_returns_the_measured_bounding_cylinder(monkeypatch):
-    """Reading a STEP needs gmsh, which the API process does not have — so the upload
+    """Reading a STEP needs gmsh, which the API process does not have, so the upload
     dispatches one short measurement to the FEM env and caches it. Without this the
     3D loupe had no dimensions and drew a flat disk for an arbitrary solid."""
     import api.routes.upload as route
@@ -106,7 +106,7 @@ def test_upload_returns_the_measured_bounding_cylinder(monkeypatch):
 
 
 def test_an_unmeasurable_solid_still_uploads(monkeypatch):
-    """No FEM env, an unreadable solid, a timeout — the upload must still succeed with
+    """No FEM env, an unreadable solid, a timeout: the upload must still succeed with
     the dimensions simply absent. A CAD upload must never fail because the *preview*
     could not be measured; the loupe then says the shape needs FEM."""
     import api.routes.upload as route
@@ -121,7 +121,7 @@ def test_an_unmeasurable_solid_still_uploads(monkeypatch):
 
 def test_compare_draws_the_cad_solid_as_its_bounding_cylinder(monkeypatch):
     """/compare cannot resolve a CAD body (no gmsh), so its marker came back bodyless
-    and the loupe drew a flat disk — a specific shape the upload is not. The cached
+    and the loupe drew a flat disk, a specific shape the upload is not. The cached
     measurement lets it emit a MarkerBody(kind='cad'), which is exactly the case
     MarkerBody's own docstring describes."""
     from api import cad_store

@@ -1,6 +1,6 @@
 """Insert the FM (Fohlmeister-Miller) channels into an RGC, per region.
 
-Conductance densities differ by compartment class — the spike initiates at the
+Conductance densities differ by compartment class. The spike initiates at the
 **sodium-channel band (AIS)**, so its gNa is elevated relative to soma, axon, and
 (low) dendrites. Temperature is set to 37 C with the FM-2010 q10 scaling of the
 gating kinetics (added to spike.mod). Densities here are nominal, FM-2010-informed
@@ -20,16 +20,16 @@ from .morphology import RGCModel
 class ChannelDensities:
     """Maximal conductances (S/cm^2 == mho/cm^2). gNa is region-specific.
 
-    These are mammalian (37 C) densities — ~4x the salamander FM defaults. At body
+    These are mammalian (37 C) densities, roughly 4x the salamander FM defaults. At body
     temperature the faster kinetics shorten the Na open-window, so more channels
     are needed to reach threshold and to repolarize for repetitive firing (the
     FM-2010 mammalian regime; warm neurons carry more channels). Nominal starting
-    values — calibrated against Greenberg 1999 / Tsai 2012 in S5.
+    values, calibrated against Greenberg 1999 / Tsai 2012 in S5.
     """
 
     gna_soma: float = 0.28
     gna_hillock: float = 0.40
-    gna_ais: float = 1.40  # elevated sodium-channel band — spike initiation
+    gna_ais: float = 1.40  # elevated sodium-channel band: spike initiation
     gna_axon: float = 0.28
     gna_dendrite: float = 0.04  # low
     gk: float = 0.048  # delayed rectifier
@@ -104,7 +104,7 @@ def build_active_rgc(
     origin_um: tuple[float, float, float] = (0.0, 0.0, 0.0),
     axon_direction: tuple[float, float, float] = (1.0, 0.0, 0.0),
 ) -> RGCModel:
-    """Build the morphology and insert channels — a ready-to-simulate RGC."""
+    """Build the morphology and insert channels: a ready-to-simulate RGC."""
     from .morphology import build_rgc
 
     model = build_rgc(cell_type, origin_um=origin_um, axon_direction=axon_direction)

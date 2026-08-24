@@ -1,6 +1,6 @@
 """Measure an uploaded CAD solid in the conda FEM env.
 
-Reading a STEP/BREP needs gmsh, which lives only in the FEM env — so the uv API
+Reading a STEP/BREP needs gmsh, which lives only in the FEM env, so the uv API
 process cannot describe an uploaded solid at all. That is why the Compare screen's 3D
 loupe used to draw a flat disk for a CAD electrode: not a rendering bug, simply no
 dimensions to draw with.
@@ -10,7 +10,7 @@ measured on a 5 x 30 um pillar) and caches the answer beside the file, so every 
 gmsh-free request can describe the shape without paying that cost again.
 
 Best-effort by construction: if the FEM env is absent the upload still succeeds and the
-client simply gets no dimensions — the same graceful degradation the loupe already
+client simply gets no dimensions, the same graceful degradation the loupe already
 handles. A CAD upload must never fail because the *preview* could not be measured.
 """
 
@@ -41,7 +41,7 @@ print({_MARK!r} + json.dumps({{
 def measure_upload(upload_id: str, *, timeout_s: float = 60.0) -> dict[str, float] | None:
     """Measure a stored CAD solid, caching and returning its dimensions.
 
-    Returns the cached value if present. Returns None — never raises — when the FEM
+    Returns the cached value if present. Returns None (never raises) when the FEM
     env is unavailable, the solid is unreadable, or the measurement times out; the
     caller degrades to "shape not previewable" rather than failing the upload.
     """
@@ -61,7 +61,7 @@ def measure_upload(upload_id: str, *, timeout_s: float = 60.0) -> dict[str, floa
             check=False,
         )
     except (OSError, subprocess.SubprocessError):
-        return None  # no FEM env, or it died — the upload stands regardless
+        return None  # no FEM env, or it died; the upload stands regardless
     for line in proc.stdout.splitlines():
         if line.startswith(_MARK):
             try:

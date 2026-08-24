@@ -1,6 +1,6 @@
 """S2d: the RGC fires action potentials correctly under injected current.
 
-The Week-3 gate — sane APs above rheobase, silence below, repetitive firing
+The Week-3 gate: sane APs above rheobase, silence below, repetitive firing
 under sustained drive, and a temperature effect (NEURON-marked).
 """
 

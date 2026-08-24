@@ -93,7 +93,7 @@ def test_compare_reports_no_activation_cleanly():
     r = client.post("/compare", json={**_CONTROLS, "n": 21, "include_scorecard": True})
     card = r.json()["scorecard"]
     # the off-target set exists whether or not the target fired, so the hash stands
-    # even here — it is a property of the scene, not of the outcome
+    # even here: it is a property of the scene, not of the outcome
     assert card.pop("offtarget_hash")
     assert card == {
         "activated": False, "target_uA": None, "off_min_uA": None, "ratio": None,
@@ -113,12 +113,12 @@ def test_compare_rejects_invalid_controls():
 def test_scorecard_carries_the_offtarget_policy_it_was_scored_against():
     """The engine refuses to compare results scored against different off-target sets
     (engine.eval.result.require_same_offtarget), so the contract exposes which one
-    each run used — the client shows runs side by side and must not present a
+    each run used. The client shows runs side by side and must not present a
     category error as a difference.
 
     Note what the hash actually covers: ``OffTargetSet`` is the *policy* (soma radius,
     axon proximity), not the cells it selects. Moving a bystander changes the patch,
-    not the rule, so those runs stay comparable — which is the whole point of the
+    not the rule, so those runs stay comparable, which is the whole point of the
     neighbour-distance slider.
     """
     provider = _fake_provider(8.0, {"neighbor": 12.0})
@@ -151,7 +151,7 @@ def test_offtarget_hash_tracks_the_policy_not_the_scene():
 def test_scorecard_reports_the_per_cell_off_target_thresholds():
     """`off_min_uA` is a min() over a vector the evaluator already computed. Which
     bystander binds the window, and how far behind the next one sits, are different
-    design questions from "how close is the nearest" — and both were already paid
+    design questions from "how close is the nearest", and both were already paid
     for by the threshold search."""
     provider = _fake_provider(8.0, {"near": 12.0, "far": 30.0})
     client = TestClient(create_app(thresholds_provider=provider))

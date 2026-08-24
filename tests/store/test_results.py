@@ -54,7 +54,7 @@ def test_corrupt_sidecar_raises_store_error(tmp_path, result_windowed):
 def test_an_interrupted_index_write_leaves_the_store_usable(
     tmp_path, result_windowed, result_unbounded, monkeypatch
 ):
-    """The index was rewritten in place, and parquet writes its footer last — so an
+    """The index was rewritten in place, and parquet writes its footer last, so an
     interruption mid-flush left a truncated index. Because ``put`` reads the index
     first, the store then became permanently UNWRITABLE as well as unreadable, with
     every completed result still intact in its sidecar. Staging + os.replace means a

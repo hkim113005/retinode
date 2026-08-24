@@ -186,7 +186,7 @@ def test_evaluate_end_to_end(neuron_h):
 def test_truncated_off_target_search_does_not_report_an_unbounded_window():
     """A bystander above the search cap used to vanish from the thresholds dict, so
     ``evaluate`` scored the scene as having no off-targets and extended the usable
-    window all the way to the safety ceiling — over amplitudes at which the bystander
+    window all the way to the safety ceiling, over amplitudes at which the bystander
     does in fact fire. The window must stop at what was actually probed, and say so.
     """
 
@@ -199,7 +199,7 @@ def test_truncated_off_target_search_does_not_report_an_unbounded_window():
     # A big electrode on a short pulse, so the safety ceiling (~1993 µA) sits ABOVE the
     # search cap and the cap is what actually binds. On the small default electrode the
     # ceiling is 24.9 µA and binds first, which is a correct "safety" verdict, not this
-    # case — whichever bound is lower should win, and it does.
+    # case. Whichever bound is lower should win, and it does.
     big = spec.ElectrodeArray(
         electrodes=(spec.Electrode(id="e", pos_um=(0.0, 0.0, 0.0), shape="disk", size_um=200.0),)
     )

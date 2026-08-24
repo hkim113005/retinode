@@ -4,8 +4,8 @@ A spec's identity is its canonical JSON (serialization.py), so its content hash
 is simply SHA-256 of that JSON: equal specs hash equal, any field change yields
 a new hash, and the digest is stable across processes and machines (nothing
 depends on dict ordering, memory addresses, or float repr quirks). Composite
-keys — the field and result keys of the store — are built from these digests
-with ``combine``.
+keys, meaning the field and result keys of the store, are built from these
+digests with ``combine``.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ def combine(*parts: str) -> str:
     backend name and parameters), for composite cache keys.
 
     The parts are encoded as a canonical JSON array before hashing, so the
-    boundaries between parts are unambiguous — no part's contents can forge a
+    boundaries between parts are unambiguous: no part's contents can forge a
     delimiter to collide with a different split.
     """
     payload = json.dumps(list(parts), separators=(",", ":"), ensure_ascii=False)

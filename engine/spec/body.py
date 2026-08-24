@@ -2,7 +2,7 @@
 
 An electrode with a ``body`` is no longer a flat face on the array plane but a
 *solid* the FEM subtracts from the tissue; its conductive surface(s) inject the
-current. This module is purely geometric -- dimensions and which surfaces conduct.
+current. This module is purely geometric: dimensions and which surfaces conduct.
 The meshing lives in :mod:`engine.field.mesh3d`, and the cable/NEURON biophysics
 never sees any of it (Phase-6 D1): a body only changes the field solve.
 """
@@ -30,7 +30,7 @@ class Hemisphere:
 @dataclass(frozen=True)
 class Cylinder:
     """A cylindrical pillar: ``radius_um`` wide, reaching ``height_um`` into the
-    tissue. ``conductive_faces`` selects the injecting surface -- the deep tip cap,
+    tissue. ``conductive_faces`` selects the injecting surface: the deep tip cap,
     the side wall, or all of it (an insulated shank is ``"tip"``)."""
 
     radius_um: float
@@ -52,7 +52,7 @@ class Frustum:
 @dataclass(frozen=True)
 class CadBody:
     """A 3D electrode imported from a CAD solid (STEP/BREP). The file's *content*
-    (hashed into ``content_hash``) is the geometric identity — so two different
+    (hashed into ``content_hash``) is the geometric identity, so two different
     files key distinctly for provenance even at the same path. The other fields are
     summaries the loader derives from the CAD once (``engine.field.mesh3d.load_cad_body``)
     so the pure-spec helpers here need no gmsh: ``bounding_radius_um`` /
@@ -62,7 +62,7 @@ class CadBody:
     Face groups (P6 S8): the loader also splits the exposed surface by depth into a
     deep **tip** (``tip_area_um2``) and the lateral **sides** (``sides_area_um2``),
     so ``conductive_faces`` can pick ``"tip"`` / ``"sides"`` / ``"all"`` on an
-    imported solid — not only ``"all"``. The two group areas sum to
+    imported solid, not only ``"all"``. The two group areas sum to
     ``surface_area_um2`` (both default 0.0 for a body loaded before S8, for which
     only ``"all"`` is meaningful)."""
 
@@ -86,7 +86,7 @@ ElectrodeBody = Hemisphere | Cylinder | Frustum | CadBody
 
 
 def body_base_radius_um(body: ElectrodeBody) -> float:
-    """The body's lateral radius at the array plane -- used for mesh sizing and the
+    """The body's lateral radius at the array plane, used for mesh sizing and the
     aperture-fit check, the way ``radius_um`` is for a flat electrode."""
     if isinstance(body, Hemisphere | Cylinder):
         return body.radius_um
@@ -100,7 +100,7 @@ def _select_faces_area(tip: float, sides: float, which: ConductiveFaces) -> floa
 
 
 def body_conductive_area_um2(body: ElectrodeBody) -> float:
-    """Area of the conductive surface(s), in square microns -- the denominator for
+    """Area of the conductive surface(s), in square microns: the denominator for
     charge density in the safety check."""
     if isinstance(body, Hemisphere):
         return 2.0 * math.pi * body.radius_um**2
@@ -130,7 +130,7 @@ def _point_in_trimesh(
     p: tuple[float, float, float],
 ) -> bool:
     """Point-in-closed-triangle-mesh by ray parity: cast a ray from ``p`` along a
-    fixed skewed direction and count triangle crossings — odd means inside
+    fixed skewed direction and count triangle crossings. An odd count means inside
     (Möller–Trumbore)."""
     dx, dy, dz = _RAY_DIR
     crossings = 0

@@ -11,7 +11,7 @@ import { useResizeRedraw } from "../chart/useResizeRedraw";
 import { livePalette } from "../chart/scene";
 import { FigureExport } from "./FigureExport";
 
-const RATIO = 0.6; // height / width — keeps the frontier readable, not squat
+const RATIO = 0.6; // height / width, keeping the frontier readable rather than squat
 const HIT = 20; // px: these marks are small, so be generous
 const DRAG = 4; // px before a click becomes a brush
 

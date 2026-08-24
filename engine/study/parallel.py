@@ -1,12 +1,12 @@
 """Local parallel execution of a geometry sweep (P5 S4).
 
-Geometries are independent — each builds its own array, solves its own field, and
-searches its own thresholds — so they parallelise across CPU cores. Two facts
+Geometries are independent: each builds its own array, solves its own field, and
+searches its own thresholds, so they parallelise across CPU cores. Two facts
 shape the design:
 
 - **NEURON keeps per-process global state** (the ``h`` interpreter is a
   singleton), so cells for different geometries cannot share a process safely.
-  Parallelism must be by *process*, not thread — hence a ``ProcessPoolExecutor``.
+  Parallelism must be by *process*, not thread, hence a ``ProcessPoolExecutor``.
 - **The on-disk store is not safe for concurrent writes** (HDF5 field cache,
   parquet result index). So workers compute with ``store=None`` and *return* their
   results; the **main process records them serially**. "Content-addressed writes
@@ -15,7 +15,7 @@ shape the design:
 
 Resumability rides the same content-addressed store as the serial path: a geometry
 already fully in the store is served from cache and never dispatched. Serial
-execution stays the default (``max_workers=1``) and the injectable fallback —
+execution stays the default (``max_workers=1``) and the injectable fallback:
 :class:`SerialExecutor` runs jobs in-process, which is also what lets the sweep
 *logic* be tested without pickling or NEURON.
 """

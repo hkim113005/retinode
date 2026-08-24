@@ -1,4 +1,4 @@
-"""P7 S3b: the FEM dispatch — subprocess protocol, divergence, and error handling.
+"""P7 S3b: the FEM dispatch (subprocess protocol, divergence, and error handling).
 
 These mock the subprocess (no conda/DOLFINx needed), so they run in the fast job.
 The real conda-side solve is exercised by tests/field/test_fem_dispatch.py (fem).

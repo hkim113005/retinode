@@ -2,17 +2,17 @@
 
 An epiretinal threshold depends strongly on the ascending axon, and the true path of
 any one cell's axon is *unknown*. ``engine.cable.trajectories`` answers that for one
-cell — sample K plausible paths, report the spread of thresholds. This lifts it to a
-geometry sweep, which is the lift ``trajectories.py`` explicitly deferred ("full
+cell by sampling K plausible paths and reporting the spread of thresholds. This
+lifts that to a geometry sweep, which is the lift ``trajectories.py`` explicitly deferred ("full
 trajectory × population sweeps are deliberately a Phase-5 concern").
 
 The number this produces is **epistemic**: it says "given we do not know where this
-cell's axon runs, its threshold could be anywhere in this band" — not "the surgeon
-may misplace the array", which is a different (also interesting, also unbuilt)
-question about placement.
+cell's axon runs, its threshold could be anywhere in this band". It does not say
+"the surgeon may misplace the array", which is a different (also interesting, also
+unbuilt) question about placement.
 
-Scoped to the **target** cell by design. The whisker rides the target threshold —
-the number a candidate is ranked on — and spreading the whole population would
+Scoped to the **target** cell by design. The whisker rides the target threshold,
+the number a candidate is ranked on, and spreading the whole population would
 multiply the cost by the cell count for a number nothing displays.
 """
 
@@ -47,7 +47,7 @@ def geometry_trajectory_spread(
 ) -> dict[tuple[float, float], float | None]:
     """Std of the target threshold over K axon trajectories, per geometry.
 
-    Keyed by ``(diameter_um, pitch_um)`` — the same identity the study's points carry.
+    Keyed by ``(diameter_um, pitch_um)``, the same identity the study's points carry.
     A value is ``None`` when the target never fired on enough trajectories to have a
     spread; callers must render that as *absent*, never as zero. A confident-looking
     ``±0.0`` on a design nobody could measure is worse than no whisker at all.

@@ -66,7 +66,7 @@ def run_score_job(
 
         # A watchdog enforces the wall-clock bound and ALWAYS reaps the child: the
         # stderr read loop blocks until EOF (child exit), so a solve that hangs while
-        # alive would never time out on its own — the timer kills it, closing stderr.
+        # alive would never time out on its own. The timer kills it, closing stderr.
         timed_out = threading.Event()
 
         def _on_timeout() -> None:

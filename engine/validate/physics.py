@@ -1,7 +1,7 @@
 """Field-physics reproductions for the validation report (fast, no NEURON).
 
-Wraps the two deep field invariants — Green's-function reciprocity and far-field
-decay — as :class:`Reproduction` records so they appear alongside the literature
+Wraps the two deep field invariants (Green's-function reciprocity and far-field
+decay) as :class:`Reproduction` records, so they appear alongside the literature
 reproductions in the validation report and the app's Validation panel.
 """
 

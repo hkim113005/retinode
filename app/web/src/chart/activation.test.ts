@@ -51,8 +51,8 @@ describe("activationScene", () => {
   });
 
   it("draws the scorecard's threshold beside the grid's step, distinctly", () => {
-    // the two numbers are different things — the bisection is accurate, the step is
-    // grid resolution — so the plot shows both rather than picking one
+    // the two numbers are different things: the bisection is accurate, the step is
+    // grid resolution, so the plot shows both rather than picking one
     const s = activationScene({
       data: SWEEP,
       width: 600,

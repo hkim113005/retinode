@@ -1,4 +1,4 @@
-# Phase 1 — Cable engine & evaluator: implementation plan
+# Phase 1 implementation plan: cable engine and evaluator
 
 **Goal.** The NEURON population engine (multi-site activation, threshold search)
 plus the fixed evaluator (selective operating window, thresholds, charge/safety,
@@ -6,7 +6,7 @@ activated area). **Done when** the analytical + NEURON pipeline produces a
 defensible selectivity score for *any* spec, with single-cell thresholds matched
 to Greenberg 1999 / Tsai 2012.
 
-**Gates.** single cell spikes under an imposed field (Wk 3) → single-cell
+**Gates.** A single cell spikes under an imposed field (Wk 3) → single-cell
 thresholds match literature (Wk 4, Gate-1 checkpoint) → pipeline yields a
 defensible SOW for any spec (Wk 5, **Gate 1**).
 
@@ -43,49 +43,57 @@ engine/eval/
 
 ## Ordered steps (de-risked: pure arithmetic first, NEURON isolated)
 
-- **S1 — Evaluator arithmetic (pure, no NEURON).** safety (charge, density,
-  Shannon `log D = k − log Q`, `k ≤ 1.5`, + material limit), `OffTargetSet` +
-  selection, SOW math, activating function. Fully on the fast CI job.
-- **S2 — Single-cell model + intracellular sanity.** Vendor/compile FM `.mod`;
-  parametric morphology with Na-band; `celsius`/q10. *Done:* injected current
-  spikes correctly; silent below rheobase (Wk-3 gate).
-- **S3 — Extracellular drive + sign (done).** Ve(t) = (A·I)·waveform(t) into
+- **S1: Evaluator arithmetic (pure, no NEURON).** Safety (charge, density,
+  Shannon `log D = k − log Q`, `k ≤ 1.5`, plus the material limit),
+  `OffTargetSet` and selection, SOW math, activating function. Runs entirely on
+  the fast CI job.
+- **S2: Single-cell model and intracellular sanity.** Vendor and compile the FM
+  `.mod`; parametric morphology with the Na band; `celsius`/q10. *Done:* injected
+  current spikes correctly; silent below rheobase (Wk-3 gate).
+- **S3: Extracellular drive and sign (done).** Ve(t) = (A·I)·waveform(t) into
   `e_extracellular`; the field engine now drives the cell. Sign chain verified:
   cathodic-over-soma depolarizes (and fires); anodic hyperpolarizes. (Note: a
-  biphasic pulse's reversed 2nd phase can itself excite, so the sign check uses
+  biphasic pulse's reversed second phase can itself excite, so the sign check uses
   the subthreshold membrane deflection, and a `monophasic` option isolates it.)
-- **S4 — Threshold search (done).** Geometric ladder → bracket → bisect → scan
-  above (detect upper-threshold/block). Returns the **lowest** activating
-  amplitude + bracket + tolerance + block flag. Generic `find_threshold` (tested
-  on synthetic monotone/non-monotone curves, no NEURON) + `extracellular_threshold`
-  wrapper. Verified: closer electrode → lower threshold (12/26/55 µA at
-  25/40/60 µm). Not naive bisection.
-- **S5 — Single-cell threshold validation (Wk-4 checkpoint) — done.** Five
+- **S4: Threshold search (done).** Geometric ladder → bracket → bisect → scan
+  above (to detect an upper threshold or block). Returns the **lowest** activating
+  amplitude with its bracket, tolerance, and block flag. A generic `find_threshold`
+  (tested on synthetic monotone and non-monotone curves, no NEURON) plus an
+  `extracellular_threshold` wrapper. Verified: a closer electrode lowers the
+  threshold (12/26/55 µA at 25/40/60 µm). Not naive bisection.
+- **S5: Single-cell threshold validation (Wk-4 checkpoint). Done.** Five
   density-robust reproductions, each a `Reproduction` record, all passing:
   R1 threshold↑ with distance (12/26/55 µA at 25/40/60 µm); R2 axon-of-passage
   excitability (axon 14 µA < soma 26 µA); R3 spike initiates at the AIS near
   threshold; R4 strength-duration falls with pulse width (82/45/26/16 µA at
   50/100/200/400 µs); R5 thresholds in physiological range (~26 µA).
-  **Finding:** R2 diverges from Greenberg 1999's *original* soma<axon claim —
-  our model (proper Na band, excitable thin axon) makes the axon the
-  low-threshold off-target, which is the *modern* understanding and the
-  axon-avoidance premise (Vilkhu 2021). Absolute-value matching deferred to the
-  Phase-3 ex-vivo primate reproductions.
-- **S6 — Population, multi-site, trajectories, AF — done.** (a) Placement:
+  **Finding:** R2 diverges from Greenberg 1999's *original* soma<axon claim. Our
+  model (proper Na band, excitable thin axon) makes the axon the low-threshold
+  off-target, which is the *modern* understanding and the premise of axon
+  avoidance (Vilkhu 2021). Absolute-value matching is deferred to the Phase-3
+  ex-vivo primate reproductions.
+- **S6: Population, multi-site, trajectories, activating function. Done.** (a) Placement:
   `place_cell` positions an RGC at its `soma_um` and orients the appended axon
   toward the optic disc; `drive.py` refactored to `compute_ve` +
   `apply_field_pulse` shared across single-site/initiation/multi-site. (b)
   Multi-site: a NetCon on every segment, activated if *any* compartment fires,
-  initiation = earliest-crosser — verified to follow the electrode (soma→AIS,
-  distal→axon). (c) `population_thresholds`: target + off-targets, each an
+  initiation = earliest-crosser, verified to follow the electrode (soma→AIS,
+  distal→axon). (c) `population_thresholds`: target and off-targets, each an
   independent multi-site search; half-space convention pinned (electrodes on the
-  z=0 boundary, tissue at z<0 — placing a cell at z>0 mirrors it onto an image
+  z=0 boundary, tissue at z<0; placing a cell at z>0 mirrors it onto an image
   source and inflates the field ~10×). (d) `trajectory_spread`: multi-site
   threshold over K deterministically-perturbed axon paths (mean/std/CV = the
   per-cell error bar); `activating_function_along_axon` wires the Rattay AF as
   the geometry-level fire predictor. Small-K here; full trajectory×population
   sweeps are deferred to Phase 5.
-- **S7 — Fixed evaluator → SOW (Gate 1, Wk 5) — done.** `evaluate` is the one
+
+  > **Later note (P6/P8).** The shared convention flipped to **+z into the
+  > tissue** (electrodes on `z = 0`, cells at `z ≥ 0`) so one scene drives both
+  > the analytical and the FEM backend, which meshes an explicit `z ≥ 0` slab.
+  > The analytical field is mirror-symmetric about `z = 0`, so the Phase-1
+  > numbers are unaffected by the flip. See `engine/cable/population.py` and
+  > [phase-8-plan.md](phase-8-plan.md).
+- **S7: Fixed evaluator → SOW (Gate 1, Wk 5). Done.** `evaluate` is the one
   fixed scorer: per-cell thresholds (cable) → selective window → intersect with
   the charge-safety **ceiling** (Shannon/material inverted to a max-safe
   amplitude) → a **safe-and-selective operating window** `[target, min(off_min,
@@ -95,7 +103,7 @@ engine/eval/
   combine(field_key, spec_hash(config), spec_hash(patch), EVALUATOR_VERSION,
   spec_hash(offtarget))` (`engine/store/keys.py`). Threshold computation is
   injected (`thresholds_provider`) so the scoring logic is fully fast-tested
-  without NEURON; one neuron end-to-end run confirms the pipeline (target 8.5 µA,
+  without NEURON; one NEURON end-to-end run confirms the pipeline (target 8.5 µA,
   off-target 10.7 µA → usable window 8.5–10.7 µA, ratio 1.25).
 
 ## Testing strategy
@@ -105,9 +113,9 @@ engine/eval/
   and the threshold-search *logic* on synthetic activation curves (monotone +
   non-monotone).
 - **`neuron`/`slow` (deliberate):** cell spikes, sign convention, extracellular
-  drive, temperature effect, and physics property tests — threshold decreases
-  with electrode proximity; threshold-vs-pulse-width follows a strength–duration
-  relation; current-linearity.
+  drive, temperature effect, and three physics property tests: threshold falls as
+  the electrode nears the cell; threshold-versus-pulse-width follows a
+  strength–duration relation; and Ve is linear in current.
 - **Regression (gate checkpoints):** Greenberg/Tsai thresholds with stored
   target + tolerance + current value (also feed the Validation screen later).
 
@@ -124,7 +132,7 @@ stand, so even a partial NEURON layer yields a usable score.
 
 ## Technical safeguards (from the design review)
 - **Non-monotonic thresholds (T5):** bracketed scan, not bare bisection.
-- **Temperature (T6):** pin `celsius`/q10 — FM is salamander.
+- **Temperature (T6):** pin `celsius`/q10, because FM is a salamander model.
 - **Multi-site (T7):** real initiation criterion; distinguish initiation from
   propagation.
 - **Sign chain (T8):** verify cathodic → `e_extracellular` → depolarization.
@@ -133,7 +141,7 @@ stand, so even a partial NEURON layer yields a usable score.
 
 ---
 
-## S2 — single-cell model: research-current scope (approved)
+## S2 scope: the single-cell model, research-current (approved)
 
 Verified against the current literature (2023 review + 2025–26 work).
 
@@ -141,13 +149,13 @@ Verified against the current literature (2023 review + 2025–26 work).
 |---|---|---|
 | Channels | FM structure, **FM-2010 mammalian** (rat/cat) densities + Q10s | 2023 review; still the standard in 2025–26 |
 | Vendoring | ModelDB #3673 `spike.mod`/`capump.mod` with attribution | reuse-with-citation |
-| NEURON 9 | compiles as-is on 9.0.1 (no C++ adaptation needed) — **confirmed in S2a** | MOD→C++ migration risk retired |
+| NEURON 9 | compiles as-is on 9.0.1 (no C++ adaptation needed), **confirmed in S2a** | MOD→C++ migration risk retired |
 | Morphology | **full dendritic arbor**, **mouse reconstructed SWC** (NeuroMorpho, Wang 2018) via Import3D | review: reduced models underestimate thresholds; cat/rat retinal reconstructions scarce on NeuroMorpho, mouse abundant |
 | Species | mammalian single cell (mouse morphology + rat/cat FM-2010 channels); primate-specificity at the array/patch level | matches field + Lotlikar 2026 (macaque 512-array) |
 | Temperature | **37 °C** + FM-2010 Q10s (applied at insertion, S2c) | review best practice |
 | Activating function | **axon-of-passage diagnostic only**, never a whole-cell threshold surrogate | review: whole-cell AF R²=0.04 |
 | Integrator | fixed `dt=0.025 ms`, CVODE off | deterministic; the FM mod is CVODE-incompatible |
 
-**Build sub-steps:** S2a vendor+compile harness (done) · S2b SWC morphology — mouse RGC arbor + appended AIS/axon (done) · S2c FM channel insertion, per-region densities, 37 °C + q10 (done) · S2d spike sanity — silent below / AP above rheobase, repetitive firing, temperature effect (done). **S2 complete**; extracellular field drive is S3.
+**Build sub-steps:** S2a vendor + compile harness (done) · S2b SWC morphology: mouse RGC arbor plus an appended AIS and axon (done) · S2c FM channel insertion, per-region densities, 37 °C + q10 (done) · S2d spike sanity: silent below rheobase, an AP above it, repetitive firing, temperature effect (done). **S2 complete**; extracellular field drive is S3.
 
 Key sources: [2023 review](https://pmc.ncbi.nlm.nih.gov/articles/PMC10010067/); Fohlmeister–Miller [ModelDB #3673](https://modeldb.science/3673); [FM-2010 mammalian](https://pmc.ncbi.nlm.nih.gov/articles/PMC2887638/); [Lotlikar et al. 2026](https://arxiv.org/abs/2607.04063).

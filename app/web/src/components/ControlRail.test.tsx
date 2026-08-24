@@ -30,7 +30,7 @@ describe("ControlRail", () => {
     expect(onChange).toHaveBeenCalledWith({ ...BASE, electrode_um: 16 });
   });
 
-  it("exposes tissue conductivity — it is a physics dimension, not a constant", () => {
+  it("exposes tissue conductivity, a physics dimension rather than a constant", () => {
     const onChange = vi.fn();
     render(<ControlRail controls={BASE} onChange={onChange} />);
     const sigma = screen.getByLabelText(/Tissue conductivity/);

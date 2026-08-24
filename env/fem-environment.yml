@@ -1,8 +1,8 @@
 # Conda-forge environment for the Phase-4 FEM field backend.
 #
 # This is DELIBERATELY separate from the uv toolchain (see docs/phase-4-plan.md,
-# D4): FEniCSx/DOLFINx ships no pip wheel, but conda-forge has an osx-arm64 build
-# — so the FEM layer is conda-only and runs locally on Apple Silicon. Everything
+# D4): FEniCSx/DOLFINx ships no pip wheel, but conda-forge has an osx-arm64 build,
+# so the FEM layer is conda-only and runs locally on Apple Silicon. Everything
 # else (analytical field, NEURON cable, the app) stays under uv.
 #
 # Create locally:
@@ -24,7 +24,7 @@ dependencies:
   - python-gmsh             # gmsh Python API (the `import gmsh` module)
   - numpy
   # scipy is a declared core dependency in pyproject.toml, and this env installs the
-  # project with `pip install -e . --no-deps` — so nothing else pulls it in. Without
+  # project with `pip install -e . --no-deps`, so nothing else pulls it in. Without
   # it `engine.study.surrogate` cannot even be imported in the FEM env.
   - scipy
   - pytest

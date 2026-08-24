@@ -23,7 +23,7 @@ def test_inactive_result_round_trips(result_inactive):
 
 def test_tuple_and_dict_types_survive(result_windowed):
     back = serialize.loads(serialize.dumps(result_windowed))
-    # per_electrode is a tuple, off-target map is a dict — decode must preserve both
+    # per_electrode is a tuple, off-target map is a dict: decode must preserve both
     assert isinstance(back.safety_at_target.per_electrode, tuple)
     assert isinstance(back.thresholds.off_target_thresholds_uA, dict)
     assert (

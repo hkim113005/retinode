@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-// The Compare controls — the same handful the Dash app exposes, plus an optional 3D
+// The Compare controls: the same handful the Dash app exposes, plus an optional 3D
 // electrode body. Edits the geometry and stimulus; a flat electrode recomputes live on
 // the analytical tier, a body is FEM-only (the point source can't see geometry).
 export type ConductiveFaces = "tip" | "sides" | "all";
@@ -48,7 +48,7 @@ const BODY_DEFAULTS: Record<BodyControls["kind"], BodyControls> = {
   cad: { kind: "cad", upload_id: "", conductive_faces: "all" },
 };
 
-// The numeric dimensions to show per body kind (µm). Rendered as number inputs — more
+// The numeric dimensions to show per body kind (µm). Rendered as number inputs: more
 // precise than sliders for a design you're pinning down, and they stay out of the way
 // for a flat electrode.
 const BODY_DIMS: Record<Exclude<BodyControls["kind"], "none" | "cad">, readonly string[]> = {
@@ -86,8 +86,8 @@ interface Slider {
   decimals?: number;
 }
 
-// Ranges match the Dash app's, which are the ones the engine was exercised over —
-// a narrower slider silently puts real configurations out of reach.
+// Ranges match the Dash app's, which are the ones the engine was exercised over.
+// A narrower slider would silently put real configurations out of reach.
 const SLIDERS: Slider[] = [
   { key: "electrode_um", label: "Electrode diameter", min: 5, max: 40, step: 1, unit: "µm" },
   { key: "pitch_um", label: "Pair pitch", min: 20, max: 160, step: 5, unit: "µm", bipolarOnly: true },
@@ -165,7 +165,7 @@ export function ControlRail({
         </div>
       ))}
 
-      {/* 3D electrode body — shapes the driven electrode e0. Anything but a flat disk
+      {/* 3D electrode body: shapes the driven electrode e0. Anything but a flat disk
           is FEM-only (the analytical preview can't represent geometry), so Compare
           swaps the live field for a Run-FEM prompt when a body is set. */}
       <div className="ctl">

@@ -1,7 +1,7 @@
 // Activation versus amplitude: one trace per cell, showing where it fires.
 //
 // Deliberately NOT an "activation fraction" curve. The patch is a target plus its
-// bystanders — a handful of cells — so a fraction would be a two-level step function
+// bystanders (a handful of cells), so a fraction would be a two-level step function
 // dressed up as a sigmoid. Per-cell traces are what the engine actually knows, and a
 // step IS the honest shape of "this cell fires above 26 µA".
 import type { AmplitudeSweep } from "../../api/client";
@@ -55,7 +55,7 @@ export function activationScene({
   const lo = amps[0];
   const hi = amps[amps.length - 1];
   // A LOG axis. Amplitude is positive and spans a decade or more, and thresholds
-  // cluster at the bottom of it — on a linear axis the whole interesting region is
+  // cluster at the bottom of it. On a linear axis the whole interesting region is
   // squeezed into the left margin while the flat top eats the plot. Falls back to
   // linear only for a non-positive range, which the API forbids anyway.
   const logAxis = lo > 0 && hi > lo;
@@ -66,7 +66,7 @@ export function activationScene({
   const x = (uA: number) => PAD.l + t(uA) * (width - PAD.l - PAD.r);
   const laneY = (i: number) => PAD.t + i * LANE + LANE / 2;
 
-  // amplitude axis — ticks are placed evenly on screen, so on a log axis they carry
+  // amplitude axis. Ticks are placed evenly on screen, so on a log axis they carry
   // round-ish values from the geometric progression rather than a linear one
   for (let i = 0; i <= 4; i++) {
     const f = i / 4;

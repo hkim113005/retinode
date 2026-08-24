@@ -1,5 +1,5 @@
-// The live field canvas: the Ve heatmap with electrode outlines and cell markers —
-// the signature canvas from docs/phase-7-design.md. The drawing itself lives in
+// The live field canvas: the Ve heatmap with electrode outlines and cell markers, the
+// signature canvas from docs/phase-7-design.md. The drawing itself lives in
 // chart/plots/field.ts as a pure Scene builder; this component only measures the
 // box, paints, and hangs the export menu off it (P7 S7).
 import { useEffect, useRef, useState } from "react";

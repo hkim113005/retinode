@@ -1,4 +1,4 @@
-"""Pre-sweep cost estimation — a safety feature for the user's time (§9).
+"""Pre-sweep cost estimation: a safety feature for the user's time (§9).
 
 Before launching a sweep, estimate how long it will take, so no one accidentally
 starts a three-day job. The model matches how the sweep actually spends time (P2
@@ -8,8 +8,8 @@ un-cached config runs one threshold search per cell.
     total ≈ n_cells · per_solve  +  (n_configs − n_cached) · n_cells · per_threshold
 
 The two per-unit times come from a quick one-cell benchmark on the real patch;
-the arithmetic is pure and testable without it. This is the minimal estimator —
-the at-scale version (per-mesh FEM benchmark, realized-vs-estimated logging that
+the arithmetic is pure and testable without it. This is the minimal estimator. The
+at-scale version (per-mesh FEM benchmark, realized-vs-estimated logging that
 improves the estimate over time) is Phase 5.
 """
 
@@ -77,8 +77,8 @@ def estimate_sweep_cost(
     """Estimate a configuration sweep's wall-clock from per-unit times (pure).
 
     ``per_threshold_s`` is one cell's threshold search over an already-solved
-    field; ``per_solve_s`` is one field solve (0 by default — negligible on the
-    analytical tier). Cached configs cost nothing.
+    field; ``per_solve_s`` is one field solve (0 by default, since it is negligible
+    on the analytical tier). Cached configs cost nothing.
     """
     n_cached = min(max(0, n_cached), n_configs)
     n_to_evaluate = n_configs - n_cached
@@ -122,8 +122,9 @@ def benchmark_cell(
 ) -> CellBenchmark:
     """Time one field solve and one threshold search on the patch's target cell.
 
-    A quick, representative probe (approximate — the true per-cell time varies with
-    cell placement and how deep the search bisects), enough to size a sweep.
+    A quick, representative probe. It is approximate, since the true per-cell time
+    varies with cell placement and how deep the search bisects, but it is enough to
+    size a sweep.
     """
     backend = backend or AnalyticalBackend()
     cell = place_cell(patch.target(), optic_disc=patch.optic_disc_um)

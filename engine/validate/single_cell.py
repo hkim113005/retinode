@@ -1,9 +1,9 @@
 """Single-cell threshold reproductions vs the literature (S5, Wk-4 checkpoint).
 
-Robust, density-independent checks — trends, ratios, initiation site, and range
-— not absolute-value matching (our densities are nominal; the real biophysical
-test is the Phase-3 ex-vivo primate reproductions). Search granularity is coarse
-here: we need trends, not high precision, and CI runtime is bounded.
+Robust, density-independent checks (trends, ratios, initiation site, and range)
+rather than absolute-value matching. Our densities are nominal; the real
+biophysical test is the Phase-3 ex-vivo primate reproductions. Search granularity
+is coarse here: we need trends, not high precision, and CI runtime is bounded.
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def axon_of_passage_is_excitable(cell: RGCModel) -> Reproduction:
         criterion="axon threshold <= soma threshold, in physiological range",
         note=(
             "Diverges from Greenberg 1999's original soma<axon claim; consistent with a proper "
-            "Na band and the axon-avoidance premise — axons are the low-threshold off-target."
+            "Na band and the axon-avoidance premise: axons are the low-threshold off-target."
         ),
     )
 

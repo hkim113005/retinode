@@ -1,8 +1,8 @@
 """UI state → spec objects. Pure translation, no Dash, no engine computation.
 
-A "scene" is the four spec objects an evaluation needs — array, stimulus,
-patch, tissue — built from the handful of dashboard controls. Keeping this pure
-means the whole input surface is testable without a browser or NEURON.
+A "scene" is the four spec objects an evaluation needs (array, stimulus, patch,
+tissue), built from the handful of dashboard controls. Keeping this pure means the
+whole input surface is testable without a browser or NEURON.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from engine import spec
 
 # The array plane is z=0 and +z runs INTO the tissue, so cells sit at z>0 (D8; see
 # docs/phase-6-plan.md and engine/spec/geometry.py). This used to be -20.0, which the
-# analytical tier tolerated — its field is exactly mirror-symmetric about z=0, so the
+# analytical tier tolerated: its field is exactly mirror-symmetric about z=0, so the
 # sign changed no number anywhere. It was still a landmine: every Phase-6 3D predicate
 # assumes the +z convention (`point_in_body` tests `0 <= dz <= height_um`), so the
 # moment an electrode carried a body, the overlap check would have silently matched
@@ -36,9 +36,9 @@ def body_from_spec(d: dict | None) -> spec.ElectrodeBody | None:
 
     ``None`` / ``{"kind": "none"}`` -> a flat electrode (no body). The primitives
     (hemisphere / cylinder / frustum) resolve here, in the uv env, with no gmsh. A
-    ``"cad"`` body cannot be built here — it needs gmsh to read the solid — so this
-    raises; the FEM jobs resolve CAD via ``engine.field.mesh3d.load_cad_body`` in the
-    conda env and pass the resulting ``CadBody`` straight to ``build_scene``.
+    ``"cad"`` body cannot be built here, because it needs gmsh to read the solid, so
+    this raises; the FEM jobs resolve CAD via ``engine.field.mesh3d.load_cad_body`` in
+    the conda env and pass the resulting ``CadBody`` straight to ``build_scene``.
     """
     if d is None or d.get("kind", "none") == "none":
         return None
@@ -130,9 +130,10 @@ def build_scene(
     """Assemble the full scene from the dashboard controls.
 
     ``body`` shapes the driven electrode ``e0`` (a 3D pillar/dome/taper/CAD solid);
-    ``None`` is the flat disk the analytical tier handles. A bodied scene is FEM-only
-    — the analytical field is a point source blind to the body — so the caller must
-    solve it on ``FenicsxBackend`` (the API routes a bodied scene to the conda env)."""
+    ``None`` is the flat disk the analytical tier handles. A bodied scene is FEM-only,
+    because the analytical field is a point source blind to the body, so the caller
+    must solve it on ``FenicsxBackend`` (the API routes a bodied scene to the conda
+    env)."""
     return Scene(
         array=build_array(layout, electrode_um, pitch_um, body=body),
         config=build_config(layout, phase_width_us),

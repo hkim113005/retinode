@@ -59,7 +59,7 @@ export function ActivationPlot({
         <h2>Activation vs amplitude</h2>
         <p className="empty">
           The threshold search probes a ladder of amplitudes and keeps only the crossing.
-          Sweep a stated grid instead to see the whole picture — who joins next, and
+          Sweep a stated grid instead to see the whole picture: who joins next, and
           whether anything stops firing again as current rises.
         </p>
         <button className="btn" onClick={onRun}>

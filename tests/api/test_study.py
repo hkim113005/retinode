@@ -22,7 +22,7 @@ _STUDY = {
 
 def _geometry_varying_provider():
     """A fast fake whose target threshold shrinks with electrode size and whose
-    off-target rises with the array's spread — so the sweep has a real trade-off."""
+    off-target rises with the array's spread, so the sweep has a real trade-off."""
 
     def provider(patch, array, config, conductivity, *, off_target_set=None, backend=None, **_):
         r = radius_um(array.electrodes[0])

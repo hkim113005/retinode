@@ -2,7 +2,7 @@
 stays on the fast in-process analytical path.
 
 The FEM dispatch itself (api.score_worker) is unit-tested with a fake subprocess in
-test_score_worker.py; here we only assert the route picks the right path — mocking
+test_score_worker.py; here we only assert the route picks the right path, mocking
 run_score_job so no conda interpreter is needed."""
 
 import time

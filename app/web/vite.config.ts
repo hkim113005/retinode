@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  // three.js (the 3D loupe) is a deliberately large, lazy-loaded chunk — don't warn.
+  // three.js (the 3D loupe) is a deliberately large, lazy-loaded chunk, so don't warn.
   build: { chunkSizeWarningLimit: 900 },
   server: {
     port: 5173,

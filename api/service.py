@@ -1,7 +1,7 @@
 """Engine → typed payloads. Pure functions the routes call.
 
 The field grid mirrors ``app.views.field_grid`` exactly (same backend, same z
-plane) so the API and the Dash view can never disagree — locked by a parity test.
+plane), so the API and the Dash view can never disagree. A parity test locks that.
 Deliberately imports only the engine and the pure ``app.scene`` depth convention;
 no plotly/dash, so the API server stays light and NEURON-free on the field path.
 """
@@ -51,7 +51,7 @@ def field_grid_payload(
     n: int,
     backend: FieldBackend | None = None,
 ) -> FieldGridResponse:
-    """Ve (mV) on an ``n × n`` grid at the cell plane — the analytical preview."""
+    """Ve (mV) on an ``n × n`` grid at the cell plane: the analytical preview."""
     backend = backend or AnalyticalBackend()
     z = cell_depth_um()
     xs = np.linspace(-extent_um, extent_um, n)
@@ -124,7 +124,7 @@ def scorecard_payload(result) -> ScorecardResponse:  # noqa: ANN001 - an Evaluat
 
 def sweep_payload(sweep) -> AmplitudeSweepResponse:  # noqa: ANN001 - an AmplitudeSweep
     """Map an amplitude sweep to the wire. ``crossing_uA`` is the grid crossing, NOT
-    the scorecard's bisected threshold — the client must keep them apart."""
+    the scorecard's bisected threshold. The client must keep the two apart."""
     amps = list(sweep.amplitudes_uA)
     return AmplitudeSweepResponse(
         amplitudes_uA=amps,

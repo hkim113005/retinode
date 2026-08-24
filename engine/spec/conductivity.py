@@ -1,4 +1,4 @@
-"""ConductivityModel — how the tissue conducts. Homogeneous or layered."""
+"""ConductivityModel: how the tissue conducts. Homogeneous or layered."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ class Layer:
 
 @dataclass(frozen=True)
 class HomogeneousConductivity:
-    """A single conductivity everywhere — the analytical-tier default."""
+    """A single conductivity everywhere: the analytical-tier default."""
 
     sigma_S_per_m: float
     schema_version: int = SCHEMA_VERSION
@@ -30,7 +30,7 @@ class HomogeneousConductivity:
 
 @dataclass(frozen=True)
 class LayeredConductivity:
-    """Ordered conductivity slabs — needed once FEM models real tissue layers."""
+    """Ordered conductivity slabs, needed once FEM models real tissue layers."""
 
     layers: tuple[Layer, ...]
     schema_version: int = SCHEMA_VERSION

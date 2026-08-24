@@ -50,7 +50,7 @@ describe("fieldScene", () => {
   it("skips near-zero cells and colours by sign", () => {
     const s = fieldScene({ data: DATA, size: 300, palette: PAPER });
     const rects = s.items.filter((i) => i.kind === "rect");
-    // the four corners are exactly zero — they must not be painted at all
+    // the four corners are exactly zero, so they must not be painted at all
     expect(rects).toHaveLength(5);
     // every painted cell here is negative, so all of them wear the potential blue
     expect(rects.every((r) => r.fill?.startsWith("rgba(10, 106, 224"))).toBe(true);
@@ -124,7 +124,7 @@ describe("paretoScene", () => {
     const cs = circles(s);
     // 4 points + 1 halo behind the selected one
     expect(cs).toHaveLength(5);
-    // the charge-unsafe design is stroked, never filled — it is not selectable
+    // the charge-unsafe design is stroked, never filled, because it is not selectable
     const unsafe = cs.find((c) => c.stroke?.includes("201, 42, 47"));
     expect(unsafe?.fill).toBeUndefined();
     // the selected point wears the amber
@@ -135,7 +135,7 @@ describe("paretoScene", () => {
     const s = paretoScene({ points: POINTS, width: 600, height: 360, palette: PAPER });
     const path = s.items.find((i) => i.kind === "path" && i.lineWidth === 2.5);
     expect(path).toBeDefined();
-    // the two safe frontier points (cost 7 and 9) — the unsafe and dominated are out
+    // the two safe frontier points (cost 7 and 9); the unsafe and dominated are out
     expect(path && path.kind === "path" && path.pts).toHaveLength(2);
     const g = paretoGeom(POINTS, 600, 360)!;
     // ordered by cost: the cheaper design comes first
@@ -146,7 +146,7 @@ describe("paretoScene", () => {
     const s = paretoScene({ points: POINTS, width: 600, height: 360, palette: PAPER });
     const labels = texts(s).map((t) => t.text);
     const g = paretoGeom(POINTS, 600, 360)!;
-    // costs run 7..12, so the domain is 6..13 — one decimal at that span
+    // costs run 7..12, so the domain is 6..13, a span that ticks to one decimal
     expect(g.x0).toBeCloseTo(6);
     expect(g.x1).toBeCloseTo(13);
     expect(labels).toContain("6.0"); // the x domain's ends are both labelled
@@ -170,7 +170,7 @@ describe("toSvg", () => {
     expect(svg).toContain("<title>");
     expect(svg).toContain("<circle");
     expect(svg).toContain("<rect");
-    // no CSS variables may survive into the file — they mean nothing outside the app
+    // no CSS variables may survive into the file: they mean nothing outside the app
     expect(svg).not.toContain("var(--");
   });
 

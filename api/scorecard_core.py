@@ -1,4 +1,4 @@
-"""The scorecard payload as a plain dict — shared by the uv service and the FEM job.
+"""The scorecard payload as a plain dict, shared by the uv service and the FEM job.
 
 The conda ``retinode-fem`` env has no Pydantic (like :mod:`api.study_core` and
 :mod:`api.fem_job`), so the FEM scorecard job cannot build a ``ScorecardResponse``.
@@ -14,7 +14,7 @@ from typing import Any
 def scorecard_dict(result: Any) -> dict[str, Any]:  # an engine.eval EvaluationResult
     """Map an evaluation result to the scorecard wire fields (see
     ``api.models.ScorecardResponse``). ``activated=False`` collapses to just that flag
-    plus the off-target hash — every other field is absent."""
+    plus the off-target hash; every other field is absent."""
     offtarget = getattr(result, "offtarget_hash", None)
     if not result.activated or result.window is None or result.sow is None:
         return {"activated": False, "offtarget_hash": offtarget}
