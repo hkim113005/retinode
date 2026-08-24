@@ -4,9 +4,9 @@ A penetrating electrode body is planted so it swallows the target's soma and som
 proximal compartments. Then:
 
 - ``reject`` refuses the scene (raises), and
-- ``displace`` severs the interior compartments — never querying the field there
+- ``displace`` severs the interior compartments. It never queries the field there
   (the point is inside the metal, which the FEM backend would reject) and never
-  detecting a spike there — yet the cell still reaches threshold on its surviving,
+  detects a spike there, yet the cell still reaches threshold on its surviving,
   outside-the-metal compartments.
 
 Uses the analytical backend (a point/disk source, fast, no FEM env). The property
@@ -105,7 +105,7 @@ def test_displace_severs_the_interior_and_survivors_still_fire(neuron_h):
     # the target still activates, on its surviving compartments
     assert r.target_threshold_uA is not None and r.target_threshold_uA > 0.0
 
-    # and the field was never queried at a severed (in-metal) compartment — the
+    # and the field was never queried at a severed (in-metal) compartment: the
     # property the FEM backend relies on, since an interior point there raises
     severed_xyz = {tuple(np.round(coords[i], 6)) for i in severed}
     for pts in spy.queried:

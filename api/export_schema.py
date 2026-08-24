@@ -18,7 +18,7 @@ _SNAPSHOT = pathlib.Path(__file__).resolve().parents[1] / "app" / "web" / "opena
 def main() -> None:
     schema = create_app().openapi()
     _SNAPSHOT.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n")
-    print(f"wrote {_SNAPSHOT} — paths: {sorted(schema['paths'])}")
+    print(f"wrote {_SNAPSHOT} (paths: {sorted(schema['paths'])})")
 
 
 if __name__ == "__main__":

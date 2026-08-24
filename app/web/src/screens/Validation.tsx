@@ -1,5 +1,5 @@
 // The Validation screen: the trust panel. Which published/physics reproductions
-// currently pass, with the evidence — the claim, its source, what was measured, and
+// currently pass, with the evidence: the claim, its source, what was measured, and
 // the criterion. This is the committed report CI regenerates; the app renders it and
 // never recomputes the science, so a skeptic sees exactly what the suite last proved
 // (master plan §15).
@@ -29,7 +29,7 @@ export function Validation({ onNavigate }: { onNavigate?: (s: Screen) => void })
     <div className="app">
       <Rail
         active="Validation"
-        tier={report ? `${report.n_pass}/${report.n_total}` : "—"}
+        tier={report ? `${report.n_pass}/${report.n_total}` : "n/a"}
         safe={allPass ? "all pass" : "see below"}
         onNavigate={onNavigate}
       />
@@ -38,7 +38,7 @@ export function Validation({ onNavigate }: { onNavigate?: (s: Screen) => void })
           <div>
             <h1>Validation · what reproduces</h1>
             <div className="crumb">
-              the committed report CI regenerates — rendered, never recomputed here
+              the committed report CI regenerates, rendered here and never recomputed
             </div>
           </div>
         </div>
@@ -90,7 +90,7 @@ export function Validation({ onNavigate }: { onNavigate?: (s: Screen) => void })
           <p className="empty">
             A ranking is only worth as much as the engine behind it. This panel lets a
             skeptical reader check the tool’s credibility <i>before</i> believing its
-            candidates — each row names the claim, its source, and the measurement.
+            candidates. Each row names the claim, its source, and the measurement.
           </p>
           <div className="foot">
             The bar is trend and direction, not absolute magnitude (analytical tier +

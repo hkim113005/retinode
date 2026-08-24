@@ -66,7 +66,7 @@ def run_study_job(
         # Enforce the wall-clock bound with a watchdog, and ALWAYS reap the child.
         # The stderr read loop below blocks until EOF (child exit), so `wait(timeout)`
         # alone gives no protection against a solve that hangs while alive and stops
-        # emitting output — the timer kills it, which closes stderr and unblocks us.
+        # emitting output. The timer kills it, which closes stderr and unblocks us.
         timed_out = threading.Event()
 
         def _on_timeout() -> None:

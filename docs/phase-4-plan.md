@@ -1,20 +1,21 @@
-# Phase 4 — FEM accuracy layer: plan
+# Phase 4 plan: the FEM accuracy layer
 
 **Goal.** A validated, drop-in open-source **FEM field backend** behind the
 existing transfer-matrix contract, confirmed against known-answer solutions and a
-second solver, and **extended to layered conductivity** — the retina's structure
-the analytical backend rejects (`UnsupportedByBackend`) — with mesh-convergence
-evidence per result and a map of where the analytical tier can be trusted.
+second solver, and **extended to layered conductivity**, the retina's structure
+that the analytical backend rejects outright (`UnsupportedByBackend`). Every
+result carries mesh-convergence evidence, and the phase ends with a map of where
+the analytical tier can be trusted.
 
 **Done when** an open-source FEM field is validated and swappable behind the
 contract, confirmed by a second backend, and the analytical-vs-FEM regime is
-mapped. (The master plan called this lab-compute work; in fact DOLFINx runs
-**locally** on Apple Silicon — see the toolchain note — so Phase 4 develops on the
-Mac, and only Phase 5's sweeps need shared compute.)
+mapped. (The master plan called this lab-compute work. In fact DOLFINx runs
+**locally** on Apple Silicon, as the toolchain note below explains, so Phase 4
+develops on the Mac and only Phase 5's sweeps need shared compute.)
 
 **Why it matters beyond FEM:** this is where the two items deferred from P1/P3 get
-their validation — **absolute threshold magnitudes** and **Fan 2019's full somatic
-selectivity gain** — because both need a faithful *layered* field, not the
+their validation, **absolute threshold magnitudes** and **Fan 2019's full somatic
+selectivity gain**, because both need a faithful *layered* field rather than the
 homogeneous half-space.
 
 ## Locked decisions
@@ -22,31 +23,33 @@ homogeneous half-space.
 | # | Decision | Choice |
 |---|---|---|
 | D1 | Primary FEM backend | **FEniCSx / DOLFINx** (per master plan), behind the `FieldBackend.transfer_matrix` contract. |
-| D2 | Validation | **Method of Manufactured Solutions + analytical** (rigorous known-answer) as the primary correctness gate; **NGSolve** as the second-solver agreement check (the "confirmed by a second backend" done-when). |
+| D2 | Validation | **Method of Manufactured Solutions plus analytical** (a rigorous known answer) as the primary correctness gate; **NGSolve** as the second-solver agreement check (the "confirmed by a second backend" done-when). |
 | D3 | CI | **A dedicated FEM CI job** (micromamba installs DOLFINx + gmsh) runs `fem`-marked tests on every push. |
-| D4 | Toolchain | FEniCSx has **no pip wheel**, but conda-forge ships an **osx-arm64 build** (verified `fenics-dolfinx` 0.11.0) → the FEM env is **conda-forge**, *separate from uv*, and **runs locally on Apple Silicon** — no lab compute needed for development. The uv toolchain is untouched; a `fem`-marked, conda-only layer sits beside it. |
+| D4 | Toolchain | FEniCSx has **no pip wheel**, but conda-forge ships an **osx-arm64 build** (verified `fenics-dolfinx` 0.11.0), so the FEM env is **conda-forge**, *separate from uv*, and **runs locally on Apple Silicon**: no lab compute is needed for development. The uv toolchain is untouched; a `fem`-marked, conda-only layer sits beside it. |
 | D5 | Value-add scope | Layered conductivity is **in scope** (the whole point of FEM); homogeneous is validated first as the known-answer case. |
 | D6 | Mesh | **gmsh** as the shared mesh front-end (neutral geometry → mesh both solvers read). |
-| D7 | Boundary | Phase 4 is the **backend + validation**, not the sweep at scale (parametric FEM, surrogate, cluster/cloud = P5). Sim4Life/COMSOL are field-only/stub, documented/deferred. |
+| D7 | Boundary | Phase 4 is the **backend plus its validation**, not the sweep at scale (parametric FEM, surrogate, and cluster/cloud are P5). Sim4Life and COMSOL stay field-only stubs: documented, deferred. |
 
 ## Toolchain note (read first)
 
 FEniCSx-first means the FEM layer lives in a **conda environment, separate from
-uv** — but it **runs locally**: conda-forge ships `fenics-dolfinx` 0.11.0 for
-osx-arm64 (Apple Silicon), verified. No lab compute is needed for Phase 4 — the
-whole backend plus MMS/analytical validation develops on the Mac. Plan:
+uv**, but it **runs locally**: conda-forge ships a verified `fenics-dolfinx`
+0.11.0 for osx-arm64 (Apple Silicon). No lab compute is needed for Phase 4,
+because the whole backend plus its MMS and analytical validation develops on the
+Mac. Plan:
 
-- `env/fem-environment.yml` — a conda-forge env (`fenics-dolfinx`, `gmsh`,
-  `python`, `numpy`, `pytest`) for local FEM dev and CI. Create it with
+- `env/fem-environment.yml`, a conda-forge env (`fenics-dolfinx`, `gmsh`,
+  `python`, `numpy`, `pytest`) for local FEM development and CI. Create it with
   `conda create -n fenics -c conda-forge fenics-dolfinx gmsh python=3.12`, then
   `pip install -e . --no-deps` so `engine` imports. FEM work runs under this env;
   analytical / NEURON work stays under uv.
 - The FEM CI job uses `mamba-org/setup-micromamba` to build the same env on the
   linux runner and runs `pytest -m fem`. The `test` / `test-neuron` jobs are
   unchanged.
-- **P4 S1 opens with a (now low-risk) feasibility gate:** create the env and solve
-  a trivial Poisson problem, locally and in CI. If DOLFINx somehow won't install
-  cleanly, fall back to NGSolve-first (D1 flips) before building anything on it.
+- **P4 S1 opens with a feasibility gate,** now low-risk: create the env and solve
+  a trivial Poisson problem, locally and in CI. If DOLFINx somehow will not
+  install cleanly, fall back to NGSolve-first (D1 flips) before building anything
+  on it.
 
 **Compute for scale (Phase 5, not here):** local suffices for Phase 4's
 single-electrode solves and convergence checks. Big geometry sweeps escalate to
@@ -58,117 +61,120 @@ lab if true HPC parallelism is needed.
 ```
 engine/field/
   backend.py       transfer-matrix contract + UnsupportedByBackend             [done]
-  analytical.py    Tier-1 analytical backend                                    [done]
-  mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers)  [done]
-  fem_fenicsx.py   DOLFINx backend behind the contract                          [done (homog + isotropic layered)]
-  fem_ngsolve.py   NGSolve backend (second-solver cross-check)                  [done]
-  regime.py        analytical-vs-FEM error map (trust boundary)                 [done]
+  analytical.py    Tier-1 analytical backend                                   [done]
+  mesh.py          neutral geometry -> gmsh mesh (electrode surfaces + layers) [done]
+  fem_fenicsx.py   DOLFINx backend behind the contract    [done: homogeneous + layered]
+  fem_ngsolve.py   NGSolve backend (second-solver cross-check)                 [done]
+  regime.py        analytical-vs-FEM error map (trust boundary)                [done]
   convergence.py   mesh-refinement convergence check                           [done]
 env/
-  fem-environment.yml   conda-forge FEM env (dolfinx, gmsh)                     [done]
-.github/workflows/ci.yml   + a `test-fem` job (micromamba)                      [done]
+  fem-environment.yml   conda-forge FEM env (dolfinx, gmsh)                    [done]
+.github/workflows/ci.yml   plus a `test-fem` job (micromamba)                  [done]
 ```
 
 ## Ordered steps
 
-- **P4 S1 — Toolchain, feasibility gate, and mesh — done. Gate PASSED.** The
+- **P4 S1: Toolchain, feasibility gate, and mesh. Done, gate PASSED.** The
   local conda env (`env/fem-environment.yml`: `fenics-dolfinx` 0.11.0, `gmsh`
-  4.15, Python 3.12) builds on Apple Silicon and a `test-fem` CI job builds the
+  4.15, Python 3.12) builds on Apple Silicon, and a `test-fem` CI job builds the
   same spec via micromamba. **Feasibility gate passed:** a manufactured-solution
   Poisson solve (`u = 1 + x² + 2y²`, P2 elements) recovers the exact field to L2
-  error `< 1e-9` — DOLFINx-first is confirmed, no NGSolve fallback needed
+  error `< 1e-9`, so DOLFINx-first is confirmed and no NGSolve fallback is needed
   (`tests/field/test_fem_gate.py`, deliberately gmsh-independent). `mesh.py` is a
-  neutral parametric geometry — disk electrodes imprinted on the z=0 top face over
+  neutral parametric geometry: disk electrodes imprinted on the z=0 top face over
   a tissue slab, split into one tagged volume per conductivity layer, meshed by
   gmsh with graded refinement (fine at electrodes, coarse to the shell) and a
   `refined(factor)` knob for P4 S4. Boundary tags pinned: **each electrode surface
-  its own physical group** (Neumann flux, applied per electrode by the backend),
-  the rest of the top face **insulating** (natural zero-flux), sides + bottom
-  **grounded** (Dirichlet V=0, the far-field truncation). Verified end-to-end:
+  is its own physical group** (Neumann flux, applied per electrode by the backend),
+  the rest of the top face is **insulating** (natural zero-flux), and the sides and
+  bottom are **grounded** (Dirichlet V=0, the far-field truncation). Verified
+  end-to-end:
   gmsh writes the mesh, DOLFINx reads it back with all tags intact, and the
   tagged measures are correct (electrode ≈ πr², shell + layer volumes exact).
   Pure geometry (partition/sizing/validation) is fast-tested without gmsh;
   gmsh+DOLFINx build is `fem`-marked (`tests/field/test_mesh.py`,
   `test_mesh_fem.py`).
-- **P4 S2 — DOLFINx backend (homogeneous) + MMS/analytical — done.**
+- **P4 S2: DOLFINx backend (homogeneous) plus MMS and analytical checks. Done.**
   `engine/field/fem_fenicsx.py`: `FenicsxBackend` behind the contract. Per
   electrode, a unit current is a Neumann flux `σ ∂V/∂n = 1/area` spread over the
   disk; the top face is insulating (natural zero-flux) and the outer shell is
-  grounded. One LU solve per electrode → one column of `A`; the mesh is scaled
+  grounded. One LU solve per electrode yields one column of `A`; the mesh is scaled
   microns→metres so assembly is pure SI, then `A = 1e-3 · V` recovers mV/µA. The
-  half-space image the analytical tier adds by hand is **geometric** here (the
-  slab *is* the half-space). Validated three ways (`test_fem_backend.py`, `fem`):
-  **(a) MMS** — `u* = 1 + x² + 2y² + 3z²` recovered on the real tissue mesh to
-  relative L2 `< 1e-8` (P2); **(b) analytical agreement** — on a homogeneous
+  half-space image the analytical tier adds by hand is **geometric** here, because
+  the slab *is* the half-space. Validated three ways (`test_fem_backend.py`,
+  `fem`). **(a) MMS:** `u* = 1 + x² + 2y² + 3z²` is recovered on the real tissue
+  mesh to relative L2 `< 1e-8` (P2). **(b) Analytical agreement:** on a homogeneous
   half-space with a ~3 mm grounded shell (truncation ≪ disk/mesh error), FEM `A`
-  matches analytical `A` to **median 3.8%, max 4.5%** across z = 20–100 µm, same
-  1/r decay, correct sign; **(c) current conservation** — a unit-current solve
-  drives **−0.997 A** out through the ground (Kirchhoff to 0.3%), confirming the
-  flux BC and unit chain. **Finding (recorded, not a bug):** the error grows with
-  query distance only when the domain is too small — it is *truncation*
-  (`err ≈ d/R`), so accuracy needs an adequately large grounded shell; the
-  regime is mapped in P4 S5 and the convergence knob is P4 S4. The
-  electrode-surface flux recovered by differentiating a P1 solution is unreliable
-  (the ground integral is the trustworthy conservation check).
-- **P4 S3 — Layered conductivity (the value-add) — done.** The backend now
+  matches analytical `A` to **median 3.8%, max 4.5%** across z = 20–100 µm, with
+  the same 1/r decay and the correct sign. **(c) Current conservation:** a
+  unit-current solve drives **−0.997 A** out through the ground (Kirchhoff to
+  0.3%), confirming the flux BC and the unit chain. **Finding (recorded, not a
+  bug):** the error grows with query distance only when the domain is too small,
+  so it is *truncation* (`err ≈ d/R`) and accuracy needs an adequately large
+  grounded shell. The regime is mapped in P4 S5 and the convergence knob is P4 S4.
+  The electrode-surface flux recovered by differentiating a P1 solution is
+  unreliable; the ground integral is the trustworthy conservation check.
+- **P4 S3: Layered conductivity, the value-add. Done.** The backend now
   builds a **DG0 (cell-wise) σ** from the mesh's per-layer volume tags, so the σ
   jump sits exactly on the meshed interface and a conforming FEM enforces V- and
   flux-continuity across it. Isotropic layers are supported; diagonal anisotropy
-  raises `NotImplementedError` (a planned extension — refused early, before any
-  mesh build, so it is fast-tested). Validated two ways (`test_fem_layered.py`,
-  `fem`): **(a) two-layer closed form** — for a unit source on the insulating
+  raises `NotImplementedError`, a planned extension refused early, before any
+  mesh build, so it is fast-tested. Validated two ways (`test_fem_layered.py`,
+  `fem`). **(a) Two-layer closed form:** for a unit source on the insulating
   surface of a two-layer half-space, FEM `A` matches the **image-series** in-layer
-  potential to **median 3.4% / max 3.5%** (z = 20–40 µm inside the top layer);
-  **(b) layered MMS** — a flux-continuous piecewise-linear exact solution
-  (`σ₁A₁ = σ₂A₂`) is recovered to **relative L2 3.6e-16** (machine), through the
-  backend's own `_build_sigma`. The **value-add is quantified and sign-checked**:
-  a buried *resistive* layer (σ₂<σ₁) banks current up and raises the layer-1 field
-  **1.3–1.7×** above the homogeneous-σ₁ field the analytical tier would give,
-  while a *conductive* buried layer (σ₂>σ₁) drains it and lowers the field — a
-  large, correctly-signed effect the analytical backend cannot represent (it
-  rejects layered models by contract).
-- **P4 S4 — Convergence + provenance — done.** `engine/field/convergence.py`:
+  potential to **median 3.4%, max 3.5%** (z = 20–40 µm inside the top layer).
+  **(b) Layered MMS:** a flux-continuous piecewise-linear exact solution
+  (`σ₁A₁ = σ₂A₂`) is recovered to **relative L2 3.6e-16**, machine precision,
+  through the backend's own `_build_sigma`. The **value-add is quantified and
+  sign-checked**: a buried *resistive* layer (σ₂<σ₁) banks current up and raises
+  the layer-1 field **1.3–1.7×** above the homogeneous-σ₁ field the analytical
+  tier would give, while a *conductive* buried layer (σ₂>σ₁) drains it and lowers
+  the field. That is a large, correctly-signed effect the analytical backend
+  cannot represent, since it rejects layered models by contract.
+- **P4 S4: Convergence and provenance. Done.** `engine/field/convergence.py`:
   `mesh_convergence(base_domain, query_points, factors, tol)` solves on the domain
   refined by each factor (extent fixed, so truncation is constant and only the
-  discretization changes) and records the curve — per level: mesh size, `‖A‖`, and
-  the relative change `‖A_k − A_{k-1}‖ / ‖A_k‖` of the transfer matrix at the fixed
-  query points. `converged` when the change between the two finest meshes < `tol`.
-  Verified on a real solve: rel-change **0.034 → 0.018** across factors 1→3
-  (`converged` at tol 0.05). The solver is **injectable**, so the convergence
-  logic is fast-tested without dolfinx (a stub returns matrices with a known
-  refinement trend); the real run is `fem`-marked. **Provenance:** `field_key`
-  gained a `solve_params` argument (hashed when present); `FieldDomain.descriptor()`
-  + `FenicsxBackend.solve_params()` expose the mesh extent/resolution + element
-  degree, so a coarse-mesh `A` **can never be silently reused for a finer mesh**.
-  The analytical backend passes no `solve_params`, so its keys — and every existing
-  store/result key — are unchanged.
-- **P4 S5 — Second-solver agreement + regime map — done.**
+  discretization changes) and records the curve, one row per level: mesh size,
+  `‖A‖`, and the relative change `‖A_k − A_{k-1}‖ / ‖A_k‖` at the fixed
+  query points. It reports `converged` when the change between the two finest
+  meshes is below `tol`. Verified on a real solve: relative change **0.034 →
+  0.018** across factors 1→3, `converged` at tol 0.05. The solver is
+  **injectable**, so the convergence logic is fast-tested without dolfinx (a stub
+  returns matrices with a known refinement trend); the real run is `fem`-marked.
+  **Provenance:** `field_key` gained a `solve_params` argument, hashed when
+  present, and `FieldDomain.descriptor()` plus `FenicsxBackend.solve_params()`
+  expose the mesh extent, resolution, and element degree, so a coarse-mesh `A`
+  **can never be silently reused for a finer mesh**. The analytical backend passes
+  no `solve_params`, so its keys, and every existing store or result key, are
+  unchanged.
+- **P4 S5: Second-solver agreement and the regime map. Done.**
   `engine/field/fem_ngsolve.py`: `NGSolveBackend` solves the **same gmsh mesh** as
-  DOLFINx — `build_mesh` now writes **MSH 2.2**, which both DOLFINx (via the gmsh
-  API) and netgen's `ReadGmsh` parse, so the cross-check reads one file, not two
-  builds. NGSolve solves in microns with an effective σ·1e-6 (the µm→m fold),
-  matching the DOLFINx mV/µA chain. **Agreement (the "confirmed by a second
+  DOLFINx. `build_mesh` now writes **MSH 2.2**, which both DOLFINx (via the gmsh
+  API) and netgen's `ReadGmsh` parse, so the cross-check reads one file rather
+  than building two. NGSolve solves in microns with an effective σ·1e-6 (the µm→m
+  fold), matching the DOLFINx mV/µA chain. **Agreement (the "confirmed by a second
   backend" done-when):** on the same mesh, DOLFINx ≈ NGSolve to **max 0.9%
-  (homogeneous) / 0.25% (layered), median ~0%** — two independent FEM libraries
+  homogeneous, 0.25% layered, median ~0%**, so two independent FEM libraries
   confirm each other (`test_fem_agreement.py`, `fem`). NGSolve is a pip
-  universal2/manylinux wheel that coexists with the conda DOLFINx (added to
-  `env/fem-environment.yml`'s pip section). `engine/field/regime.py`: the
-  **analytical-vs-FEM regime map** sweeps layer contrast σ₂/σ₁ and records the
-  error of pretending the medium is homogeneous-σ₁, with a `trustworthy` flag vs a
-  tolerance and a `trustworthy_at(contrast)` query for the evaluator. **Verified
-  behaviour:** at contrast 1 (homogeneous) the error is just the **3.6%**
-  discretization floor → trustworthy; a resistive (0.3×) or conductive (3×) buried
-  layer drives it to **28–35%** → not trustworthy, escalate to FEM. The map's
-  arithmetic is fast-tested with injected solvers; the real sweep is `fem`-marked.
-- **P4 S6 (optional) — Independent check + adapters — documented, deferred.**
-  Sim4Life field-only import (a solved file → `A`) and a COMSOL adapter stub are
-  **recorded as a design, not built** — both are commercial tools behind cloud/lab
-  access we do not have, and they were always third-vote nice-to-haves: Phase 4's
-  done-whens are met by the open-source stack (DOLFINx validated, NGSolve
-  cross-check, regime mapped). The adapter designs, the one-method contract they
-  satisfy, and the gate for un-deferring them live in
+  universal2/manylinux wheel that coexists with the conda DOLFINx, added to
+  `env/fem-environment.yml`'s pip section. `engine/field/regime.py` holds the
+  **analytical-vs-FEM regime map**: it sweeps layer contrast σ₂/σ₁ and records the
+  error of pretending the medium is homogeneous-σ₁, with a `trustworthy` flag
+  against a tolerance and a `trustworthy_at(contrast)` query for the evaluator.
+  **Verified behaviour:** at contrast 1 (homogeneous) the error is just the
+  **3.6%** discretization floor, so the tier is trustworthy; a resistive (0.3×) or
+  conductive (3×) buried layer drives it to **28–35%**, which is not trustworthy,
+  so escalate to FEM. The map's arithmetic is fast-tested with injected solvers;
+  the real sweep is `fem`-marked.
+- **P4 S6 (optional): Independent check and adapters. Documented, deferred.**
+  The Sim4Life field-only import (a solved file → `A`) and the COMSOL adapter stub
+  are **recorded as a design, not built**. Both are commercial tools behind
+  cloud or lab access we do not have, and they were always third-vote
+  nice-to-haves: Phase 4's done-whens are met by the open-source stack (DOLFINx
+  validated, NGSolve cross-check, regime mapped). The adapter designs, the
+  one-method contract they satisfy, and the gate for un-deferring them live in
   [fem-independent-checks.md](fem-independent-checks.md). This is the intended
-  first cut under pressure (D7 + the cut list).
+  first cut under pressure (D7 and the cut list).
 
 ## Testing strategy
 
@@ -182,8 +188,9 @@ env/
 
 ## What to cut under pressure, in order
 
-Drop P4 S6 (Sim4Life/COMSOL) — documented, not load-bearing. Then drop the NGSolve
-second solver (keep MMS + analytical + two-layer closed-form as the known-answer
-validation — rigorous on their own). Then drop layered anisotropy (keep isotropic
-layers). Never cut the MMS/analytical validation or the convergence check — they
-are what separate a trusted FEM number from a plausible-looking one.
+Drop P4 S6 (Sim4Life/COMSOL): documented, not load-bearing. Then drop the NGSolve
+second solver, keeping MMS, analytical agreement, and the two-layer closed form as
+the known-answer validation, which is rigorous on its own. Then drop layered
+anisotropy and keep isotropic layers. Never cut the MMS/analytical validation or
+the convergence check: they are what separate a trusted FEM number from a
+plausible-looking one.

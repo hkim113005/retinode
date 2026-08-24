@@ -1,7 +1,7 @@
 """Analytical-vs-FEM regime map: where can the cheap tier be trusted?
 
 The analytical backend is a homogeneous half-space; the retina is layered. So for
-any layered medium there is an error in pretending it is homogeneous — and the
+any layered medium there is an error in pretending it is homogeneous, and the
 question the evaluator needs answered is *how big*, as a function of the layer
 contrast. This module sweeps the contrast ``sigma2/sigma1``, solves the true
 (FEM, layered) field and the analytical (homogeneous-sigma1) field at the same
@@ -11,7 +11,7 @@ The result is a small map the app/evaluator consults: at low contrast the
 analytical tier is trustworthy (cheap, instant); past some contrast the error
 crosses the tolerance and the field must be escalated to FEM. At contrast 1 the
 medium *is* homogeneous, so the error collapses to the FEM/analytical
-discretization floor — a built-in sanity check on the map itself.
+discretization floor, a built-in sanity check on the map itself.
 
 The solvers are injectable so the map's *logic* is testable without a solver; by
 default the FEM side is :func:`engine.field.fem_fenicsx.solve_transfer_matrix` and

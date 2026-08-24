@@ -1,6 +1,6 @@
 """The uv-side dispatcher that scores a bodied (3D) scene in the conda FEM env.
 
-The subprocess is mocked here — the real FEM+NEURON scorecard is a fem-marked test in
+The subprocess is mocked here. The real FEM+NEURON scorecard is a fem-marked test in
 tests/field. What matters at this layer: the streamed progress protocol, the scorecard
 round-trip, and honest failure (a missing FEM env, or an OverlapConflict surfaced from
 the child's stderr)."""

@@ -1,4 +1,4 @@
-"""P6 S2: 3D electrode bodies — geometry, conductive area, and serialization."""
+"""P6 S2: 3D electrode bodies (geometry, conductive area, and serialization)."""
 
 import math
 

@@ -9,7 +9,7 @@ half-space:
       insulating image plane is also z = 0);
     - tissue fills the slab 0 <= z <= depth, laterally |x|,|y| <= half_width;
     - electrode faces (disk / square / hex / polygon) are imprinted on the top face
-      z = 0 and tagged one surface each -- that is where the current is injected (a
+      z = 0 and tagged one surface each, which is where the current is injected (a
       Neumann flux in the weak form, applied per electrode by the backend);
     - the rest of the top face is the insulating substrate (natural zero-flux);
     - the outer boundary (sides + bottom) is a grounded far-field truncation
@@ -17,9 +17,9 @@ half-space:
     - the slab is split into one volume per conductivity layer, tagged so the
       backend can assign a sigma (or diagonal anisotropy) per layer.
 
-This module is split so the *pure geometry* -- domain sizing, the layer
-partition, tag conventions, validation -- imports and tests without gmsh (the
-fast suite), while :func:`build_mesh` (which needs gmsh) is exercised only in the
+This module is split so the *pure geometry* (domain sizing, the layer partition,
+tag conventions, validation) imports and tests without gmsh (the fast suite),
+while :func:`build_mesh` (which needs gmsh) is exercised only in the
 ``fem`` job. Import gmsh lazily for exactly that reason.
 """
 
@@ -84,7 +84,7 @@ class FieldDomain:
     h_far_um: float
 
     def descriptor(self) -> str:
-        """Canonical string of the numeric mesh/extent parameters — the part of
+        """Canonical string of the numeric mesh/extent parameters: the part of
         a FEM solve's identity *beyond* the array and conductivity. Threaded into
         ``field_key`` (as ``solve_params``) so a coarse mesh's transfer matrix is
         never silently reused for a finer one. ``%.6g`` is finer than any mesh
@@ -95,7 +95,7 @@ class FieldDomain:
         )
 
     def refined(self, factor: float) -> FieldDomain:
-        """Same geometry, mesh sizes divided by ``factor`` -- the knob P4 S4's
+        """Same geometry, mesh sizes divided by ``factor``: the knob P4 S4's
         convergence study turns. ``factor > 1`` refines."""
         if factor <= 0:
             raise ValueError("refine factor must be positive")
@@ -149,7 +149,7 @@ def layer_partition(domain: FieldDomain) -> tuple[LayerSlab, ...]:
 
 
 def validate_domain(domain: FieldDomain) -> None:
-    """Cheap geometry sanity checks -- caught here, in the fast suite, rather
+    """Cheap geometry sanity checks, caught here in the fast suite rather
     than as a cryptic gmsh failure. Electrodes must sit on z=0, be a supported 2D
     shape (disk/square/hex/poly), and fit inside the top face with a margin; the
     mesh sizes must be sane."""
@@ -194,9 +194,9 @@ def default_domain(
     tests and P4 S2; production runs can size the domain explicitly.
 
     ``min_half_width_um`` floors the lateral extent. The array alone is a poor guide
-    when the field is sampled at points far from it — a cell's axon of passage reaches
-    hundreds of µm toward the optic disc, well outside a domain sized for a small
-    electrode. A caller that knows its query points passes their reach here so the
+    when the field is sampled at points far from it, because a cell's axon of passage
+    reaches hundreds of µm toward the optic disc, well outside a domain sized for a
+    small electrode. A caller that knows its query points passes their reach here so the
     domain contains them (a point outside the mesh is a hard error, not a small
     inaccuracy)."""
     placed = apply_placement(array)  # size the domain around the posed positions
@@ -433,7 +433,7 @@ def build_mesh(domain: FieldDomain, path: str) -> MeshResult:
 
         gmsh.model.mesh.generate(3)
         # Write MSH 2.2: DOLFINx reads it (via the gmsh API) *and* so does
-        # netgen's ReadGmsh, which only parses 2.2 -- so both FEM backends read
+        # netgen's ReadGmsh, which only parses 2.2, so both FEM backends read
         # the one file (the P4 S5 cross-check reads the same mesh, not two builds).
         gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
         gmsh.write(path)

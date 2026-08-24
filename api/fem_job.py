@@ -2,9 +2,9 @@
 
 This runs in the **conda** ``retinode-fem`` env (the only one with DOLFINx), invoked
 by :mod:`api.fem_worker` in the uv API env. It reads the scene controls as JSON on
-stdin and writes ``{xs_um, ys_um, ve_mV, vmax_mV}`` to the file named in ``argv[1]``
-— NOT stdout, because gmsh/PETSc scribble banners there and would corrupt the JSON
-(see ``main`` below). Plain dicts, no FastAPI, so it imports cleanly in the FEM env
+stdin and writes ``{xs_um, ys_um, ve_mV, vmax_mV}`` to the file named in ``argv[1]``.
+NOT stdout: gmsh/PETSc scribble banners there and would corrupt the JSON (see ``main``
+below). Plain dicts, no FastAPI, so it imports cleanly in the FEM env
 (see the lazy ``api/__init__``).
 
 The FEM tissue is the ``z >= 0`` slab, so the field is sampled at ``+|cell depth|``
@@ -54,7 +54,7 @@ def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
     # A domain much larger than the sampled grid so the grounded truncation stays
     # well outside the near field (the analytical tier it is compared against is an
     # infinite half-space). Fine at the electrode, coarse far away. Still truncation-
-    # sensitive — the residual FEM/analytical difference is real (finite electrode +
+    # sensitive: the residual FEM/analytical difference is real (finite electrode +
     # bounded domain), which is exactly what the "accurate" pass surfaces.
     domain = mesh.FieldDomain(
         array=scene.array,
@@ -66,7 +66,7 @@ def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
     )
     # A penetrating body can occupy the cell-plane grid: points inside the metal have
     # no extracellular field, and the FEM domain (tissue minus electrode) has no node
-    # there — querying one is an error. Mask those points out and render them as a hole
+    # there, so querying one is an error. Mask those points out and render them as a hole
     # (NaN), which is the physically honest picture: there is no tissue potential
     # inside the electrode. A flat disk never reaches the cell plane, so nothing masks.
     inside = _points_in_bodies(points, scene.array)
@@ -78,7 +78,7 @@ def solve_fem_grid(params: dict[str, Any]) -> dict[str, Any]:
     ve[outside] = a @ current_vector(scene.array, scene.config)
     grid = ve.reshape(n, n)
     finite = grid[np.isfinite(grid)]
-    # Emit holes as JSON null, not NaN — NaN is not valid JSON and would break the
+    # Emit holes as JSON null, not NaN: NaN is not valid JSON and would break the
     # client's response parse. ``FieldGridResponse.ve_mV`` is ``float | None`` for this.
     ve_grid = [[None if not np.isfinite(v) else float(v) for v in row] for row in grid]
     return {

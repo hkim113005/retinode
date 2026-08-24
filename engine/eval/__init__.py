@@ -1,6 +1,6 @@
 """The evaluator: one fixed scorer, called identically for every configuration.
 
-S1 provides the pure arithmetic — charge/safety, the off-target set, and the
+S1 provides the pure arithmetic: charge/safety, the off-target set, and the
 selective operating window. The threshold-driven pieces (evaluator, result) are
 wired in once the cable engine lands.
 """

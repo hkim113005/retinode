@@ -4,7 +4,7 @@ To first order, an axon is driven toward firing where the second spatial
 derivative of the extracellular potential along it is positive (Rattay 1986):
 ``AF ∝ ∂²Ve/∂s²``. Bi-electrode patterns that flatten this along a bundle are how
 axon avoidance works (Vilkhu 2021). This returns ∂²Ve/∂s² (mV/µm²) at each axon
-compartment — the sign and shape are the useful part; the positive cable
+compartment. Only the sign and shape carry meaning here: the positive cable
 prefactor is dropped. Endpoints, where a centered second derivative is
 undefined, are 0.
 """

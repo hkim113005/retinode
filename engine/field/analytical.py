@@ -4,17 +4,17 @@ The epiretinal array sits on an insulating substrate, so the free-space Green's
 function ``I / (4*pi*sigma*r)`` is replaced by its method-of-images form: a
 same-sign image across the substrate plane. That image enforces the insulating
 (Neumann) boundary and, for a source on the plane, doubles the potential to
-``I / (2*pi*sigma*r)``. This shapes the near field — which is where selectivity
-lives — so it is not a cosmetic correction.
+``I / (2*pi*sigma*r)``. This shapes the near field, which is where selectivity
+lives, so it is not a cosmetic correction.
 
 Only a homogeneous isotropic conductivity has this closed form; layered or
 anisotropic models must use a FEM backend (raised as UnsupportedByBackend).
 
 The array's :class:`ArrayPlacement` is honoured here, as it is by the FEM mesh
 (``mesh.build_mesh``) and the overlap check: the tier solves for the *posed*
-electrode positions, not the authored ones. What stays orientation-free — and so
-still requires FEM — is an electrode's ``normal`` and its 3D ``body``, which a
-point source cannot represent. Before this, the analytical tier read
+electrode positions, not the authored ones. Two things stay orientation-free and
+so still require FEM: an electrode's ``normal`` and its 3D ``body``, neither of
+which a point source can represent. Before this, the analytical tier read
 ``array.electrodes`` directly while every other consumer posed first, so an array
 with a placement was solved at different coordinates by the two tiers.
 
@@ -42,7 +42,7 @@ class AnalyticalBackend:
       (default True). False gives the raw free-space field, for comparison.
     - ``boundary_plane_z_um``: the substrate plane (default 0).
     - ``regularize``: floor the source distance at the electrode radius so the
-      near field is bounded rather than singular — a finite-electrode stand-in
+      near field is bounded rather than singular: a finite-electrode stand-in
       for the full equipotential-disk solution.
     """
 
@@ -71,7 +71,7 @@ class AnalyticalBackend:
             )
         sigma = conductivity.sigma_S_per_m
         q = np.asarray(query_points_um, dtype=float).reshape(-1, 3)  # (m, 3)
-        # Pose the array first — same as mesh.build_mesh and eval.overlap. A point
+        # Pose the array first, same as mesh.build_mesh and eval.overlap. A point
         # source is orientation-free, but a placement's TRANSLATION and in-plane
         # rotation move the source, and those it must follow.
         placed = apply_placement(array)

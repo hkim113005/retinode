@@ -1,6 +1,6 @@
 """S5: single-cell threshold reproductions vs the literature (NEURON-marked).
 
-Density-robust checks (trends, ratios, initiation site, range) — the Wk-4
+Density-robust checks (trends, ratios, initiation site, range) are the Wk-4
 checkpoint. Absolute-value matching is deferred to the Phase-3 ex-vivo
 reproductions.
 """

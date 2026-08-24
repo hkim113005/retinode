@@ -1,9 +1,9 @@
 """Place an RGC in the patch: position at its soma + orient the axon (S6a).
 
 The morphology is built at the template origin; `origin_um` carries it to the
-cell's `soma_um` (added by segment_coords, so the field sees patch coordinates —
-no pt3d surgery), and `axon_direction` points the appended axon toward the optic
-disc (or along the spec's `axon_um`), so axons of passage cross the array
+cell's `soma_um` (added by segment_coords, so the field sees patch coordinates
+with no pt3d surgery), and `axon_direction` points the appended axon toward the
+optic disc (or along the spec's `axon_um`), so axons of passage cross the array
 realistically.
 """
 

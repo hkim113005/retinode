@@ -1,4 +1,4 @@
-"""P8: the amplitude sweep — the curve the threshold search throws away.
+"""P8: the amplitude sweep. The curve the threshold search throws away.
 
 The grid maths and the curve readers are pure, so they are tested without NEURON.
 The end-to-end sweep is marked `neuron` and lives at the bottom.
@@ -49,7 +49,7 @@ class TestCrossing:
         assert _cell([False] * 4).crossing_uA(self.AMPS) is None
 
     def test_is_the_grid_point_not_an_interpolation(self):
-        # deliberately coarser than the bisection's tolerance — these are different
+        # deliberately coarser than the bisection's tolerance: these are different
         # numbers and must not be conflated
         assert _cell([False, True, True, True]).crossing_uA(self.AMPS) == 2.0
 
@@ -131,7 +131,7 @@ def test_the_target_fires_before_the_bystander():
 
 
 def test_amplitude_sweep_rejects_an_empty_grid():
-    """The empty-grid guard fires before any field solve, so it is fast-testable —
+    """The empty-grid guard fires before any field solve, so it is fast-testable,
     but every other amplitude_sweep test is neuron-marked, so this cheap branch was
     never hit."""
     from engine.study.activation import amplitude_sweep

@@ -2,7 +2,7 @@
 
 Places the target and its off-target cells (from the patch + an OffTargetSet) and
 finds each cell's activation threshold under the array's field, using multi-site
-activation (a spike anywhere counts — so an off-target's axon of passage firing
+activation (a spike anywhere counts, so an off-target's axon of passage firing
 makes it activated). This is the per-cell data the evaluator (S7) turns into the
 selective operating window.
 
@@ -12,8 +12,8 @@ distribution (spread) is trajectories.py, and full trajectory×population sweeps
 are a Phase-5 concern.
 
 Coordinate convention (matters for the half-space field): the array/electrodes
-sit on the insulating boundary at **z = 0**; the tissue — every cell — is on one
-side of it. The analytical field is built by the method of images, so it is
+sit on the insulating boundary at **z = 0**, and the tissue (every cell) sits on
+one side of it. The analytical field is built by the method of images, so it is
 *exactly mirror-symmetric across z = 0*: a cell at +z and its mirror at -z see the
 identical field. Either sign is therefore valid analytically. The FEM path,
 however, meshes an explicit z >= 0 tissue slab, so the shared Phase-6 convention is
@@ -44,7 +44,7 @@ def severed_segments(
     model: RGCModel, array: ElectrodeArray, *, eps_um: float = 1.0
 ) -> frozenset[int]:
     """Segment indices (in ``segment_coords`` order) that lie inside an electrode
-    body — the ``displace`` policy's severed compartments. Aligning the overlap
+    body: the ``displace`` policy's severed compartments. Aligning the overlap
     check to ``segment_coords`` is what lets the index set map straight onto the
     transfer matrix rows and the spike detectors."""
     # Lazy import: overlap lives in engine.eval; a module-level import would form a
@@ -65,7 +65,7 @@ class PopulationThresholds:
     off_target_thresholds_uA: dict[str, float]  # id -> threshold (cells that fired)
     # Off-targets that did NOT fire anywhere in the searched range, and the cap that
     # range stopped at. Without these, a bystander whose threshold sits above the cap
-    # is simply absent from the dict — indistinguishable from a patch that has no
+    # is simply absent from the dict, indistinguishable from a patch that has no
     # bystanders at all, which is how the evaluator came to report an unbounded
     # selective window for a scene whose bystanders had merely never been reached.
     unfired_off_target_ids: tuple[str, ...] = ()

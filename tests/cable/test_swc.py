@@ -9,7 +9,7 @@ def test_parse_vendored_rgc_regions():
     counts = swc.counts_by_region(nodes)
     assert counts["soma"] == 3  # standard 3-point soma
     assert counts["dendrite"] == 1514
-    assert "axon" not in counts  # no axon traced — appended in morphology.py
+    assert "axon" not in counts  # no axon traced; morphology.py appends it
 
 
 def test_soma_center_near_origin():

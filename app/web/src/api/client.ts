@@ -1,5 +1,5 @@
 // The typed API client. Types come from src/api/schema.d.ts, generated from the
-// FastAPI OpenAPI schema (`npm run gen:types`) — so the client can never drift from
+// FastAPI OpenAPI schema (`npm run gen:types`), so the client can never drift from
 // the server contract (docs/phase-7-plan.md, D2).
 import type { components } from "./schema";
 

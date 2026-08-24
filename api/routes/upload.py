@@ -23,7 +23,7 @@ async def _read_capped(file: UploadFile) -> bytes:
     """Read the upload, refusing it the moment it exceeds ``MAX_BYTES``.
 
     ``await file.read()`` with no argument materialises the *whole* body in memory
-    before ``store_upload`` ever gets to check the size — so the 25 MB limit was no
+    before ``store_upload`` ever gets to check the size, so the 25 MB limit was no
     protection at all: a multi-GB POST is a plain out-of-memory kill of the API.
     Reading in chunks and bailing at the first byte over the cap bounds the cost of
     a hostile (or fat-fingered) upload at ``MAX_BYTES`` + one chunk.
@@ -50,7 +50,7 @@ async def upload_cad(file: UploadFile) -> CadUploadResponse:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     # Measure the solid now, in the FEM env, and cache it beside the file: the API
     # process has no gmsh, so this is the only moment the shape can be learned without
-    # a full FEM job. Returns None if that env is absent — never fails the upload.
+    # a full FEM job. Returns None if that env is absent; it never fails the upload.
     dims = measure_upload(upload_id) or {}
     return CadUploadResponse(
         upload_id=upload_id,

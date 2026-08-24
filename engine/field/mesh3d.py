@@ -1,6 +1,6 @@
 """3D electrode bodies in the FEM mesh: build the solid, tag its surfaces (P6 S2).
 
-The tissue domain is the slab *minus* the electrode body — a boolean cut done in
+The tissue domain is the slab *minus* the electrode body, a boolean cut done in
 :func:`engine.field.mesh.build_mesh`. This module supplies the two body-specific
 pieces: constructing the body solid in the OCC kernel, and, after the cut, splitting
 its cavity-wall surfaces into **conductive** (Neumann flux) and **insulated**
@@ -74,7 +74,7 @@ def add_body_solid(occ, electrode, rotation: Mat3 | None = None):  # noqa: ANN00
         solid = occ.importShapes(body.cad_path)[0][1]  # its origin is the electrode base
         # The primitives above are already in microns; a CAD file is in whatever unit
         # it declares. Scale the imported solid so the MESHED geometry matches the
-        # dimensions load_cad_body recorded — otherwise the body's metadata says 5 um
+        # dimensions load_cad_body recorded. Otherwise the body's metadata says 5 um
         # while the solve cuts a 5000 um hole out of the tissue.
         cad_scale = cad_unit_scale_um(body.cad_path)
         if cad_scale != 1.0:
@@ -118,8 +118,8 @@ def classify_cavity_surfaces(occ, electrode, wall_surfs, rotation: Mat3 | None =
 
 
 # Every length in this engine is microns (spec/conventions.py). A STEP/IGES file
-# DECLARES its own unit in its header — millimetres in almost every CAD package's
-# default export — so its raw coordinates are not microns and must be converted.
+# DECLARES its own unit in its header, and almost every CAD package exports
+# millimetres by default, so its raw coordinates are not microns until converted.
 #
 # gmsh has a Geometry.OCCTargetUnit option, but it is global process state applied
 # deep inside OCC's STEP reader, and it proved order-dependent: with two loads in one
@@ -141,7 +141,7 @@ def cad_unit_scale_um(cad_path: str) -> float:
     """Microns per file unit, from the CAD's own declared length unit.
 
     A BREP declares nothing (it is a raw geometry dump), and neither does a file whose
-    header we cannot read, so both fall back to 1.0 — their numbers are taken as
+    header we cannot read, so both fall back to 1.0: their numbers are taken as
     microns. That assumption is the format's limitation, not a guess we can improve on.
     """
     if not cad_path.lower().endswith((".step", ".stp", ".iges", ".igs")):
@@ -151,7 +151,7 @@ def cad_unit_scale_um(cad_path: str) -> float:
             head = fh.read(200_000)  # the header + unit context live near the top
     except OSError:
         return 1.0
-    # e.g. "( LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.) )" — the prefix is
+    # e.g. "( LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.) )". The prefix is
     # optional ("SI_UNIT($,.METRE.)" is a bare metre).
     m = re.search(r"SI_UNIT\s*\(\s*(?:\.(\w+)\.|\$)\s*,\s*\.METRE\.\s*\)", head)
     if m is None:
@@ -178,11 +178,12 @@ def load_cad_body(
 
     **Units.** A STEP/IGES file declares its own length unit, and CAD packages export
     millimetres by default. Those raw coordinates were previously taken as microns,
-    so a solid authored at true implant scale came in 1000x too small — silently, with
-    no warning, producing a plausible-looking but meaningless score. The declared unit
-    is now honoured: gmsh converts to microns on import. A **BREP** carries no unit
-    (it is a raw geometry dump), so its numbers are still read as microns — that is the
-    only remaining assumption, and it is the format's own limitation.
+    so a solid authored at true implant scale came in 1000x too small, silently and
+    with no warning, producing a plausible-looking but meaningless score. The declared
+    unit is now honoured: :func:`cad_unit_scale_um` reads it from the file header and
+    the geometry is scaled here. A **BREP** carries no unit (it is a raw geometry
+    dump), so its numbers are still read as microns. That is the only remaining
+    assumption, and it is the format's own limitation.
 
     If the result is implausibly large for a retina, this raises rather than solving:
     a wrong declared unit is far likelier than a millimetre-scale retinal electrode.
@@ -202,7 +203,7 @@ def load_cad_body(
         occ.synchronize()
         # Everything below is measured in the FILE's own unit and converted at the end
         # (lengths x scale, areas x scale^2). Scaling the OCC shape in place with
-        # occ.dilate was tried first and gave a bounding box inflated by sqrt(3) —
+        # occ.dilate was tried first and gave a bounding box inflated by sqrt(3);
         # measure-then-convert is arithmetic we control.
         xmin, ymin, zmin, xmax, ymax, zmax = occ.getBoundingBox(*solid)
         bounding_radius = 0.5 * max(xmax - xmin, ymax - ymin) * scale
@@ -259,9 +260,9 @@ def load_cad_body(
 
 
 def _surface_triangulation(gmsh, size_um: float):  # noqa: ANN001
-    """Surface-mesh the loaded solid at ``size_um`` and return ``(points, tris)`` —
-    node coordinates (microns) and triangles indexing them — for the exact overlap
-    proxy. The model already holds the synchronized solid."""
+    """Surface-mesh the loaded solid at ``size_um`` and return ``(points, tris)`` for
+    the exact overlap proxy: node coordinates (microns) and triangles indexing them.
+    The model already holds the synchronized solid."""
     gmsh.option.setNumber("Mesh.MeshSizeMax", size_um)
     gmsh.option.setNumber("Mesh.MeshSizeMin", size_um)
     gmsh.model.mesh.generate(2)  # surfaces only

@@ -1,4 +1,4 @@
-<title>Retinode — Study &amp; Pareto (design mockup)</title>
+<title>Retinode: Study &amp; Pareto (design mockup)</title>
 <style>
   :root{
     --bg1:#eef2f8; --bg2:#e6ecf5;
@@ -176,7 +176,7 @@
         <h1>Study · diameter × pitch × return</h1>
         <div class="crumb">selectivity vs. current on the Pareto frontier · drag to select a family</div>
       </div>
-      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ study·2c9f</div>
+      <div class="chip" id="hashChip" title="Copy a shareable link (the link is the hash)">◇ study·2c9f</div>
     </div>
 
     <div class="card plot-wrap">
@@ -185,7 +185,7 @@
         <div class="prog"><i id="progFill"></i></div></div>
       <div class="ghost" id="ghost">
         <canvas id="ghostC" width="300" height="180"></canvas>
-        <div class="g-lab" id="gLab">—</div><div class="g-sub" id="gSub"></div>
+        <div class="g-lab" id="gLab">n/a</div><div class="g-sub" id="gSub"></div>
       </div>
     </div>
 
@@ -230,9 +230,9 @@
     <div class="card panel">
       <h2>Legend</h2>
       <div class="legend">
-        <div class="r"><span class="d" style="background:var(--accent)"></span>on the Pareto frontier — not beaten on both axes</div>
-        <div class="r"><span class="d" style="background:var(--faint)"></span>dominated — a frontier design beats it</div>
-        <div class="r"><span class="d hollow"></span>over the charge-density limit — excluded</div>
+        <div class="r"><span class="d" style="background:var(--accent)"></span>on the Pareto frontier: not beaten on both axes</div>
+        <div class="r"><span class="d" style="background:var(--faint)"></span>dominated: a frontier design beats it</div>
+        <div class="r"><span class="d hollow"></span>over the charge-density limit: excluded</div>
         <div class="r"><span class="d" style="background:var(--warm)"></span>selected</div>
       </div>
     </div>
@@ -419,7 +419,7 @@
   function syncSel(){
     const n=selected.size; document.getElementById("selN").textContent=n;
     const btn=document.getElementById("sendBtn"); btn.disabled=n===0;
-    document.getElementById("selFoot").textContent = n? `${n} design${n>1?"s":""} ready — carries to Candidates with tier, threshold, and rationale.`
+    document.getElementById("selFoot").textContent = n? `${n} design${n>1?"s":""} ready. Carries to Candidates with tier, threshold, and rationale.`
       : "Drag a box across the frontier to select a family of designs; the selection carries to the Candidates shortlist.";
     renderMultiples(); draw();
   }
@@ -441,7 +441,7 @@
 
   // ---- run animation (incremental fill) ----
   document.getElementById("runBtn").addEventListener("click",()=>{
-    if(reduce){ revealed=active.length; renderMultiples(); draw(); toast("Study complete — "+active.length+" configurations"); return; }
+    if(reduce){ revealed=active.length; renderMultiples(); draw(); toast("Study complete: "+active.length+" configurations"); return; }
     revealed=0; selected.clear(); const N=active.length; const t0=performance.now(), dur=1500;
     document.getElementById("progFill").style.width="0%";
     (function step(){
@@ -450,12 +450,12 @@
       document.getElementById("pDone").textContent=revealed;
       document.getElementById("progFill").style.width=(k*100)+"%";
       onFront=computeFrontier(active); renderMultiples(); draw();
-      if(k<1) requestAnimationFrame(step); else { toast("Study complete — frontier ready"); syncSel(); }
+      if(k<1) requestAnimationFrame(step); else { toast("Study complete: frontier ready"); syncSel(); }
     })();
   });
 
   document.getElementById("sendBtn").addEventListener("click",()=>toast(selected.size+" designs sent to Candidates →"));
-  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied — reopens this study at this exact state (link = hash)"));
+  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied. Reopens this study at this exact state (link = hash)"));
 
   let toastT; function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show");
     clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2200); }

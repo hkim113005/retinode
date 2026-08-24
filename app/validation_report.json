@@ -32,7 +32,7 @@
       "passed": true,
       "measured": "axon=15 vs soma=26 uA (soma/axon 1.70)",
       "criterion": "axon threshold <= soma threshold, in physiological range",
-      "note": "Diverges from Greenberg 1999's original soma<axon claim; consistent with a proper Na band and the axon-avoidance premise — axons are the low-threshold off-target."
+      "note": "Diverges from Greenberg 1999's original soma<axon claim; consistent with a proper Na band and the axon-avoidance premise: axons are the low-threshold off-target."
     },
     {
       "name": "spike initiates at the sodium-channel band (AIS)",

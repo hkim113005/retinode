@@ -4,11 +4,11 @@ Solves the quasi-static conduction problem ``-div(sigma grad V) = 0`` on the
 truncated tissue slab meshed in :mod:`engine.field.mesh`, one unit-current solve
 per electrode. Because the top face z=0 is meshed as an insulating boundary
 except at the electrodes, the half-space image the analytical backend adds by
-hand is enforced *geometrically* here -- the FEM slab already is the half-space.
+hand is enforced *geometrically* here: the FEM slab already is the half-space.
 
 The boundary conditions realise the electrode contract:
 
-    - each electrode surface carries a Neumann flux ``sigma dV/dn = I / area`` --
+    - each electrode surface carries a Neumann flux ``sigma dV/dn = I / area``,
       a unit current spread uniformly over the disk (weak-form RHS
       ``(I/area) * integral(v) dS``);
     - the rest of the top face is insulating: the natural zero-flux BC, nothing
@@ -22,8 +22,8 @@ from microns to metres so the assembly is pure SI (V for I in amps), then A is
 returned in mV/uA via ``A_mV/uA = 1e-3 * V_volts`` (see spec/conventions.py and
 the analytical backend, which this must match on a homogeneous half-space).
 
-Requires the FEM conda env (dolfinx); imported lazily so the module -- and the
-cheap guards on it -- import under uv without dolfinx.
+Requires the FEM conda env (dolfinx); imported lazily so the module, and the
+cheap guards on it, import under uv without dolfinx.
 """
 
 from __future__ import annotations
@@ -236,7 +236,7 @@ def _assemble_scalar(fem, mesh, MPI, form_expr) -> float:
 
 def _eval_at_points(func, mesh, points_m: np.ndarray) -> np.ndarray:
     """Evaluate a scalar Function at arbitrary points (metres). Points must lie
-    inside the meshed tissue -- a query point outside the domain is an error, not
+    inside the meshed tissue: a query point outside the domain is an error, not
     a silent zero."""
     from dolfinx import geometry
 

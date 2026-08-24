@@ -17,7 +17,7 @@ export function downloadBlob(filename: string, blob: Blob): void {
   URL.revokeObjectURL(url);
 }
 
-/** Download `text` as a file — the shared path for JSON/CSV/SVG. */
+/** Download `text` as a file: the shared path for JSON/CSV/SVG. */
 export function downloadText(filename: string, mime: string, text: string): void {
   downloadBlob(filename, new Blob([text], { type: mime }));
 }

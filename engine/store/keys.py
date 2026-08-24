@@ -4,7 +4,7 @@ A result is identified by *everything* that could change it: the field solve
 (backend + array + conductivity), the stimulus, the patch, the scorer version,
 and the off-target definition it was measured against. Keys are built from spec
 content hashes (hashing.py) with ``combine``, so equal inputs key equal and any
-change yields a fresh key — the basis for a content-addressed store (Phase 2).
+change yields a fresh key: the basis for a content-addressed store (Phase 2).
 """
 
 from __future__ import annotations
@@ -43,16 +43,17 @@ def field_key(
     """Identity of a field solve: the transfer matrix depends only on these.
 
     ``query_points`` (the cell's segment centers) is where the field is sampled,
-    so a *per-cell* transfer-matrix cache must include it — two placements of the
+    so a *per-cell* transfer-matrix cache must include it: two placements of the
     same cell type under one array have different fields. It is optional so the
     regime-level key (used inside ``result_key``, where the patch hash already
     captures every cell's placement) stays unchanged.
 
     ``solve_params`` carries backend-specific settings that change ``A`` beyond
-    the array and conductivity — for the FEM backend, the mesh resolution/extent
-    and element degree (``FenicsxBackend.solve_params``). Threading it in means a
-    coarse-mesh ``A`` is never silently reused for a finer mesh. The analytical
-    backend has no such settings and passes ``None``, so its keys are unchanged.
+    the array and conductivity. For the FEM backend those are the mesh
+    resolution/extent and the element degree (``FenicsxBackend.solve_params``).
+    Threading it in means a coarse-mesh ``A`` is never silently reused for a finer
+    mesh. The analytical backend has no such settings and passes ``None``, so its
+    keys are unchanged.
     """
     parts = [backend_name, spec_hash(array), spec_hash(conductivity)]
     if solve_params is not None:
@@ -84,7 +85,7 @@ def result_key(
     previous key exactly, so analytical result keys are unchanged.
 
     ``eval_params`` (from :func:`engine.eval.safety.eval_params_digest`) carries the
-    scoring parameters that are not part of the scene — the safety limits and the
+    scoring parameters that are not part of the scene: the safety limits and the
     overlap policy/epsilon. They were absent, which broke the promise in this module's
     own docstring that a result is identified by everything that could change it: the
     same study re-run against one store with tighter safety limits was served the

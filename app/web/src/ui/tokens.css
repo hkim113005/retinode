@@ -1,4 +1,4 @@
-/* Retinode instrument-panel design tokens — the one visual language (docs/phase-7-design.md).
+/* Retinode instrument-panel design tokens: the one visual language (docs/phase-7-design.md).
    Mirrors app/assets/style.css and the mockups: graphite ink on a cool ground,
    blue = potential, amber = activation, green = safe. Light + dark, token-driven. */
 :root {
@@ -177,8 +177,8 @@ button.step:hover { background: var(--accent-soft); color: var(--ink); }
   color: var(--warm-strong); font-family: var(--mono); }
 
 /* the hover readout: the field's top-left corner (the loupe owns the right). It is
-   an instrument reading, so it is monospaced and does not move with the cursor —
-   a chip that chases the mouse is harder to read than one that stays put. */
+   an instrument reading, so it is monospaced and does not move with the cursor.
+   A chip that chases the mouse is harder to read than one that stays put. */
 .probe { position: absolute; left: 18px; top: 18px; z-index: 3; pointer-events: none;
   display: flex; align-items: baseline; gap: 5px; padding: 5px 10px; border-radius: 9px;
   background: var(--glass-strong); border: 1px solid var(--border);
@@ -186,8 +186,8 @@ button.step:hover { background: var(--accent-soft); color: var(--ink); }
 .probe .v { font-size: 13px; font-weight: 600; color: var(--field); }
 .probe .at { color: var(--faint); }
 
-/* figure export: quiet until wanted. It rides at the end of the legend row — the
-   figure-caption position — so it never competes with the data and never fights the
+/* figure export: quiet until wanted. It rides at the end of the legend row, in the
+   figure-caption position, so it never competes with the data and never fights the
    3D loupe for the plot's top-right corner. The menu opens upward for the same
    reason: there is nothing below it but the card edge. */
 .canvas-tools { margin-left: auto; position: relative; }
@@ -311,7 +311,7 @@ canvas.field { width: 100%; height: auto; display: block; border-radius: 12px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 /* rank-by control on Candidates. "robustness" disables itself when the study did not
-   measure a trajectory spread — an order over an unmeasured column is invented. */
+   measure a trajectory spread, because an order over an unmeasured column is invented. */
 .sorts { display: flex; gap: 3px; padding: 3px; background: var(--inset); border-radius: 9px; }
 .sorts button { font-size: 11px; font-family: var(--sans); color: var(--muted);
   background: transparent; border: 0; border-radius: 7px; padding: 4px 10px; cursor: pointer;

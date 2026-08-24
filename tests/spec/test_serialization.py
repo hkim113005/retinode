@@ -152,7 +152,7 @@ def test_missing_field_falls_back_to_default():
 def test_placed_mixed_3d_array_round_trips_whole():
     # The Phase-6 stress case for the decoder: one array carrying a flat electrode
     # AND two different ElectrodeBody arms (Cylinder, Hemisphere) AND an
-    # ArrayPlacement. This is what forced the multi-arm-union decode order — a
+    # ArrayPlacement. This is what forced the multi-arm-union decode order: a
     # single payload where the tagged-dict branch must win over the union unpack.
     arr = spec.ElectrodeArray(
         electrodes=(

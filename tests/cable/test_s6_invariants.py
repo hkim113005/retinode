@@ -1,4 +1,4 @@
-"""S6 correctness invariants — cross-checks beyond the per-feature tests.
+"""S6 correctness invariants: cross-checks beyond the per-feature tests.
 
 These assert properties that must hold if placement, multi-site detection, the
 field coupling, and the activating function are wired correctly:

@@ -1,7 +1,7 @@
 """Content-addressed store for uploaded CAD solids.
 
 Two processes touch a CAD upload: the uv API receives it (``POST /cad``) and writes
-it here; a conda FEM job later loads it with gmsh. They share this store on disk —
+it here; a conda FEM job later loads it with gmsh. They share this store on disk, so
 the same ``upload_id`` resolves to the same path in both. Pydantic-free so the conda
 jobs can import it (like :mod:`api.study_core`).
 
@@ -20,7 +20,7 @@ import tempfile
 from typing import Any
 
 # STEP/BREP are OpenCASCADE solids that boolean-cut cleanly. STL is a surface
-# tessellation, not a solid — rejected with a message that says so.
+# tessellation, not a solid, and is rejected with a message that says so.
 ALLOWED_SUFFIXES = (".step", ".stp", ".brep")
 MAX_BYTES = 25 * 1024 * 1024
 
@@ -62,7 +62,7 @@ def resolve_upload(upload_id: str) -> str:
         raise CadUploadError(f"invalid CAD upload id {upload_id!r}")
     path = _store_dir() / upload_id
     if not path.exists():
-        raise CadUploadError(f"unknown CAD upload {upload_id!r} — re-upload the file")
+        raise CadUploadError(f"unknown CAD upload {upload_id!r}; re-upload the file")
     return str(path)
 
 
@@ -84,7 +84,7 @@ def resolve_body(body_spec: dict[str, Any]) -> Any:  # an engine.spec ElectrodeB
 
 # --- cached dimensions, so the gmsh-free API can describe the solid ----------------
 #
-# Reading a STEP needs gmsh, which lives only in the conda FEM env — so ``POST
+# Reading a STEP needs gmsh, which lives only in the conda FEM env, so ``POST
 # /compare`` (uv env) could not describe an uploaded solid at all, and the 3D loupe
 # fell back to drawing a flat disk for it. Measuring once at upload and caching the
 # result next to the file lets every later gmsh-free request describe the shape.

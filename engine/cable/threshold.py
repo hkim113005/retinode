@@ -1,11 +1,11 @@
-"""Activation-threshold search — non-monotonicity aware (not naive bisection).
+"""Activation-threshold search that is aware of non-monotonicity (not naive bisection).
 
 Extracellular stimulation is non-monotonic: a cell fires above a lower threshold
 but can fall silent again at high amplitude (depolarization block / upper
 threshold). Naive bisection can converge to a spurious value, so the search
 (1) climbs a geometric ladder to *bracket* the lowest activating amplitude,
-(2) bisects within that bracket to tolerance, then (3) scans above to check the
-activation persists — recording any upper block.
+(2) bisects within that bracket to tolerance, then (3) scans above to check that
+activation persists, recording any upper block.
 
 `find_threshold` is generic (takes an `activates(amp) -> bool` predicate), so the
 algorithm is tested on synthetic activation curves with no NEURON.
@@ -38,13 +38,13 @@ def find_threshold(
 ) -> ThresholdResult:
     # 1. climb a geometric ladder to bracket the first activating amplitude.
     #
-    # The last rung is CLAMPED to amp_max — the same clamp step 3 below already uses.
+    # The last rung is CLAMPED to amp_max, the same clamp step 3 below already uses.
     # Climbing by bare multiplication instead left the band between the top rung and
     # amp_max unprobed (at ladder=1.5 that is the top 33% of the declared range: with
     # amp_min=2, amp_max=500 the highest amplitude ever tested was 389.2 µA). A cell
-    # whose threshold fell in that band returned None — which every caller reads as
-    # "never fires", not "not looked for" — and so dropped out of the off-target set
-    # entirely, taking the selective-window bound with it.
+    # whose threshold fell in that band returned None. Every caller reads that as
+    # "never fires" rather than "not looked for", so such a cell dropped out of the
+    # off-target set entirely, taking the selective-window bound with it.
     last_inactive: float | None = None
     first_active: float | None = None
     a = amp_min
@@ -104,7 +104,7 @@ def extracellular_threshold(
     """Threshold (µA amplitude) for a field-driven cell, scaling the config's amplitude.
 
     Uses the monophasic excitatory phase by default so the threshold is clean
-    (a biphasic pulse's reversed phase can itself excite — see drive.py).
+    (a biphasic pulse's reversed phase can itself excite; see drive.py).
     """
     from .drive import run_extracellular_pulse
 

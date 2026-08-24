@@ -1,18 +1,27 @@
-# Validation — literature and physics reproductions
+# Validation: literature and physics reproductions
 
 Correctness is the product, so the tool's trustworthiness is both **enforced in
 CI** (every reproduction is a regression test) and **visible in the app** (the
 Validation panel, from a precomputed report). This page is the human-readable
 scorecard.
 
-**Bar:** trend / direction, not absolute magnitude. On the analytical tier with a
-mouse-RGC morphology the tool reproduces the *directions and ratios* of published
-results reliably; matching exact primate ex-vivo magnitudes needs FEM + primate
-morphology and is deferred to Phase 4+.
+**Bar: trend and direction, not absolute magnitude.** On the analytical tier with
+a mouse-RGC morphology, the tool reproduces the *directions and ratios* of
+published results reliably. Matching exact primate ex-vivo magnitudes needs both a
+faithful layered field and a primate morphology. Phase 4 delivered the first (the
+FEM tier, with layered conductivity); the primate morphology does not exist here,
+so absolute magnitudes stay out of reach.
 
-Regenerate the machine report with `uv run python -m engine.validate.report`
-(needs the `cable` extra); it writes `app/validation_report.json`, which the app
-reads.
+Every reproduction in the tables below runs on the **analytical** field tier, so
+none of these numbers is an FEM number.
+
+Regenerate the machine report with:
+
+```bash
+uv run --extra cable python -m engine.validate.report
+```
+
+It writes `app/validation_report.json`, which the Validation screen reads.
 
 ## Field physics (exact, fast)
 
@@ -53,10 +62,11 @@ lucky scene.
 ## Two honest scope notes
 
 1. **Fan 2019 reproduces the field-sharpening *mechanism*, not the full somatic
-   threshold gain.** In the reduced model, AIS/dendrite activation confounds the
-   somatic threshold-ratio (a tight return ring penalises the centred target; a
-   loose one fails to suppress the off-target). The mechanism is robust; the
-   threshold magnitude awaits Phase 4.
-2. **The one negative is what makes the set credible** — reproductions were not
-   tuned until they passed; where the reduced tier cannot support a claim, it is
+   threshold gain.** In the reduced model, AIS and dendrite activation confounds
+   the somatic threshold ratio: a tight return ring penalises the centred target,
+   while a loose one fails to suppress the off-target. The mechanism is robust.
+   The threshold magnitude needs a faithful layered field, and it has not been
+   re-measured on the FEM tier that Phase 4 delivered.
+2. **The one negative is what makes the set credible.** No reproduction was tuned
+   until it passed. Where the reduced tier cannot support a claim, that is
    recorded honestly and deferred.

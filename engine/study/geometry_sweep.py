@@ -20,7 +20,7 @@ Two composition points make different geometries work cleanly:
 
 Backend-agnostic and store-backed throughout (resumability rides ``sweep``'s
 content-addressed cache), so this stays fast-testable with an injected
-``thresholds_provider`` — no NEURON, no FEM.
+``thresholds_provider``: no NEURON, no FEM.
 """
 
 from __future__ import annotations
@@ -138,7 +138,7 @@ def geometry_sweep(
     **Tier-agnostic by design.** This primitive does not force FEM: sweeping geometry
     on the diameter-blind analytical tier is legitimate (a fast integration test that
     only exercises the Pareto machinery, or a caller who knows the field is fixed). It
-    is a *policy* — "a user comparing diameters wants a tier that can see diameter" —
+    is a *policy* ("a user comparing diameters wants a tier that can see diameter")
     that belongs to the caller. Callers making a real geometry comparison should invoke
     :func:`require_geometry_distinguishable` first (as ``api.study_core`` does); it is
     not enforced here so the primitive stays usable on any tier.
@@ -203,7 +203,7 @@ def resolve_field_tier(
 
     **Conductivity-only, and blind to electrode geometry.** The analytical backend is
     a *point source*: exact for a point in a half-space, but it reads an electrode's
-    position and never its extent — two disks of different diameter give a
+    position and never its extent, so two disks of different diameter give a
     byte-identical field (``docs/electrode-geometry.md``; pinned in
     ``tests/field/test_regime.py``). So this function answers "which tier for this
     conductivity", NOT "which tier for this geometry". A sweep that compares geometry
@@ -235,17 +235,17 @@ def geometry_field_tier(
     """The tier for *comparing electrode geometry*: always FEM.
 
     Only a field solve that resolves the electrode surface (FEM) distinguishes
-    diameter or shape — the analytical point source cannot (see
+    diameter or shape; the analytical point source cannot (see
     :func:`resolve_field_tier`). This constructs a ``FenicsxBackend``, which is lazy:
     it imports DOLFINx only when it actually solves, so callers in the uv env can
     build it and hand it across to the FEM env to run.
 
     ``min_half_width_um`` floors the FEM domain's lateral extent. Callers that sample
-    the field far from the array — the axon of passage reaches hundreds of µm toward
-    the optic disc — must pass their query reach, or the solve raises on a point
-    outside the mesh. It is a constructor argument rather than an attribute the
-    caller sets afterwards so the floor cannot be silently dropped by a backend that
-    has no such attribute.
+    the field far from the array must pass their query reach, or the solve raises on
+    a point outside the mesh. An axon of passage reaches hundreds of µm toward the
+    optic disc, well beyond a domain sized for the array alone. It is a constructor
+    argument rather than an attribute the caller sets afterwards, so the floor cannot
+    be silently dropped by a backend that has no such attribute.
     """
     return FenicsxBackend(min_half_width_um=min_half_width_um), conductivity
 
@@ -256,7 +256,7 @@ def geometry_varies(geometries: Iterable[ArrayGeometry]) -> bool:
     Keyed on **diameter**, the airtight case: diameter never changes an electrode's
     position, so the point-source field is provably identical across it. (Pitch also
     reads as inert on a monopolar-centre protocol, because the moved electrodes carry
-    no current — but that is a murkier, protocol-dependent story; diameter is the one
+    no current, but that is a murkier, protocol-dependent story; diameter is the one
     that is wrong for *any* protocol, so the guard stands on it.)
     """
     return len({round(g.diameter_um, 6) for g in geometries}) > 1
@@ -270,14 +270,14 @@ def require_geometry_distinguishable(
     Turns the silent-flat-frontier bug (``docs/phase-8-findings.md``) into a loud
     error at the engine boundary: a diameter sweep on the analytical point source
     yields one identical field for every diameter, so the frontier it feeds is
-    meaningless. Only fire on the analytical tier — the FEM backends see geometry.
+    meaningless. Only fire on the analytical tier; the FEM backends see geometry.
     """
     geoms = list(geometries)
     if isinstance(backend, AnalyticalBackend) and geometry_varies(geoms):
         raise GeometryTierError(
             "this sweep varies electrode diameter, which the analytical tier cannot "
             "see (it is a point source): every diameter would yield the same field "
-            "and a flat frontier. Use the FEM tier — engine.study.geometry_field_tier."
+            "and a flat frontier. Use the FEM tier: engine.study.geometry_field_tier."
         )
 
 
@@ -297,7 +297,7 @@ def monopolar_center(
 ) -> list[StimConfig]:
     """A one-config protocol: drive the electrode nearest the array centre,
     cathodic-first, with a distant return. A sensible default ``config_factory``
-    for a geometry sweep — usable directly, or wrap it to tune the waveform."""
+    for a geometry sweep, usable directly or wrapped to tune the waveform."""
     center = min(array.electrodes, key=lambda e: math.hypot(e.pos_um[0], e.pos_um[1]))
     return [
         StimConfig.from_map(

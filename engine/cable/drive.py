@@ -7,7 +7,7 @@ imposes. We apply it through NEURON's ``extracellular`` mechanism
 
 Sign chain (must hold): cathodic current is negative, A is positive, so Ve is
 negative under the electrode; NEURON's ``v = v_internal − e_extracellular``, so a
-negative e_extracellular depolarizes — a cathodic pulse over the soma fires the
+negative e_extracellular depolarizes: a cathodic pulse over the soma fires the
 cell, an anodic one does not.
 """
 
@@ -101,7 +101,7 @@ def activating_function_along_axon(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Ve-based activating function along the axon of passage (hillock→AIS→axon).
 
-    Returns ``(coords, af)`` for the ordered axonal compartments — ``af`` is the
+    Returns ``(coords, af)`` for the ordered axonal compartments, where ``af`` is the
     Rattay activating function ∂²Ve/∂s² (mV/µm²). Under a cathodic electrode Ve
     dips under the electrode, so ``af`` peaks positive (depolarizing) there. This
     is the geometry-level predictor of where the axon fires, without a NEURON run.
@@ -118,12 +118,12 @@ def activating_function_along_axon(
 def leading_scale(waveform: Any, monophasic: bool) -> float:
     """The scale applied to Ve on the pulse's *first* phase.
 
-    ``+1`` applies the field as computed — a cathodic leading edge when the driven
+    ``+1`` applies the field as computed: a cathodic leading edge when the driven
     electrode is a cathode (negative weight → negative Ve → depolarizing). Anodic-first
     biphasic (``cathodic_first=False``) leads with ``-Ve`` and recovers with ``+Ve``,
     which is a real, distinct stimulus. A **monophasic** pulse has a single edge, so
-    its polarity is the field (weight) sign and ``cathodic_first`` does not apply —
-    honouring it there would just double the weight-sign control.
+    its polarity is the field (weight) sign and ``cathodic_first`` does not apply.
+    Honouring it there would just double the weight-sign control.
     """
     return 1.0 if (monophasic or waveform.cathodic_first) else -1.0
 
@@ -152,7 +152,7 @@ def apply_field_pulse(
 ) -> None:
     """Insert ``extracellular`` and drive Ve over the (bi/mono)phasic pulse.
 
-    Caller installs any spike recorders before calling — they populate during the
+    Caller installs any spike recorders before calling; they populate during the
     run. Ve is the field during phase 1; the second phase applies its reverse.
 
     **Phase timing is quantized to whole ``dt_ms`` steps**, and both phases are given
@@ -162,7 +162,8 @@ def apply_field_pulse(
     phase 2's target is measured from the nominal time, so phase 2 got fewer steps than
     phase 1. At ``phase_width_us=60`` with the default ``dt_ms=0.025`` that delivered
     75 µs cathodic against 50 µs anodic; at 10 µs the interphase gap and the entire
-    recovery phase ran zero steps — a monophasic pulse reported as balanced biphasic.
+    recovery phase ran zero steps, delivering a monophasic pulse that was reported as
+    a balanced biphasic one.
 
     A phase width below one timestep cannot be delivered at all, so it raises rather
     than rounding up to a full step and misattributing the result to the width asked
@@ -233,8 +234,8 @@ def run_extracellular_pulse(
 ) -> SpikeResult:
     """Drive the cell with the array's extracellular field over one pulse.
 
-    ``monophasic=True`` applies only the first phase (the field Ve) — useful for
-    isolating the sign chain, since a biphasic pulse's reversed second phase can
+    ``monophasic=True`` applies only the first phase (the field Ve), which is useful
+    for isolating the sign chain, since a biphasic pulse's reversed second phase can
     itself excite. Default is the full biphasic (physical) pulse.
     """
     ve, segs = compute_ve(model, array, config, conductivity, backend)

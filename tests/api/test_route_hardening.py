@@ -4,7 +4,7 @@ Three of these four defects shared one shape: a request carrying a 3D electrode 
 reached an analytical code path, which is blind to electrode geometry by construction,
 and got the flat-disk answer back as though it were the body's. That is the same
 silent-flat-frontier failure ``require_geometry_distinguishable`` exists to prevent in
-the study path (docs/phase-8-findings.md) — these lock the API side of it. The fourth
+the study path (docs/phase-8-findings.md). These lock the API side of it. The fourth
 is the input-validation floor: what a route must refuse before it ties up a worker.
 """
 
@@ -123,7 +123,7 @@ def test_compare_refuses_non_finite_floats(client, raw):
 
 def test_a_non_finite_input_can_still_be_rendered_as_422(client):
     """Starlette renders JSON with ``allow_nan=False``, so echoing the bad input back
-    made the 422 *itself* raise — a 500 for the input that most needed a clear error."""
+    made the 422 *itself* raise: a 500 for the input that most needed a clear error."""
     r = client.request(
         "POST",
         "/study",

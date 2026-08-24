@@ -6,14 +6,15 @@ run leaves every completed geometry durably on disk and a re-run recomputes none
 of it. This module adds the two things that turn that substrate into a study you
 can run unattended and resume without bookkeeping:
 
-- :func:`study_status` — ask a store *how far along a study is* without computing
+- :func:`study_status` asks a store *how far along a study is* without computing
   anything: it recomputes each geometry's result keys and checks membership, so
   you can report progress before a run, or plan a resume ("3 of 10 done, these 7
   remain"). This is the provenance-at-scale query.
-- :func:`run_geometry_study` — the same run as :func:`~engine.study.geometry_sweep.geometry_sweep`,
-  but emitting a structured :class:`GeometryProgress` per geometry (cumulative
-  cached vs evaluated, ``from_cache``, fraction done) suitable for a progress bar
-  or a long log. Resuming is just calling it again against the same store.
+- :func:`run_geometry_study` is the same run as
+  :func:`~engine.study.geometry_sweep.geometry_sweep`, but emits a structured
+  :class:`GeometryProgress` per geometry (cumulative cached vs evaluated,
+  ``from_cache``, fraction done) suitable for a progress bar or a long log.
+  Resuming is just calling it again against the same store.
 """
 
 from __future__ import annotations
@@ -85,7 +86,7 @@ class StudyStatus:
 
     @property
     def remaining_geometries(self) -> list[ArrayGeometry]:
-        """Geometries not yet fully in the store — what a resume still has to do."""
+        """Geometries not yet fully in the store: what a resume still has to do."""
         return [s.geometry for s in self.statuses if not s.complete]
 
 
@@ -104,10 +105,10 @@ def study_status(
     overlap_policy: OverlapPolicy = "reject",
     overlap_eps_um: float = 1.0,
 ) -> StudyStatus:
-    """How much of this geometry study is already in ``store`` — no field solve,
+    """How much of this geometry study is already in ``store``: no field solve,
     no threshold search, just the same ``result_key`` the sweep would compute,
     checked for membership. Use the same arguments you would pass to the sweep so
-    the keys line up exactly — including ``safety_limits`` and the overlap
+    the keys line up exactly, including ``safety_limits`` and the overlap
     parameters, which are part of the key. Omitting them here while the sweep ran
     with non-default limits would report every geometry as pending (and vice versa)."""
     off_target_set = off_target_set or OffTargetSet()

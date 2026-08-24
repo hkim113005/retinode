@@ -2,7 +2,7 @@
 
 Runs in the conda ``retinode-fem`` env (the only one with DOLFINx *and* NEURON),
 invoked by :mod:`api.score_worker` from the uv API env. A shaped/3D electrode is
-FEM-only — the analytical tier is a point source blind to the body — so the Compare
+FEM-only (the analytical tier is a point source blind to the body), so the Compare
 scorecard for one cannot run in-process; it dispatches here.
 
 Mirrors :mod:`api.fem_job` / :mod:`api.study_job`: scene controls as JSON on stdin,

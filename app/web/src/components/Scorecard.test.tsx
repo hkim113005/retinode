@@ -87,6 +87,6 @@ describe("Scorecard", () => {
     expect(screen.queryByText(/Infinity/)).not.toBeInTheDocument();
     expect(screen.getAllByText("∞").length).toBeGreaterThan(0);
     expect(screen.getByText("∞×")).toBeInTheDocument();
-    expect(screen.getByText("nothing — unbounded")).toBeInTheDocument();
+    expect(screen.getByText("nothing (unbounded)")).toBeInTheDocument();
   });
 });

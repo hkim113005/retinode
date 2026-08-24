@@ -3,7 +3,7 @@
 Each evaluation appends one JSON line (project plan §10): the content hashes that
 identify it, the off-target set inline (it is not a registry spec type, so its
 value travels with the record), the software versions and git commit that
-produced it, any RNG seeds, and a timestamp. The record is self-checking — it
+produced it, any RNG seeds, and a timestamp. The record is self-checking: it
 carries the components of ``field_key`` and ``result_key``, so it can *replay*
 those keys and confirm it describes exactly the computation that ran.
 
@@ -51,25 +51,25 @@ class RunRecord:
     # written before this field existed.
     #
     # ``field_key`` appends solve_params whenever it is not None, and ``evaluate``
-    # always passes it — a non-None mesh/degree/extent string on any FEM backend. It
+    # always passes it: a non-None mesh/degree/extent string on any FEM backend. It
     # was not recorded at all, so replay_field_key() could never reproduce a FEM
     # record's own key, and two FEM runs of one array at different mesh resolutions
     # logged provenance lines identical except for an opaque hash: nothing said which
     # mesh produced which number.
     solve_params: str | None = None
     # Likewise for the scoring parameters (safety limits, overlap policy/epsilon)
-    # that result_key now carries — see engine.eval.safety.eval_params_digest.
+    # that result_key now carries; see engine.eval.safety.eval_params_digest.
     eval_params: str | None = None
 
     def replay_field_key(self) -> str:
-        """Recompute field_key from the recorded components — must equal field_key."""
+        """Recompute field_key from the recorded components; must equal field_key."""
         parts = [self.backend_name, self.array_hash, self.conductivity_hash]
         if self.solve_params is not None:
             parts.append(self.solve_params)
         return combine(*parts)
 
     def replay_result_key(self) -> str:
-        """Recompute result_key from the recorded components — must equal result_key."""
+        """Recompute result_key from the recorded components; must equal result_key."""
         parts = [
             self.field_key,
             self.config_hash,
@@ -132,8 +132,8 @@ def make_run_record(
     """Assemble a provenance record for one evaluation and its run environment.
 
     Pass ``solve_params``/``eval_params`` exactly as they were passed to
-    ``field_key``/``result_key`` — use the same ``backend_solve_params`` and
-    ``eval_params_digest`` helpers — so the replayed keys match by construction.
+    ``field_key``/``result_key``, using the same ``backend_solve_params`` and
+    ``eval_params_digest`` helpers, so the replayed keys match by construction.
     """
     return RunRecord(
         result_key=result.result_key,

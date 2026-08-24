@@ -1,6 +1,6 @@
 // The export affordance that hangs on every workhorse plot (P7 S7 / D8). It rebuilds
 // the plot's Scene at export time from the same builder the screen uses, so the file
-// is the figure — not a lookalike.
+// is the figure, not a lookalike.
 //
 // The default is the PAPER palette, not the live theme: a dark-mode PNG is unusable
 // in a manuscript. "Screen colours" is there for slides and for pasting back into

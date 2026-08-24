@@ -1,4 +1,4 @@
-"""P8 S1: the amplitude sweep job — submit, poll, cache."""
+"""P8 S1: the amplitude sweep job (submit, poll, cache)."""
 
 import time
 

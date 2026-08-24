@@ -1,7 +1,7 @@
 """The typed view contract: Pydantic request/response models.
 
 These mirror the pure data functions in ``app/views.py`` (``field_grid`` /
-``scorecard_data``) — the fixed seam the React client renders against
+``scorecard_data``), the fixed seam the React client renders against
 (docs/phase-7-plan.md, D2). A parity test locks them to the same numbers the Dash
 view produces.
 """
@@ -22,7 +22,7 @@ from pydantic import (
 
 ConductiveFaces = Literal["tip", "sides", "all"]
 
-# Bounds on the geometry-study grid. These are not physics limits — they are the line
+# Bounds on the geometry-study grid. These are not physics limits. They are the line
 # past which a request stops being a study and becomes a denial of service. The sweep
 # is a Cartesian product whose every point tiles the aperture with electrodes, so cost
 # grows as ``len(diameters) * len(pitches) * (aperture/pitch)**2``.
@@ -40,12 +40,12 @@ MAX_GRID_POINTS = 64  # len(diameters_um) * len(pitches_um)
 
 
 class NoBody(BaseModel):
-    """A flat 2D face on the array plane — the default, analytical-friendly."""
+    """A flat 2D face on the array plane: the default, analytical-friendly."""
 
     kind: Literal["none"] = "none"
 
 
-# ``gt=0`` does not exclude inf, and pydantic's model_config is per-model — it is NOT
+# ``gt=0`` does not exclude inf, and pydantic's model_config is per-model: it is NOT
 # inherited from SceneControls into these nested body models. Without this, a body of
 # radius 1e400 passed validation, reached spec_hash, and raised
 # "Out of range float values are not JSON compliant" as a 500 from a request the
@@ -93,9 +93,9 @@ class CadUploadResponse(BaseModel):
     """The id ``POST /cad`` hands back for a stored solid, plus its original name.
 
     The bounding dimensions are measured once at upload, in the FEM env (reading a
-    STEP needs gmsh). They are ``None`` when that env is unavailable — the upload
-    still succeeds; only the shape preview is unavailable, and the client says so
-    rather than drawing a flat disk and letting it pass for the real solid.
+    STEP needs gmsh). They are ``None`` when that env is absent. The upload still
+    succeeds; only the shape preview is missing, and the client says so rather than
+    drawing a flat disk and letting it pass for the real solid.
     """
 
     upload_id: str
@@ -109,7 +109,7 @@ BodySpec = NoBody | HemisphereBody | CylinderBody | FrustumBody | CadBodySpec
 
 
 class SceneControls(BaseModel):
-    """The Compare screen's inputs — the same handful of controls the Dash app
+    """The Compare screen's inputs: the same handful of controls the Dash app
     exposes, translated to specs server-side via ``app.scene.build_scene``."""
 
     # ``gt=0`` does not exclude inf: ``float("inf") > 0`` is True, and pydantic accepts
@@ -139,12 +139,13 @@ class SceneControls(BaseModel):
 
 
 class FieldGridResponse(BaseModel):
-    """Ve (mV) on a square grid at the cell plane — the analytical field preview."""
+    """Ve (mV) on a square grid at the cell plane. Carries either the synchronous
+    analytical preview or the FEM field solved by ``POST /field/accurate``."""
 
     xs_um: list[float]
     ys_um: list[float]
     # (n, n), row-major over ys then xs. A cell is ``null`` where a 3D electrode body
-    # occupies the cell plane — there is no extracellular potential inside metal, so
+    # occupies the cell plane: there is no extracellular potential inside metal, so
     # the FEM field has a hole there (the analytical preview is always fully populated).
     ve_mV: list[list[float | None]]
     vmax_mV: float  # symmetric colour limit, |Ve| max (>=0)
@@ -154,7 +155,7 @@ class MarkerBody(BaseModel):
     """The 3D shape an electrode marker carries, so the loupe can draw the true solid
     (not just its flat footprint). Dimensions are summarised to what the view needs:
     ``radius_um`` is the base/lateral radius, ``height_um`` the depth into the tissue
-    (0 for a hemisphere — its radius is the depth), ``top_radius_um`` the frustum's tip.
+    (0 for a hemisphere, whose radius is its depth), ``top_radius_um`` the frustum's tip.
     A CAD solid is drawn as its bounding cylinder."""
 
     kind: Literal["hemisphere", "cylinder", "frustum", "cad"]
@@ -182,14 +183,15 @@ class CellMarker(BaseModel):
 
 
 class ScorecardResponse(BaseModel):
-    """The evaluator's operating-window verdict. ``activated=False`` means the
-    target never fired in the searched range and every other field is absent."""
+    """The evaluator's operating-window verdict. ``activated=False`` means the target
+    never fired in the searched range; only ``offtarget_hash`` comes back with it, and
+    every other field is absent."""
 
     activated: bool
     # The off-target set this was scored against (``EvaluationResult.offtarget_hash``).
-    # The engine REFUSES to compare two results across differing off-target sets --
-    # see ``engine.eval.result.require_same_offtarget``; the selective window is only
-    # comparable when both were measured against the same bystanders. The client
+    # The engine REFUSES to compare two results across differing off-target sets
+    # (see ``engine.eval.result.require_same_offtarget``); the selective window is
+    # only comparable when both were measured against the same bystanders. The client
     # shows runs side by side, so it needs this to tell the user when two runs are
     # not comparable rather than let them read a difference that is a category error.
     offtarget_hash: str | None = None
@@ -205,7 +207,7 @@ class ScorecardResponse(BaseModel):
     safe_at_target: bool | None = None
     # The per-cell off-target thresholds behind ``off_min_uA``, and which cell set it.
     # The evaluator computes the whole vector (``PopulationThresholds``) and the
-    # scorecard used to collapse it to its minimum — but "how far is the SECOND
+    # scorecard used to collapse it to its minimum. But "how far is the SECOND
     # bystander?" is a different design question from "how far is the nearest?", and
     # the answer was already paid for. ``limiting_off_id`` names the binding cell.
     off_target_thresholds_uA: dict[str, float] | None = None
@@ -225,7 +227,7 @@ class ValidationReproduction(BaseModel):
 
 class ValidationReport(BaseModel):
     """The trust panel: which reproductions currently pass (master plan §15). This is
-    the committed report CI regenerates — the app renders it, never recomputes it."""
+    the committed report CI regenerates. The app renders it, never recomputes it."""
 
     n_pass: int
     n_total: int
@@ -237,7 +239,7 @@ class SweepControls(SceneControls):
 
     amp_min_uA: float = Field(1.0, gt=0)
     amp_max_uA: float = Field(200.0, gt=0)
-    # capped: at ~2 cells this is n × 2 NEURON runs, so 60 is ~3× a scorecard — the
+    # capped: at ~2 cells this is n × 2 NEURON runs, so 60 is ~3× a scorecard, the
     # honest ceiling before this stops being a "seconds" job
     n_amplitudes: int = Field(24, ge=2, le=60)
     spacing: Literal["linear", "log"] = "linear"
@@ -248,7 +250,7 @@ class ActivationCurve(BaseModel):
     with ``AmplitudeSweepResponse.amplitudes_uA``.
 
     Note there is deliberately no "activation fraction" here. The patch is a target
-    plus its bystanders — a handful of cells — so a fraction would be a two- or
+    plus its bystanders (a handful of cells), so a fraction would be a two- or
     three-level step function wearing the costume of a sigmoid. Per-cell traces are
     what the engine actually knows."""
 
@@ -280,7 +282,7 @@ class StudyControls(BaseModel):
     # Bounded on BOTH axes. The grid is a Cartesian product, and each geometry then
     # tiles the aperture: ``_lattice_points`` loops ``(2*ceil(aperture/pitch)+1)**2``
     # times. A sub-micron pitch under the default 120 µm aperture is billions of
-    # electrodes — one small request that never returns, holding one of two worker
+    # electrodes: one small request that never returns, holding one of two worker
     # slots forever. ``MIN_PITCH_UM`` floors the density; ``max_length`` the product.
     diameters_um: list[float] = Field(
         default_factory=lambda: [8.0, 12.0, 16.0, 20.0], min_length=1, max_length=16
@@ -321,7 +323,7 @@ class StudyControls(BaseModel):
         if n > MAX_GRID_POINTS:
             raise ValueError(
                 f"the diameter × pitch grid is {n} geometries, over the "
-                f"{MAX_GRID_POINTS} cap — each one is a full FEM + NEURON solve"
+                f"{MAX_GRID_POINTS} cap; each one is a full FEM + NEURON solve"
             )
         return self
 
@@ -335,7 +337,7 @@ class StudyPoint(BaseModel):
     selectivity_uA: float  # the selective window above threshold
     safe: bool
     on_frontier: bool  # not beaten on both axes by another safe geometry
-    # Std of the target threshold across sampled axon trajectories — the honest error
+    # Std of the target threshold across sampled axon trajectories: the honest error
     # bar, since the true axon path is unknown (engine.study.spread). None means "not
     # measured" (trajectory_k=1, or the target did not fire on enough paths); it must
     # render as ABSENT, never as +/-0.
@@ -355,9 +357,10 @@ class StudyResult(BaseModel):
 
 class JobStatus(BaseModel):
     """A background job's state, polled by the client. When ``status`` is ``"done"``,
-    the matching result is present — ``scorecard`` for a score job, ``field`` (+
-    ``max_divergence_pct`` vs the analytical preview) for an accurate-field job.
-    ``cached`` means it was served from a prior identical run (P7 S3)."""
+    the matching result is present: ``scorecard`` for a score job, ``field`` (+
+    ``max_divergence_pct`` vs the analytical preview) for an accurate-field job,
+    ``study`` for a geometry sweep, ``sweep`` for an amplitude sweep. ``cached`` means
+    it was served from a prior identical run (P7 S3)."""
 
     id: str
     status: Literal["running", "done", "error"]
@@ -375,7 +378,7 @@ class JobStatus(BaseModel):
 class CompareResponse(BaseModel):
     """One configuration scored for the Compare screen: the field and its scene
     overlays always, the scorecard only when requested (it costs a threshold
-    search). This is the field-view data contract — grid + electrode outlines +
+    search). This is the field-view data contract: grid + electrode outlines +
     soma overlays (master plan §16)."""
 
     field: FieldGridResponse

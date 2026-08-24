@@ -114,7 +114,7 @@ def test_solved_field_reused_across_configurations(cell):
     thr_b = multisite_threshold(cell, array, cfg_b, COND, solved=solved).threshold_uA
     assert thr_a is not None and thr_b is not None
     assert spy.calls == 1  # A solved once, reused across both configs and every amplitude
-    # narrower pulse needs more current (strength-duration) — a real, distinct result
+    # narrower pulse needs more current (strength-duration), a real and distinct result
     assert thr_b > thr_a
 
 

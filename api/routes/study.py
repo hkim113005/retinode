@@ -1,11 +1,11 @@
 """The geometry sweep → Pareto frontier, as a background job (P7 S4, P8 S4).
 
 A sweep evaluates many geometries (each a NEURON threshold search), so it runs as a
-job on the shared registry — `POST /study` submits it, `GET /jobs/{id}` polls the
+job on the shared registry: `POST /study` submits it, and `GET /jobs/{id}` polls the
 per-geometry progress and, when done, the points.
 
 **Comparing electrode geometry is FEM-only** (the analytical point source is
-diameter-blind — see docs/phase-8-findings.md), so the real path dispatches the whole
+diameter-blind; see docs/phase-8-findings.md), so the real path dispatches the whole
 sweep to the conda FEM env (`api.study_worker`). A dev/test run with an injected
 ``thresholds_provider`` stays in-process and fast, because a fake provider makes the
 field backend cosmetic.

@@ -1,4 +1,4 @@
-<title>Retinode — Compare (design mockup)</title>
+<title>Retinode: Compare (design mockup)</title>
 <style>
   :root{
     --bg1:#eef2f8; --bg2:#e6ecf5;
@@ -152,8 +152,8 @@
   <main class="stage">
     <div class="stage-head">
       <div><h1>Compare · A vs B on one patch</h1>
-        <div class="crumb">same cells, same metric — the difference is computed for you</div></div>
-      <div class="chip" id="hashChip" title="Copy a shareable link — the link is the hash">◇ cmp·7d4a</div>
+        <div class="crumb">same cells, same metric; the difference is computed for you</div></div>
+      <div class="chip" id="hashChip" title="Copy a shareable link (the link is the hash)">◇ cmp·7d4a</div>
     </div>
 
     <div class="card warn" id="warn">
@@ -214,9 +214,9 @@
     <div class="card panel">
       <h2>Difference map</h2>
       <div class="legend">
-        <div class="r"><span class="d2" style="background:var(--warm)"></span><b style="color:var(--ink)">A stronger</b>&nbsp;— A recruits here, B doesn't</div>
-        <div class="r"><span class="d2" style="background:var(--accent)"></span><b style="color:var(--ink)">B stronger</b>&nbsp;— B's field spills to bystanders A spares</div>
-        <div class="r"><span class="d2" style="background:var(--faint)"></span>equal — the confinement boundary</div>
+        <div class="r"><span class="d2" style="background:var(--warm)"></span><b style="color:var(--ink)">A stronger</b>: A recruits here, B doesn't</div>
+        <div class="r"><span class="d2" style="background:var(--accent)"></span><b style="color:var(--ink)">B stronger</b>: B's field spills to bystanders A spares</div>
+        <div class="r"><span class="d2" style="background:var(--faint)"></span>equal: the confinement boundary</div>
       </div>
     </div>
   </aside>
@@ -231,7 +231,7 @@
   const cv=document.getElementById("cmp"), ctx=cv.getContext("2d");
   let DIM={w:700,h:450};
 
-  // config presets — electrodes (µm, w<0 cathodic), off-target set, and scores
+  // config presets: electrodes (µm, w<0 cathodic), off-target set, and scores
   const CFG={
     mono:   {name:"Monopolar",   off:"standard", els:[{x:0,y:0,w:-1}],
              thr:7.9, byst:11.0, sel:3.1, cd:0.19, tier:"FEM"},
@@ -282,7 +282,7 @@
         ctx.fillStyle=withA(d>0?warm:field, mag*0.5);
         ctx.fillRect(sx-step/2,sy-step/2,step+1,step+1);
       }
-      // zero-crossing hint ring (confinement boundary) — where |d| small along radius
+      // zero-crossing hint ring (confinement boundary): where |d| is small along the radius
       ctx.strokeStyle=withA(muted,0.35); ctx.setLineDash([3,4]); ctx.lineWidth=1;
       // sample the boundary radius on the +x axis
       let rb=40; for(let r=6;r<120;r+=1){ if(actN(cfgA,r,0)-actN(cfgB,r,0)<0){rb=r;break;} }
@@ -384,9 +384,9 @@
     // align B's off-target set to A by swapping the mismatched config to a standard one
     if(CFG[A].off!=="standard"){A="local"; [...document.querySelector('.chips[data-side="a"]').children].forEach(x=>x.classList.toggle("on",x.dataset.k==="local"));}
     if(CFG[B].off!=="standard"){B="mono"; [...document.querySelector('.chips[data-side="b"]').children].forEach(x=>x.classList.toggle("on",x.dataset.k==="mono"));}
-    toast("Bystander sets aligned — now comparing like for like"); refresh();
+    toast("Bystander sets aligned. Now comparing like for like"); refresh();
   });
-  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied — reopens this comparison at its exact state (link = hash)"));
+  document.getElementById("hashChip").addEventListener("click",()=>toast("Link copied. Reopens this comparison at its exact state (link = hash)"));
 
   let toastT; function toast(m){const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2300);}
   function withA(c,a){c=c.trim(); if(c.startsWith("#")){let h=c.slice(1); if(h.length===3)h=h.split("").map(x=>x+x).join(""); const n=parseInt(h,16);

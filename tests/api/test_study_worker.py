@@ -1,6 +1,6 @@
 """P8 S4: the uv-side dispatcher that runs a study in the conda FEM env.
 
-The subprocess is mocked here — the real FEM+NEURON run is a fem-marked test in
+The subprocess is mocked here. The real FEM+NEURON run is a fem-marked test in
 tests/field. What matters at this layer: the streamed progress protocol, the result
 round-trip, and honest failure when the FEM env is missing.
 """
@@ -43,7 +43,7 @@ def _popen_factory(stderr_lines, result, code=0):
 
     def popen(cmd, **kwargs):
         captured["cmd"] = cmd
-        # the entrypoint is `python -m api.study_job <out.json>` — the temp file is last
+        # the entrypoint is `python -m api.study_job <out.json>`, so the temp file is last
         return _FakeProc(cmd[-1], stderr_lines, result, code)
 
     popen.captured = captured
@@ -114,7 +114,7 @@ def test_a_hung_child_is_killed_by_the_watchdog_and_reported_as_a_timeout():
             def gen():
                 unblocked.wait(5.0)  # blocks the read loop until kill() (or a safety cap)
                 return
-                yield  # unreachable — makes this a generator
+                yield  # unreachable; it only makes this a generator
 
             self.stderr = gen()
 

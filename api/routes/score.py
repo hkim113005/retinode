@@ -1,7 +1,7 @@
 """The scorecard as a background job (P7 S3).
 
-The operating-window scorecard needs a NEURON threshold search — seconds, not
-milliseconds — so it runs as a job, not inline. ``POST /score`` submits it (or
+The operating-window scorecard needs a NEURON threshold search, which takes seconds
+rather than milliseconds, so it runs as a job, not inline. ``POST /score`` submits it (or
 returns a cached result for an identical scene); ``GET /jobs/{id}`` polls progress.
 The field preview stays the synchronous, NEURON-free ``/compare`` path.
 """
@@ -25,7 +25,7 @@ router = APIRouter()
 
 
 def _cache_key(c: SceneControls) -> str:
-    """A stable key over the scene inputs that affect the score — not the field-only
+    """A stable key over the scene inputs that affect the score, not the field-only
     preview options (extent/n), so a re-score of the same electrode+stimulus+patch
     hits the cache."""
     return json.dumps(

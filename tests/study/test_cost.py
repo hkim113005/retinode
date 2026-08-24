@@ -1,4 +1,4 @@
-"""P2 S5: pre-sweep cost estimation — arithmetic (fast) and a one-cell benchmark."""
+"""P2 S5: pre-sweep cost estimation. Fast arithmetic plus a one-cell benchmark."""
 
 import pytest
 

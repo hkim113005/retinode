@@ -1,10 +1,10 @@
-"""Validation — pure functions that turn an invalid spec into clear Problems.
+"""Validation: pure functions that turn an invalid spec into clear Problems.
 
 `validate(obj)` checks one spec object in isolation; `validate_scene(...)` adds
 the cross-object rules that need more than one object (a config referencing a
 missing electrode, layers not spanning the patch depth). Both are pure and
-total — same input produces the same list of Problems — so the engine, API,
-UI, and tests all surface identical errors. An empty list means valid.
+total (the same input always produces the same list of Problems), so the engine,
+API, UI, and tests all surface identical errors. An empty list means valid.
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ def _body_dims(body: object) -> tuple[tuple[str, float, bool], ...]:
 
     ``>= 0`` entries are deliberate: a frustum's ``top_radius_um`` of 0 is a real
     penetrating needle tip, and a CAD body's tip/sides areas default to 0.0 for
-    solids loaded before P6 S8 — requiring ``> 0`` would invalidate existing specs.
+    solids loaded before P6 S8, so requiring ``> 0`` would invalidate existing specs.
     """
     if isinstance(body, Hemisphere):
         return (("radius_um", body.radius_um, True),)
@@ -142,7 +142,7 @@ def _patch_depth_um(patch: RetinalPatch) -> float:
     ``spec/geometry.py`` and ``field/mesh.py``, which meshes the slab 0 <= z <= depth),
     and ``app.scene`` builds patches at +z. But this returned ``-min(zs)``, so under
     the real convention every z was positive, the result was always 0.0, and the
-    ``layers-do-not-span-depth`` check below could never fire in production — a cell
+    ``layers-do-not-span-depth`` check below could never fire in production. A cell
     15 µm outside the meshed slab was sampled outside the solution domain and returned
     a silently wrong selectivity instead of a validation error.
 
@@ -171,7 +171,7 @@ def _validate_electrode(e: Electrode) -> list[Problem]:
 
 def _placement_problems(array: ElectrodeArray) -> list[Problem]:
     """A non-finite offset/rotation passed validation and then made ``spec_hash``
-    raise — the placement was never inspected at all."""
+    raise, because the placement was never inspected at all."""
     p = array.placement
     if p is None or _all_finite((*p.offset_um, *p.rotation_deg)):
         return []

@@ -22,8 +22,8 @@ class SOW:
     ``off_min_is_lower_bound`` marks the different case that used to be reported
     identically: off-target cells exist, but one or more never fired within the
     searched amplitude range, so the true ``off_min_uA`` is somewhere *above* the
-    search cap and is not known. Then ``off_min_uA`` is the cap — a lower bound, not
-    a measurement — and everything derived from it (margin, ratio, and the window
+    search cap and is not known. Then ``off_min_uA`` is the cap, a lower bound rather
+    than a measurement, and everything derived from it (margin, ratio, and the window
     the evaluator builds) is a lower bound too. Reporting inf here claimed
     selectivity out to the safety ceiling over amplitudes that were never probed.
     """
@@ -58,7 +58,7 @@ def selective_operating_window(
     if not off_target_thresholds_uA:
         if unreached_off_ids and searched_max_uA is not None:
             # Bystanders exist; the search just never reached them. The honest bound
-            # is the cap, flagged as a lower bound — not inf.
+            # is the cap, flagged as a lower bound, not inf.
             cap = float(searched_max_uA)
             return SOW(
                 target_uA=target_threshold_uA,

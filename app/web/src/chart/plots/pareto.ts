@@ -20,7 +20,7 @@ export type ParetoOpts = {
 };
 
 /** Maps a point to plot pixels, and carries the domain so the axes can be ticked.
- *  Exported so hit-testing uses the same geometry the scene drew — a second copy
+ *  Exported so hit-testing uses the same geometry the scene drew. A second copy
  *  would drift the click targets off the marks. */
 export type ParetoGeom = {
   x: (p: StudyPoint) => number;
@@ -81,7 +81,7 @@ export function paretoScene({
   const g = paretoGeom(points, width, height)!;
 
   // grid + numeric ticks. Colour carries the gestalt, but a reader cannot take a
-  // magnitude off a gridline — the digits are the truth (docs/phase-7-design.md).
+  // magnitude off a gridline, so the digits are the truth (docs/phase-7-design.md).
   const xdp = ticksFor(g.x1 - g.x0);
   const ydp = ticksFor(g.y1);
   for (let i = 0; i <= 4; i++) {
@@ -180,7 +180,7 @@ export function paretoScene({
     const px = g.x(p);
     const py = g.y(p);
     if (!p.safe) {
-      // over the charge limit: shown, but hollow — present, never selectable
+      // over the charge limit: shown but hollow, so it is present and never selectable
       items.push({
         kind: "circle",
         cx: px,

@@ -227,12 +227,12 @@ def test_a_diameter_sweep_on_the_analytical_tier_is_a_loud_error():
         require_geometry_distinguishable([g(8), g(24)], AnalyticalBackend())
 
     # a single geometry, or a pitch-only sweep, has nothing the analytical tier
-    # provably cannot see — no error
+    # provably cannot see, so no error
     require_geometry_distinguishable([g(10)], AnalyticalBackend())
 
 
 def test_the_fem_tier_is_never_guarded_out():
-    """FEM sees geometry, so a diameter sweep on it is exactly right — no error."""
+    """FEM sees geometry, so a diameter sweep on it is exactly right, so no error."""
     from engine.field import FenicsxBackend
     from engine.study.geometry import ArrayGeometry
     from engine.study.geometry_sweep import require_geometry_distinguishable

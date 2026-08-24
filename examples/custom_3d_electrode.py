@@ -1,20 +1,20 @@
 """Test a custom 3D electrode shape end to end.
 
-Run this with the conda **retinode-fem** interpreter (the only env with DOLFINx
-*and* NEURON) — shaped/3D electrodes are FEM-only, because the analytical tier is a
-point source that cannot see an electrode's extent at all:
+Shaped/3D electrodes are FEM-only, because the analytical tier is a point source that
+cannot see an electrode's extent at all. Run this with the conda **retinode-fem**
+interpreter, the only env with DOLFINx *and* NEURON:
 
     FEMPY=/opt/homebrew/Caskroom/miniforge/base/envs/retinode-fem/bin/python
     $FEMPY examples/custom_3d_electrode.py
 
 The Compare screen can also author a body (Flat/Dome/Pillar/Taper + CAD upload) and
-run it on FEM — see docs/custom-electrode.md. This script is the code path: for
+run it on FEM (see docs/custom-electrode.md). This script is the code path: for
 scripting, reproducibility, sweeps, and anything the rail doesn't expose.
 
 What it does: scores a flat 10 µm disk and a custom 5 µm-radius, 30 µm-tall pillar
 (tip-only injection) against the *same* target-plus-bystander patch, both on the FEM
 field tier, and prints the operating window for each. The two differ because the
-pillar concentrates its injection deep in the tissue — exactly the effect a point
+pillar concentrates its injection deep in the tissue, exactly the effect a point
 source misses.
 """
 
@@ -40,7 +40,7 @@ def score(array: ElectrodeArray, label: str, *, overlap_policy: str = "reject") 
     config = StimConfig.from_map({"e0": -1.0}, waveform=Waveform(phase_width_us=200.0))
     sigma = HomogeneousConductivity(sigma_S_per_m=1.0)
 
-    # The FEM domain must contain every point the field is sampled at — the cell's
+    # The FEM domain must contain every point the field is sampled at: the cell's
     # compartments, whose axon of passage reaches ~380 µm toward the optic disc, far
     # outside a mesh sized for the electrode. Floor it, or the solve raises on a point
     # outside the domain. (This is the fix behind the Study screen's FEM path.)
@@ -50,7 +50,7 @@ def score(array: ElectrodeArray, label: str, *, overlap_policy: str = "reject") 
 
     print(f"\n=== {label} ===")
     if not result.activated or result.window is None:
-        print("  target never fired in the searched range — no operating window")
+        print("  target never fired in the searched range; no operating window")
         return
     w = result.window
     print(f"  target threshold : {w.target_uA:.2f} µA")
@@ -70,7 +70,7 @@ def custom_pillar() -> ElectrodeArray:
     """The custom 3D shape: a 5 µm-radius pillar reaching 30 µm into the tissue,
     injecting only from its deep tip cap (conductive_faces="tip"). Swap in
     ``Frustum(base_radius_um=..., top_radius_um=..., height_um=...)`` for a taper, or
-    ``Hemisphere(radius_um=...)`` for a dome — or load a CAD solid, see below."""
+    ``Hemisphere(radius_um=...)`` for a dome, or load a CAD solid (see below)."""
     e = Electrode(
         id="e0",
         pos_um=(0.0, 0.0, 0.0),
@@ -91,7 +91,7 @@ def custom_pillar() -> ElectrodeArray:
 
 if __name__ == "__main__":
     print("Scoring a flat disk vs a custom 3D pillar on the FEM tier "
-          "(this runs real FEM + NEURON — a minute or two)...")
+          "(this runs real FEM + NEURON: a minute or two)...")
 
     # The flat disk sits on the array plane and overlaps nothing.
     score(flat_disk(), "flat 10 µm disk")
@@ -111,5 +111,6 @@ if __name__ == "__main__":
     score(custom_pillar(), "pillar · displace policy", overlap_policy="displace")
 
     print("\nThe pillar's window differs from the disk's because it concentrates "
-          "injection deep in the tissue — the geometry effect the analytical point "
-          "source cannot see. And a penetrating design forces the overlap decision.")
+          "injection deep in the tissue. That is the geometry effect the analytical "
+          "point source cannot see. And a penetrating design forces the overlap "
+          "decision.")

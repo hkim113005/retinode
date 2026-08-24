@@ -1,6 +1,6 @@
 """Property-based tests: invariants that must hold for *all* inputs, not examples.
 
-Hypothesis generates many cases and shrinks failures to a minimal example — it
+Hypothesis generates many cases and shrinks failures to a minimal example, so it
 catches whole classes of bug that hand-picked examples miss. The same technique
 carries the physics invariants in later layers (linearity, 1/r decay, symmetry).
 """

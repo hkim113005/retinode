@@ -7,7 +7,7 @@ const WELL = AX.map((y) => AX.map((x) => -(4 - Math.hypot(x, y))));
 
 describe("isoContours", () => {
   it("stitches a single closed ring around a radial well", () => {
-    // z = -2.5 is where r = 1.5 — between grid nodes, so no corner sits on the level
+    // z = -2.5 is where r = 1.5, between grid nodes, so no corner sits on the level
     const rings = isoContours(AX, AX, WELL, -2.5);
     expect(rings).toHaveLength(1);
     const ring = rings[0];
@@ -20,7 +20,7 @@ describe("isoContours", () => {
   });
 
   it("still traces a level that lands exactly on grid nodes", () => {
-    // z = -3 passes through (±1, 0) and (0, ±1) — the marching-squares degeneracy.
+    // z = -3 passes through (±1, 0) and (0, ±1), the marching-squares degeneracy.
     // It may come out in pieces, but it must be drawable and on the r = 1 circle.
     const rings = isoContours(AX, AX, WELL, -3);
     expect(rings.length).toBeGreaterThan(0);

@@ -45,7 +45,7 @@ def test_no_off_targets_is_still_an_unbounded_window():
 
 def test_unreached_off_targets_bound_the_window_at_the_search_cap():
     """Bystanders that never fired below the cap used to be dropped from the dict and
-    scored as 'no off-targets' — an unbounded selective window over amplitudes that
+    scored as 'no off-targets': an unbounded selective window over amplitudes that
     were never probed. The honest answer is the cap, flagged as a lower bound."""
     w = selective_operating_window(40.0, {}, unreached_off_ids=("n1",), searched_max_uA=500.0)
     assert w.off_min_uA == 500.0
@@ -56,7 +56,7 @@ def test_unreached_off_targets_bound_the_window_at_the_search_cap():
 
 def test_a_measured_minimum_is_exact_even_when_others_were_truncated():
     """An unreached bystander can only be ABOVE the cap, so it cannot lower a minimum
-    that was actually measured — that bound stays exact."""
+    that was actually measured. That bound stays exact."""
     w = selective_operating_window(
         40.0, {"n1": 90.0}, unreached_off_ids=("n2",), searched_max_uA=500.0
     )

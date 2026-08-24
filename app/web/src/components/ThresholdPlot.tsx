@@ -22,7 +22,7 @@ export function ThresholdPlot({ data }: { data: Scorecard | null | undefined }) 
     drawScene(canvas, scene, Math.min(window.devicePixelRatio || 1, 2));
   }, [data, rtick]);
 
-  // nothing to say before a scorecard exists — the Scorecard panel already prompts
+  // nothing to say before a scorecard exists: the Scorecard panel already prompts
   if (!data || !thresholdRows(data).length) return null;
 
   return (

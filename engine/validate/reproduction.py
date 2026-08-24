@@ -1,8 +1,8 @@
 """A single literature reproduction: what we compared, and whether it holds.
 
-Each check records its measured value, the criterion for passing, and the source
-— the plan's "store target + tolerance + current value" — so these both drive
-the regression tests and feed the Validation dashboard later.
+Each check records its measured value, the criterion for passing, and the source:
+the plan's "store target + tolerance + current value". The records both drive the
+regression tests and feed the Validation dashboard later.
 """
 
 from __future__ import annotations

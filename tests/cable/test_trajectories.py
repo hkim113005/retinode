@@ -69,8 +69,8 @@ def test_trajectory_spread_over_perturbed_axons(neuron_h):
 def test_spread_is_real_when_the_electrode_sits_over_the_axon(neuron_h):
     # Over the AXON (not the soma), the ascending path matters: the on-axis
     # nominal path runs straight under the electrode and is most excitable;
-    # swinging it off-axis raises threshold. So the spread must be non-zero —
-    # this is the guard that catches axon_direction silently ceasing to thread
+    # swinging it off-axis raises threshold. So the spread must be non-zero.
+    # This is the guard that catches axon_direction silently ceasing to thread
     # into the geometry (which would collapse every path to one threshold).
     rgc = spec.RGC(id="t", cell_type="parasol_on", soma_um=(0.0, 0.0, -20.0))
     array = spec.ElectrodeArray(

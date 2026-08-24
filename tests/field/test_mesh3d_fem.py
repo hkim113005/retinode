@@ -142,7 +142,7 @@ def test_placement_offsets_the_field_rigidly():
 
 def test_tilted_hemisphere_field_is_rotation_invariant():
     # P6 S7: a hemisphere is a full sphere cut by the z>=0 tissue box; a sphere is
-    # rotation-invariant, so the cut cavity — and the field — must be identical no
+    # rotation-invariant, so the cut cavity (and the field) must be identical no
     # matter how the array is tilted. A strong known-answer that tilt doesn't
     # corrupt the field solve.
     from engine.spec import ArrayPlacement
@@ -163,7 +163,7 @@ def test_tilted_hemisphere_field_is_rotation_invariant():
 def test_tilted_cylinder_orients_its_tip_in_the_mesh():
     # P6 S7: a cylinder tilted 90 deg about y lays its axis along +x, so its deep
     # conductive tip moves from +z to +x. The field just beyond the tilted tip (+x)
-    # must exceed the field at the old upright-tip location (+z) — proof the body is
+    # must exceed the field at the old upright-tip location (+z), which proves the body is
     # actually oriented in the mesh, not just translated.
     from engine.spec import ArrayPlacement
 
@@ -188,7 +188,7 @@ def _write_step_cylinder(path: str, radius_um: float, height_um: float) -> None:
 
     gmsh/OCC stamps ``SI_UNIT(.MILLI.,.METRE.)`` into the STEP header, so the numbers
     written here are millimetres and must be scaled. This fixture previously wrote the
-    micron values raw, which made the file claim a 5 mm electrode — harmless only
+    micron values raw, which made the file claim a 5 mm electrode. That was harmless only
     because the loader also ignored the declared unit. Both halves are fixed now.
     """
     import gmsh
@@ -237,7 +237,7 @@ def test_imported_cad_cylinder_reproduces_the_primitive_field(tmp_path):
 
 
 def _write_step_slab(path: str, hx: float, hy: float, height: float) -> None:
-    """Write a STEP slab of the given MICRON half-extents — scaled to millimetres,
+    """Write a STEP slab of the given MICRON half-extents, scaled to millimetres,
     the unit gmsh/OCC stamps into the STEP header (see _write_step_cylinder)."""
     import gmsh
 
@@ -255,7 +255,7 @@ def _write_step_slab(path: str, hx: float, hy: float, height: float) -> None:
 def test_loaded_cad_overlap_is_exact_not_the_bounding_cylinder(tmp_path):
     # P6 S9: a wide thin slab (x half-extent 15, y half-extent 3). Its bounding
     # cylinder has radius 15, so a point 10 um off-axis in y is *inside* the cylinder
-    # but well outside the actual slab — the baked triangulation excludes it exactly,
+    # but well outside the actual slab. The baked triangulation excludes it exactly,
     # where the old bounding-cylinder test would over-flag it.
     from engine.field.mesh3d import load_cad_body
     from engine.spec.body import point_in_body
@@ -274,7 +274,7 @@ def test_loaded_cad_overlap_is_exact_not_the_bounding_cylinder(tmp_path):
 
 def test_cad_face_groups_split_and_shape_the_field(tmp_path):
     # P6 S8: the loader splits an imported solid's exposed area into a deep tip and
-    # lateral sides, and conductive_faces selects which inject — so a "sides"-only
+    # lateral sides, and conductive_faces selects which inject, so a "sides"-only
     # CAD electrode drives a different field than the fully-conductive "all".
     from engine.field.mesh3d import load_cad_body
 
@@ -302,7 +302,7 @@ def test_cad_face_groups_split_and_shape_the_field(tmp_path):
 
 
 def test_dolfinx_and_ngsolve_agree_on_a_placed_mixed_3d_array(tmp_path):
-    # P6 S6: the second-solver cross-check on a representative planted array —
+    # P6 S6: the second-solver cross-check on a representative planted array:
     # a flat disk + a penetrating cylinder, translated into the tissue.
     pytest.importorskip("ngsolve")
     from engine.field.fem_ngsolve import _solve_on_mesh_ngsolve
@@ -362,7 +362,7 @@ def test_fem_3d_field_drives_a_real_neuron_population(neuron_h):
 
 
 def _step_cylinder_mm(path, radius, height):
-    """Write a STEP cylinder whose numbers are MILLIMETRES — gmsh/OCC stamps
+    """Write a STEP cylinder whose numbers are MILLIMETRES. gmsh/OCC stamps
     ``SI_UNIT(.MILLI.,.METRE.)`` into the header, as every CAD package does by
     default. That is the whole point of these two tests."""
     import gmsh
@@ -382,7 +382,7 @@ def test_a_millimetre_step_is_converted_to_microns(tmp_path):
     """A solid drawn as 0.005 x 0.030 in a millimetre file IS a 5 x 30 um electrode.
 
     The raw coordinates used to be taken as microns, so this real design loaded as
-    0.005 um — 1000x too small, silently, and it still produced a plausible-looking
+    0.005 um: 1000x too small, silently, and it still produced a plausible-looking
     score. The declared unit is now honoured on import.
     """
     step = tmp_path / "real.step"
@@ -394,7 +394,7 @@ def test_a_millimetre_step_is_converted_to_microns(tmp_path):
 
 def test_a_wrong_scale_cad_is_refused_rather_than_solved(tmp_path):
     """The other half: numbers that only make sense as microns, in a millimetre file,
-    are a unit error. 5 x 30 mm is 10000 x 30000 um — not a retinal electrode. It used
+    are a unit error. 5 x 30 mm is 10000 x 30000 um, not a retinal electrode. It used
     to load as 5 x 30 um and score as though nothing were wrong."""
     step = tmp_path / "wrong.step"
     _step_cylinder_mm(step, radius=5.0, height=30.0)  # 5 mm x 30 mm

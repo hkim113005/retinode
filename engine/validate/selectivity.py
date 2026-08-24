@@ -3,7 +3,7 @@
 A monopolar electrode (distant return) spreads current broadly, so a neighbouring
 off-target cell is nearly as excitable as the target. Returning the current
 *locally* on a ring of surrounding electrodes turns the monopole into a confined
-source whose field falls off far faster with distance — the mechanism Fan et al.
+source whose field falls off far faster with distance: the mechanism Fan et al.
 (2019) identify for improved selectivity. We measure it as the field-level
 selectivity ``|Ve(target)| / |Ve(off-target)|`` at the somata: bigger means the
 target is favoured over the neighbour.
@@ -12,9 +12,9 @@ target is favoured over the neighbour.
 (a large gain across geometries). The *full NEURON somatic threshold-ratio* gain
 does **not** reproduce in this reduced tier (analytical field + mouse RGC):
 activation is AIS/dendrite-dominated, so a tight return ring penalises the
-centred target's own AIS while a loose one fails to suppress the off-target —
-there is no middle ground, and off-target thresholds even come out non-monotonic
-with distance because the dendritic arbor reaches toward the electrode.
+centred target's own AIS while a loose one fails to suppress the off-target. There
+is no middle ground, and off-target thresholds even come out non-monotonic with
+distance because the dendritic arbor reaches toward the electrode.
 Magnitude/threshold validation is therefore deferred to Phase 4 (FEM + primate
 morphology); here we reproduce the mechanism at the field level.
 """
@@ -49,7 +49,7 @@ def _array(ring_um: float = 35.0) -> spec.ElectrodeArray:
 def _field_selectivity(
     array: spec.ElectrodeArray, config: spec.StimConfig, backend: FieldBackend | None = None
 ) -> float:
-    """|Ve(target)| / |Ve(off-target)| at the somata — higher favours the target."""
+    """|Ve(target)| / |Ve(off-target)| at the somata; higher favours the target."""
     backend = backend or AnalyticalBackend()
     points = np.array([_TARGET_UM, _OFF_UM], dtype=float)
     ve = backend.transfer_matrix(array, COND, points) @ current_vector(array, config)

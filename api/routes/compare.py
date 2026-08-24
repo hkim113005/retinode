@@ -1,8 +1,8 @@
 """The Compare endpoint: one configuration scored on one patch.
 
 ``POST /compare`` builds the scene from the controls, returns the analytical field
-grid synchronously, and — only if asked — runs the evaluator for the operating-
-window scorecard. The field path never touches NEURON; the scorecard does, through
+grid synchronously and, only if asked, runs the evaluator for the operating-window
+scorecard. The field path never touches NEURON; the scorecard does, through
 the app's threshold provider (a fast fake in tests; the real population solve in
 production, which S3 moves to a background job).
 """
@@ -32,7 +32,7 @@ router = APIRouter()
 def compare(controls: SceneControls, request: Request) -> CompareResponse:
     # Thread a primitive body through so the electrode markers reflect its footprint
     # (the loupe draws the true 3D shape from them). The analytical field itself stays
-    # geometry-blind — a bodied scene is FEM-only, and the client shows a Run-FEM prompt
+    # geometry-blind: a bodied scene is FEM-only, and the client shows a Run-FEM prompt
     # instead of this field. CAD needs gmsh (absent here), so it falls back to the flat
     # footprint for the marker; its real field/scorecard come from the FEM dispatch.
     body = None if controls.body.kind == "cad" else body_from_spec(controls.body.model_dump())
@@ -51,14 +51,14 @@ def compare(controls: SceneControls, request: Request) -> CompareResponse:
     scorecard = None
     if controls.include_scorecard:
         # This scorecard is analytical, and the analytical tier cannot see a body. It
-        # would have returned the FLAT-disk operating window for a 3D electrode — the
+        # would have returned the FLAT-disk operating window for a 3D electrode: the
         # same silent-wrong-answer /sweep had. ``POST /score`` already dispatches a
         # bodied scene to the FEM env; send the caller there instead of answering wrong.
         if controls.body.kind != "none":
             raise HTTPException(
                 status_code=422,
                 detail=(
-                    "a scorecard for a 3D electrode body is FEM-only — the analytical "
+                    "a scorecard for a 3D electrode body is FEM-only: the analytical "
                     "field this endpoint uses is blind to electrode geometry. Submit "
                     "POST /score, which runs the bodied scene on FEM as a job."
                 ),
@@ -75,9 +75,9 @@ def compare(controls: SceneControls, request: Request) -> CompareResponse:
             )
         except OverlapConflict as exc:
             # The caller's own overlap_policy was being dropped on the floor here, so a
-            # request that already said "displace" still got the reject-path error --
-            # advice it had followed. Honour the policy, and surface a genuine conflict
-            # as the client error it is rather than a 500.
+            # request that already said "displace" still got the reject-path error,
+            # which is advice it had already followed. Honour the policy, and surface a
+            # genuine conflict as the client error it is rather than a 500.
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         scorecard = scorecard_payload(result)
     return CompareResponse(
@@ -92,7 +92,7 @@ def _with_cad_marker(markers: list, controls: SceneControls) -> list:
     """Attach the CAD solid's bounding cylinder to the driven electrode's marker.
 
     ``build_scene`` above is handed ``body=None`` for a CAD electrode, because
-    resolving one needs gmsh and this process has none — so its marker comes back
+    resolving one needs gmsh and this process has none, so its marker comes back
     bodyless and the 3D loupe drew a flat disk for it. That is a claim the tool cannot
     support: a flat disk is a specific shape, and the uploaded solid is not it.
 
@@ -100,7 +100,7 @@ def _with_cad_marker(markers: list, controls: SceneControls) -> list:
     are readable here without gmsh. ``MarkerBody(kind="cad")`` is exactly the case its
     own docstring already describes ("A CAD solid is drawn as its bounding cylinder"),
     and the loupe's cylinder branch already renders it. Still ``None`` when the solid
-    was never measured (no FEM env at upload) — the loupe then says the shape needs
+    was never measured (no FEM env at upload); the loupe then says the shape needs
     FEM rather than inventing one.
     """
     if controls.body.kind != "cad" or not markers:

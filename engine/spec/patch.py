@@ -1,4 +1,4 @@
-"""RetinalPatch — the population of cells being stimulated, and the target."""
+"""RetinalPatch: the population of cells being stimulated, and the target."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ class RetinalPatch:
     """The cell population plus the designated target cell.
 
     Note: the index that maps field query points to per-cell compartments is
-    *derived* at run time by the field/cable layers from these positions — it is
+    *derived* at run time by the field/cable layers from these positions. It is
     not stored here, so the spec stays a pure, hashable description.
     """
 

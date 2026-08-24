@@ -2,8 +2,8 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
-// globals are off (see vite.config), so register RTL's DOM cleanup explicitly —
-// without it, renders leak between tests and elements appear duplicated.
+// globals are off (see vite.config), so register RTL's DOM cleanup explicitly.
+// Without it, renders leak between tests and elements appear duplicated.
 afterEach(cleanup);
 
 // jsdom has no WebGL, so stub the react-three-fiber canvas globally: the 3D loupe

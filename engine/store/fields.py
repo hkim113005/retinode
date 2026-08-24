@@ -2,7 +2,7 @@
 
 A field solve (the transfer matrix over a placed cell's segments) is the
 expensive artifact the FEM tier will produce, so it is cached content-addressed
-by ``field_key`` — which, extended in P2 S1 (D6), includes the query points, so
+by ``field_key``, which, extended in P2 S1 (D6), includes the query points, so
 each placed cell's ``A`` gets its own entry. Storing ``A`` lets a re-run of the
 same placement reload the matrix instead of re-solving; the live segment refs are
 rebuilt cheaply from the (deterministic) morphology and realigned by key.

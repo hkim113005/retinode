@@ -2,9 +2,9 @@
 
 Records spike times at a representative segment of each region and returns the
 region that crossed threshold first. Under extracellular stimulation the spike
-should initiate at the sodium-channel band (AIS), not the soma — the modern
-understanding (vs Greenberg 1999's soma prediction) and the reason we model an
-elevated Na band. A focused precursor to the full multi-site detection (S6b).
+should initiate at the sodium-channel band (AIS), not the soma. That is the
+modern understanding (vs Greenberg 1999's soma prediction) and the reason we
+model an elevated Na band. A focused precursor to multi-site detection (S6b).
 """
 
 from __future__ import annotations

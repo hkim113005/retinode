@@ -98,12 +98,12 @@ describe("History", () => {
     const newest: Run = { ...run(10), scorecard: { ...CARD, offtarget_hash: "aaa" } };
     const older: Run = { ...run(20), scorecard: { ...CARD, offtarget_hash: "bbb" } };
     render(<History runs={[newest, older]} current="" onRestore={vi.fn()} />);
-    expect(screen.getByRole("alert")).toHaveTextContent(/not comparable with the latest/);
+    expect(screen.getByRole("alert")).toHaveTextContent(/Not comparable with the latest/);
     expect(screen.getByRole("button", { name: /Restore 20 µm.*different off-target set/ })).toHaveClass("odd");
     expect(screen.getByRole("button", { name: /Restore 10 µm/ })).not.toHaveClass("odd");
   });
 
-  it("says nothing when every run shares an off-target set — the normal case", () => {
+  it("says nothing when every run shares an off-target set, the normal case", () => {
     const a: Run = { ...run(10), scorecard: { ...CARD, offtarget_hash: "aaa" } };
     const b: Run = { ...run(20), scorecard: { ...CARD, offtarget_hash: "aaa" } };
     render(<History runs={[a, b]} current="" onRestore={vi.fn()} />);

@@ -1,4 +1,4 @@
-"""Tagged-JSON (de)serialization for evaluation results — the JSON sidecars.
+"""Tagged-JSON (de)serialization for evaluation results: the JSON sidecars.
 
 Mirrors ``engine.spec.serialization`` (``__type__``-tagged, type-directed decode
 so tuples decode as tuples and nested dataclasses as their exact class) but for
@@ -8,7 +8,7 @@ differences matter:
 - **Inf is allowed.** A selective window with no off-target has ``off_min = inf``;
   an unbounded safety ceiling is ``inf`` too. ``allow_nan=True`` writes these as
   ``Infinity`` tokens that ``json.loads`` reads straight back (Python-JSON, not
-  strict JSON — fine for an internal sidecar).
+  strict JSON, which is fine for an internal sidecar).
 - **Plain dicts are carried through.** ``PopulationThresholds`` holds a
   ``dict[str, float]`` off-target map; it is preserved as a mapping, not mistaken
   for a tagged object.

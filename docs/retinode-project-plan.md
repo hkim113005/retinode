@@ -1,7 +1,9 @@
 # Comprehensive Design and Implementation Plan
 ## An epiretinal electrode-geometry selectivity testbed (Retinode)
 
-This is a planning document. It designs the whole program, engine and application and interface, and how the parts fit, and lays out a revised, phased build order. It does not implement anything. The aim is a tool that is accurate enough to be trusted, clean enough to be pleasant, and easy enough that someone who is not you (Michael, a labmate) can sit down and use it to find electrode configurations worth testing in tissue.
+This is a planning document. It designs the whole program (engine, application, and interface), says how the parts fit, and lays out a revised, phased build order. It does not implement anything. The aim is a tool accurate enough to be trusted, clean enough to be pleasant, and easy enough that someone who is not you (Michael, a labmate) can sit down and use it to find electrode configurations worth testing in tissue.
+
+> **Superseded.** This is the first draft. The authoritative version, with the terminology note, the concrete spec sketch, references, glossary, and the current phase numbering, is [retinode-project-plan-revised.md](retinode-project-plan-revised.md). This file is kept as the record of what the plan looked like before the revision.
 
 Three commitments shape every decision below:
 1. **Accurate.** Reproduce known results before trusting novel ones; make every result carry its accuracy tier and its sensitivity; treat safety as a first-class output.
@@ -18,7 +20,7 @@ Three commitments shape every decision below:
 
 **In scope.** Epiretinal, direct RGC and axon activation. Physical electrode geometry (size, shape, pitch, placement) and current configuration (which electrodes source and return, with what weights, including current steering). A field engine with swappable backends across accuracy tiers. A selectivity-and-safety evaluator. A study engine for parameter sweeps. A clean application with geometry editing, field and activation visualization, comparison and Pareto views, a validation dashboard, and candidate export.
 
-**Out of scope (for now, stated so it does not creep).** Subretinal or suprachoroidal stimulation (different physics). Percept prediction (that is pulse2percept's job; a bridge to it is a possible later add). Closed-loop hardware control. Patient-specific anatomy. Manufacturing/fabrication modeling beyond electrode geometry.
+**Out of scope (for now, stated so it does not creep).** Subretinal or suprachoroidal stimulation (different physics). Percept prediction (that is pulse2percept's job; a bridge to it is a possible later add). Closed-loop hardware control. Patient-specific anatomy. Manufacturing and fabrication modeling beyond electrode geometry.
 
 **Audience.** You first. Then lab members who want to screen a geometry idea without writing simulation code. The second audience is why the UI matters: the tool has to be legible to someone who understands retinas but not your codebase.
 
@@ -83,19 +85,19 @@ The engine is a plain Python library with no web or UI dependencies, so it runs 
 
 The spec is the set of serializable objects that describe a simulation completely: the electrode array (physical geometry), the current configuration (which electrodes source and return, weights, waveform), the conductivity model (homogeneous or layered, with values and any anisotropy), and the retinal patch (RGC positions, morphologies, axon trajectories, and which cell is the target). A study definition sits above these, naming the parameters to vary and their ranges.
 
-Responsibilities of this layer: strict validation (an array with duplicate electrode ids, a configuration whose currents do not charge-balance, a patch with no target, are all rejected with a clear message), stable serialization to and from JSON, and content hashing so any spec maps to a cache key. The terminology distinction is enforced structurally: geometry objects carry no current, configuration objects carry no geometry, so the two cannot blur. This is the keystone; design and freeze its interfaces before building anything on top.
+Responsibilities of this layer: strict validation (an array with duplicate electrode ids, a configuration whose currents do not charge-balance, or a patch with no target are all rejected with a clear message), stable serialization to and from JSON, and content hashing so any spec maps to a cache key. The terminology distinction is enforced structurally: geometry objects carry no current, configuration objects carry no geometry, so the two cannot blur. This is the keystone; design and freeze its interfaces before building anything on top.
 
 ## 6. Field engine
 
 One contract makes solvers interchangeable: given an array, a conductivity model, and a set of query points, return the extracellular potential each electrode produces at those points, per unit current, as a transfer matrix. Linearity means one unit-current solve per electrode suffices and any configuration is a weighted sum.
 
-Backends behind that contract, by accuracy tier: analytical point/disk source (Tier 1, fast, prototyping and the live preview); FEniCSx as the primary open-source FEM and NGSolve as its cross-check (Tier 2, the geometry study); Sim4Life as a field-only cross-check with its own solver; COMSOL later as a thin adapter for the lab. Swappability rests on a neutral geometry spec (electrode primitives plus conductivity slabs) that each backend meshes its own way, with gmsh as the shared mesh for the open-source solvers, and on the transfer matrix as the universal handoff so a backend can even run remotely (Sim4Life in the cloud) and return a file the pipeline imports.
+Backends behind that contract, by accuracy tier: an analytical point or disk source (Tier 1, fast, for prototyping and the live preview); FEniCSx as the primary open-source FEM with NGSolve as its cross-check (Tier 2, the geometry study); Sim4Life as a field-only cross-check with its own solver; and COMSOL later as a thin adapter for the lab. Swappability rests on a neutral geometry spec (electrode primitives plus conductivity slabs) that each backend meshes its own way, with gmsh as the shared mesh for the open-source solvers, and on the transfer matrix as the universal handoff so a backend can even run remotely (Sim4Life in the cloud) and return a file the pipeline imports.
 
 Design concerns this layer owns: caching transfer matrices by (array, conductivity, query-point) hash so a fixed array is never re-solved; the honest boundary that changing physical geometry requires a new solve while changing configuration does not; and mesh-independence checks so no FEM number is trusted before convergence.
 
 ## 7. Cable and population engine
 
-NEURON-backed multi-compartment RGC models (Fohlmeister-Miller channels) placed in the patch, driven by the field through the extracellular mechanism, with a bisection threshold search per cell. This engine owns the property the lab cares about most: **multi-site activation**. A spike initiating at any compartment counts, which is exactly why multi-electrode currents combine nonlinearly, and why running the full cable model rather than a single-site linear proxy is what keeps multi-electrode predictions honest. An optional, clearly-labeled subthreshold lead-field shortcut (reciprocity) may accelerate screening, but the full threshold search stays the ground truth.
+NEURON-backed multi-compartment RGC models (Fohlmeister–Miller channels) placed in the patch, driven by the field through the extracellular mechanism, with a bisection threshold search per cell. This engine owns the property the lab cares about most: **multi-site activation**. A spike initiating at any compartment counts, which is exactly why multi-electrode currents combine nonlinearly, and why running the full cable model rather than a single-site linear proxy is what keeps multi-electrode predictions honest. An optional, clearly-labeled subthreshold lead-field shortcut (reciprocity) may accelerate screening, but the full threshold search stays the ground truth.
 
 Design concerns: mapping the field engine's query points back to per-cell compartments (the patch provides the index), sensible spike criteria and windows, and averaging over a distribution of axon trajectories rather than one, because thresholds are sensitive to the ascending axon path.
 
@@ -107,7 +109,7 @@ One fixed scorer, called identically for every configuration so comparisons are 
 
 Two speeds, matching the two kinds of sweep. Configuration sweeps on a fixed array reuse one transfer matrix and are cheap, so they can run live. Physical-geometry sweeps recompute the field per geometry and are expensive, so they run as batched, parametric FEM jobs, coarse-to-fine, optionally with a surrogate model that emulates the selectivity score as a function of geometry parameters once enough points are sampled.
 
-A thin job model wraps every long run (FEM solves, NEURON threshold searches, sweeps) as an async task with progress callbacks, a job store, and resumability, so nothing blocks and nothing is lost on a crash. Execution adapters cover local (a process pool), cluster (submit to Slurm on FarmShare or Sherlock through a sponsoring lab), and cloud (Sim4Life). The API exposes job status and streams progress to the UI. Cost estimation lives here too: before a study runs, estimate field-solves times per-solve time from a quick benchmark and surface it, so no one accidentally launches a three-day job.
+A thin job model wraps every long run (FEM solves, NEURON threshold searches, sweeps) as an async task with progress callbacks, a job store, and resumability, so nothing blocks and nothing is lost on a crash. Execution adapters cover local (a process pool), cluster (submit to Slurm on FarmShare or Sherlock through a sponsoring lab), and cloud (Sim4Life). The API exposes job status and streams progress to the UI. Cost estimation lives here too: before a study runs, multiply the number of field solves by the per-solve time from a quick benchmark and surface the total, so no one accidentally launches a three-day job.
 
 ## 10. Persistence and provenance
 
@@ -126,7 +128,7 @@ The interface has to do something unusual: make an accurate, compute-heavy scien
 ## 12. UX principles
 
 - **Two-speed by design.** Editing the geometry or configuration updates a fast analytical **preview** instantly, so the design loop never stalls. Accurate FEM is an explicit **Run accurately** action that queues an async job. The UI never pretends FEM is instant, and it never blocks on it.
-- **Trust made visible.** Every result carries a small **tier badge** (analytical, FEM, Sim4Life-checked) and, where relevant, a sensitivity note. A validation panel shows which published results currently reproduce and how backends agree. The user should be able to see why to believe a number.
+- **Trust made visible.** Every result carries a small **tier badge** (analytical, FEM, Sim4Life-checked) and, where relevant, a sensitivity note. A validation panel shows which published results currently reproduce and how the backends agree. The user should be able to see why to believe a number.
 - **Safety inline.** Charge density against the electrode limit is shown wherever a configuration is, with anything unsafe flagged in place and kept out of candidate lists.
 - **Progressive disclosure.** Strong defaults and templates up front (a standard array, a standard patch, a monopolar configuration), with advanced parameters (conductivity layers, mesh resolution, off-target definitions, trajectory distributions) tucked into expandable panels.
 - **One vocabulary.** The precise terminology holds everywhere: geometry means the physical array, configuration means current delivery. Colors mean one thing throughout (a cool field color for potential, a warm signal color for activation, a distinct alert color for safety limits), reusing the instrument-panel identity from the tracker so the whole project feels like one thing.
@@ -163,7 +165,7 @@ A single-project workspace with a persistent left rail of the stages and a main 
 
 ## 15. Screen by screen
 
-**Patch.** Define the retinal population: density and types of RGCs, the axon-trajectory model toward the optic disc, or load specific morphologies. The canvas shows somas and the axon bundles they form. This is set once and mostly left alone, so it opens with a sensible default patch and hides the detail.
+**Patch.** Define the retinal population: the density and types of RGCs and the axon-trajectory model toward the optic disc, or load specific morphologies. The canvas shows somas and the axon bundles they form. This is set once and mostly left alone, so it opens with a sensible default patch and hides the detail.
 
 **Array (geometry).** The heart of the design loop. The retinal patch is the backdrop; electrodes are draggable disks on it. A grid generator makes arrays parametrically (pitch, rows and columns, square or hex, electrode size and shape, including honeycomb), and individual electrodes can be nudged, resized, or reshaped. Templates offer known layouts as starting points. This screen only edits physical geometry; currents are not here, keeping the geometry-versus-configuration line clean.
 
@@ -177,7 +179,7 @@ A single-project workspace with a persistent left rail of the stages and a main 
 
 **Compare.** Several configurations on the same patch and metric, side by side, with their fields and scorecards aligned so differences are obvious. This is where "local return beats monopolar" becomes something you see, not just a number.
 
-**Study and Pareto.** Build a sweep by choosing parameters to vary and ranges (electrode size, pitch, return radius, steering weights). See the cost estimate, launch, and watch an incrementally-filling table and a **selectivity-versus-cost Pareto frontier**. Click any point to inspect that configuration's field and activation. Overlay studies to compare families of designs.
+**Study and Pareto.** Build a sweep by choosing the parameters to vary and their ranges (electrode size, pitch, return radius, steering weights). See the cost estimate, launch, and watch an incrementally-filling table and a **selectivity-versus-cost Pareto frontier**. Click any point to inspect that configuration's field and activation. Overlay studies to compare families of designs.
 
 **Validation.** The trust panel. Which published reproductions currently pass, with the figures. How the backends agree on shared problems. This screen is unusual and deliberate: it lets a skeptical labmate check the tool's credibility before believing its rankings.
 
@@ -192,7 +194,7 @@ The field heatmap and isopotential contours, the activation animation over ampli
 Staged so the tool is usable early and polished later, exploiting the engine's UI-independence:
 
 - **Early, usable (Phase 2).** A Python-native dashboard (Dash, Panel, or Streamlit) that calls the engine directly and gives forms plus Plotly field and activation and Pareto views. Minimal frontend effort, good enough to validate the UX and be genuinely usable on the fast analytical tier.
-- **Later, clean (Phase 6).** If the tool proves worth productizing, a FastAPI backend and a React frontend, with react-three-fiber for the 3D scene and a real charting layer for the 2D views, built to the instrument-panel visual language. This is the "looks clean and is easy to use" product, and because the engine and specs are unchanged, it is a re-skin of a working tool, not a rewrite of the science.
+- **Later, clean (Phase 6).** If the tool proves worth productizing, a FastAPI backend and a React frontend, with react-three-fiber for the 3D scene and a real charting layer for the 2D views, built to the instrument-panel visual language. This is the "looks clean and is easy to use" product, and because the engine and specs are unchanged it is a re-skin of a working tool, not a rewrite of the science. *(In the delivered numbering this became Phase 7; see the revised plan.)*
 
 The recommendation is to resist building the polished app until the engine is trustworthy. A beautiful UI over an unvalidated engine is worse than a plain UI over a correct one, because it invites belief the numbers have not earned.
 
@@ -248,7 +250,7 @@ Phase 0 blocks everything. Phase 1 needs Phase 0. Phase 2 needs Phase 1 for real
 
 # Part VII. Risks, limits, and what to cut
 
-**Accuracy ceiling.** Even at Tier 2 this is a screening and hypothesis tool, not an oracle; novel rankings can sit inside the model's error, so they ship with tier and sensitivity and are framed as candidates for tissue testing. This limit is stated in the interface, not hidden.
+**Accuracy ceiling.** Even at Tier 2 this is a screening and hypothesis tool, not an oracle. Novel rankings can sit inside the model's error, so they ship with their tier and sensitivity and are framed as candidates for tissue testing. This limit is stated in the interface, not hidden.
 
 **FEM learning curve and compute.** FEniCSx and NGSolve meshing and convergence take real time, and geometry sweeps are heavy. Mitigations: keep the analytical tier fully capable so the summer does not depend on FEM, and defer heavy sweeps to lab compute.
 
@@ -256,7 +258,7 @@ Phase 0 blocks everything. Phase 1 needs Phase 0. Phase 2 needs Phase 1 for real
 
 **Backend divergence.** Swappable backends can quietly model different things. Mitigation: the neutral geometry spec and the cross-backend agreement tests, which turn divergence into a failing test rather than a silent error.
 
-**What to cut under pressure, in order.** The React app (keep the dashboard), the 3D scene (keep 2D), the surrogate model (accept slower sweeps), current-steering optimization (keep fixed-configuration comparison). The irreducible core that must survive any cut: the spec, the analytical field, the validated cable engine and evaluator, the reproductions, and a usable interface over them.
+**What to cut under pressure, in order.** The React app (keep the dashboard), then the 3D scene (keep 2D), then the surrogate model (accept slower sweeps), then current-steering optimization (keep fixed-configuration comparison). The irreducible core that must survive any cut: the spec, the analytical field, the validated cable engine and evaluator, the reproductions, and a usable interface over them.
 
 ---
 

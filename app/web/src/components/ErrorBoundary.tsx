@@ -1,5 +1,5 @@
 // A crash in one panel should cost that panel, not the whole instrument. Without a
-// boundary React unmounts the entire tree on any render error — a white screen with
+// boundary React unmounts the entire tree on any render error: a white screen with
 // the answer only in the console, which is the least useful failure mode for a tool
 // someone is mid-decision in.
 import { Component } from "react";

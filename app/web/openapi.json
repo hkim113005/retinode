@@ -2,7 +2,7 @@
   "components": {
     "schemas": {
       "ActivationCurve": {
-        "description": "One cell's response across the sweep's amplitude grid, aligned index-for-index\nwith ``AmplitudeSweepResponse.amplitudes_uA``.\n\nNote there is deliberately no \"activation fraction\" here. The patch is a target\nplus its bystanders \u2014 a handful of cells \u2014 so a fraction would be a two- or\nthree-level step function wearing the costume of a sigmoid. Per-cell traces are\nwhat the engine actually knows.",
+        "description": "One cell's response across the sweep's amplitude grid, aligned index-for-index\nwith ``AmplitudeSweepResponse.amplitudes_uA``.\n\nNote there is deliberately no \"activation fraction\" here. The patch is a target\nplus its bystanders (a handful of cells), so a fraction would be a two- or\nthree-level step function wearing the costume of a sigmoid. Per-cell traces are\nwhat the engine actually knows.",
         "properties": {
           "activated": {
             "items": {
@@ -128,7 +128,7 @@
         "type": "object"
       },
       "CadUploadResponse": {
-        "description": "The id ``POST /cad`` hands back for a stored solid, plus its original name.\n\nThe bounding dimensions are measured once at upload, in the FEM env (reading a\nSTEP needs gmsh). They are ``None`` when that env is unavailable \u2014 the upload\nstill succeeds; only the shape preview is unavailable, and the client says so\nrather than drawing a flat disk and letting it pass for the real solid.",
+        "description": "The id ``POST /cad`` hands back for a stored solid, plus its original name.\n\nThe bounding dimensions are measured once at upload, in the FEM env (reading a\nSTEP needs gmsh). They are ``None`` when that env is absent. The upload still\nsucceeds; only the shape preview is missing, and the client says so rather than\ndrawing a flat disk and letting it pass for the real solid.",
         "properties": {
           "bounding_height_um": {
             "anyOf": [
@@ -193,7 +193,7 @@
         "type": "object"
       },
       "CompareResponse": {
-        "description": "One configuration scored for the Compare screen: the field and its scene\noverlays always, the scorecard only when requested (it costs a threshold\nsearch). This is the field-view data contract \u2014 grid + electrode outlines +\nsoma overlays (master plan \u00a716).",
+        "description": "One configuration scored for the Compare screen: the field and its scene\noverlays always, the scorecard only when requested (it costs a threshold\nsearch). This is the field-view data contract: grid + electrode outlines +\nsoma overlays (master plan \u00a716).",
         "properties": {
           "cells": {
             "items": {
@@ -300,7 +300,7 @@
         "type": "object"
       },
       "FieldGridResponse": {
-        "description": "Ve (mV) on a square grid at the cell plane \u2014 the analytical field preview.",
+        "description": "Ve (mV) on a square grid at the cell plane. Carries either the synchronous\nanalytical preview or the FEM field solved by ``POST /field/accurate``.",
         "properties": {
           "ve_mV": {
             "items": {
@@ -419,7 +419,7 @@
         "type": "object"
       },
       "JobStatus": {
-        "description": "A background job's state, polled by the client. When ``status`` is ``\"done\"``,\nthe matching result is present \u2014 ``scorecard`` for a score job, ``field`` (+\n``max_divergence_pct`` vs the analytical preview) for an accurate-field job.\n``cached`` means it was served from a prior identical run (P7 S3).",
+        "description": "A background job's state, polled by the client. When ``status`` is ``\"done\"``,\nthe matching result is present: ``scorecard`` for a score job, ``field`` (+\n``max_divergence_pct`` vs the analytical preview) for an accurate-field job,\n``study`` for a geometry sweep, ``sweep`` for an amplitude sweep. ``cached`` means\nit was served from a prior identical run (P7 S3).",
         "properties": {
           "cached": {
             "default": false,
@@ -520,7 +520,7 @@
         "type": "object"
       },
       "MarkerBody": {
-        "description": "The 3D shape an electrode marker carries, so the loupe can draw the true solid\n(not just its flat footprint). Dimensions are summarised to what the view needs:\n``radius_um`` is the base/lateral radius, ``height_um`` the depth into the tissue\n(0 for a hemisphere \u2014 its radius is the depth), ``top_radius_um`` the frustum's tip.\nA CAD solid is drawn as its bounding cylinder.",
+        "description": "The 3D shape an electrode marker carries, so the loupe can draw the true solid\n(not just its flat footprint). Dimensions are summarised to what the view needs:\n``radius_um`` is the base/lateral radius, ``height_um`` the depth into the tissue\n(0 for a hemisphere, whose radius is its depth), ``top_radius_um`` the frustum's tip.\nA CAD solid is drawn as its bounding cylinder.",
         "properties": {
           "height_um": {
             "default": 0.0,
@@ -561,7 +561,7 @@
         "type": "object"
       },
       "NoBody": {
-        "description": "A flat 2D face on the array plane \u2014 the default, analytical-friendly.",
+        "description": "A flat 2D face on the array plane: the default, analytical-friendly.",
         "properties": {
           "kind": {
             "const": "none",
@@ -574,7 +574,7 @@
         "type": "object"
       },
       "SceneControls": {
-        "description": "The Compare screen's inputs \u2014 the same handful of controls the Dash app\nexposes, translated to specs server-side via ``app.scene.build_scene``.",
+        "description": "The Compare screen's inputs: the same handful of controls the Dash app\nexposes, translated to specs server-side via ``app.scene.build_scene``.",
         "properties": {
           "body": {
             "discriminator": {
@@ -677,7 +677,7 @@
         "type": "object"
       },
       "ScorecardResponse": {
-        "description": "The evaluator's operating-window verdict. ``activated=False`` means the\ntarget never fired in the searched range and every other field is absent.",
+        "description": "The evaluator's operating-window verdict. ``activated=False`` means the target\nnever fired in the searched range; only ``offtarget_hash`` comes back with it, and\nevery other field is absent.",
         "properties": {
           "activated": {
             "title": "Activated",
@@ -1162,7 +1162,7 @@
         "type": "object"
       },
       "ValidationReport": {
-        "description": "The trust panel: which reproductions currently pass (master plan \u00a715). This is\nthe committed report CI regenerates \u2014 the app renders it, never recomputes it.",
+        "description": "The trust panel: which reproductions currently pass (master plan \u00a715). This is\nthe committed report CI regenerates. The app renders it, never recomputes it.",
         "properties": {
           "n_pass": {
             "title": "N Pass",

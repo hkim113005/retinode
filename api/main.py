@@ -26,8 +26,8 @@ def _json_safe(obj: Any) -> Any:
 
     FastAPI's default handler echoes the offending input back in the 422 body, and
     Starlette renders JSON with ``allow_nan=False``. So a request carrying ``NaN`` or
-    ``1e400`` made the *error response itself* raise, turning a clean 422 into a 500 —
-    the one input that most needed a clear message got the least clear one. Pydantic
+    ``1e400`` made the *error response itself* raise, turning a clean 422 into a 500.
+    The one input that most needed a clear message got the least clear one. Pydantic
     also puts the raw ``ValueError`` in each error's ``ctx``, which is not
     serializable either. Both hazards are inputs we do not control, so this is total:
     anything that is not a JSON primitive falls through to ``str``.
@@ -45,7 +45,7 @@ def _json_safe(obj: Any) -> Any:
 
 def _default_provider() -> Callable[..., Any]:
     # Lazy: keeps `import api` (and the field-only path) free of the cable engine,
-    # so the fast test job — which installs no NEURON — imports the API cleanly.
+    # so the fast test job, which installs no NEURON, imports the API cleanly.
     from engine.cable.population import population_thresholds
 
     return population_thresholds
@@ -60,7 +60,7 @@ def create_app(*, thresholds_provider: Callable[..., Any] | None = None) -> Fast
     # this, not the resolved provider: production runs the default real provider AND
     # must dispatch to the FEM env (geometry comparison is FEM-only), whereas an
     # injected fake short-circuits the field and runs in-process. "provider is None"
-    # can't tell them apart — both are non-None by the time they reach a route.
+    # can't tell them apart: both are non-None by the time they reach a route.
     app.state.provider_injected = thresholds_provider is not None
     app.state.jobs = JobRegistry()
 

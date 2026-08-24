@@ -5,23 +5,23 @@ import type { Scorecard as ScorecardData } from "../api/client";
 import type { Progress } from "../screens/Compare";
 
 // An unbounded window is a real evaluator state (limiting: "none"), so infinities
-// have to read as ∞ — `toFixed` would print the literal "Infinity µA".
+// have to read as ∞, because `toFixed` would print the literal "Infinity µA".
 function uA(x: number | null | undefined): string {
-  if (x == null) return "—";
+  if (x == null) return "n/a";
   return Number.isFinite(x) ? `${x.toFixed(1)} µA` : "∞";
 }
 
 function ratio(x: number | null | undefined): string {
-  if (x == null) return "—";
+  if (x == null) return "n/a";
   return Number.isFinite(x) ? `${x.toFixed(2)}×` : "∞×";
 }
 
-// What closed the window — the difference between "a bystander fires" and "the
-// charge limit bites" is the whole design decision, so it is spelled out.
+// What closed the window. The difference between "a bystander fires" and "the charge
+// limit bites" is the whole design decision, so it is spelled out.
 const LIMITING: Record<string, string> = {
   off_target: "a bystander fires",
   safety: "the charge limit",
-  none: "nothing — unbounded",
+  none: "nothing (unbounded)",
 };
 
 export function Scorecard({
@@ -58,7 +58,9 @@ export function Scorecard({
           </button>
         </>
       ) : !data.activated ? (
-        <p className="empty">The target never fired in the searched range — no operating window.</p>
+        <p className="empty">
+          The target never fired in the searched range, so there is no operating window.
+        </p>
       ) : (
         <>
           <div className="verdict">

@@ -30,7 +30,7 @@ def test_confined_return_avoids_axon_of_passage(neuron_h):
 @pytest.mark.slow
 @pytest.mark.parametrize("offset_um", [30.0, 50.0])
 def test_axon_avoidance_holds_across_offsets(neuron_h, offset_um):
-    """Robustness: avoidance is not a single lucky offset — it holds over a range."""
+    """Robustness: avoidance is not a single lucky offset. It holds over a range."""
     from engine.cable.channels import build_active_rgc
 
     cell = build_active_rgc(origin_um=(-200.0, offset_um, -20.0), axon_direction=(1.0, 0.0, 0.0))

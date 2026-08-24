@@ -72,7 +72,7 @@ def test_a_fake_provider_bypasses_the_guard():
 @pytest.mark.neuron  # run_study's default branch calls _query_reach_um -> place_cell (NEURON)
 def test_the_default_real_path_forces_a_floored_fem_backend(monkeypatch):
     """Without an injected provider, run_study must hand the sweep a FEM backend whose
-    domain is floored to the cell reach — the two things that prevent a silent flat
+    domain is floored to the cell reach. Those two things prevent a silent flat
     frontier and a point-outside-the-mesh crash. Capture the backend it constructs
     rather than running a real FEM solve."""
     from engine.field import FenicsxBackend
@@ -98,7 +98,7 @@ def test_the_default_real_path_forces_a_floored_fem_backend(monkeypatch):
 @pytest.mark.neuron  # _query_reach_um places the cell (build_active_rgc needs NEURON)
 def test_query_reach_covers_the_axon_of_passage():
     """The FEM domain must contain every point the field is sampled at. The reach
-    computation is pure and fast, but was only exercised by the conda fem test — a
+    computation is pure and fast, but was only exercised by the conda fem test, so a
     regression (min vs max, or forgetting the axon) would sail through the fast and
     NEURON jobs. Pin it: the reach far exceeds the array footprint (the axon runs
     hundreds of µm toward the optic disc)."""
@@ -110,7 +110,7 @@ def test_query_reach_covers_the_axon_of_passage():
 
 
 def test_min_half_width_floors_the_auto_sized_domain():
-    """The floor that keeps those query points inside the mesh — a point outside is a
+    """The floor that keeps those query points inside the mesh. A point outside is a
     hard solve error, not a small inaccuracy (found the hard way running P8 S4 live)."""
     from engine.field.mesh import default_domain
     from engine.spec import HomogeneousConductivity

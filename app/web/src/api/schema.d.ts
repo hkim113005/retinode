@@ -167,7 +167,7 @@ export interface components {
          *     with ``AmplitudeSweepResponse.amplitudes_uA``.
          *
          *     Note there is deliberately no "activation fraction" here. The patch is a target
-         *     plus its bystanders — a handful of cells — so a fraction would be a two- or
+         *     plus its bystanders (a handful of cells), so a fraction would be a two- or
          *     three-level step function wearing the costume of a sigmoid. Per-cell traces are
          *     what the engine actually knows.
          */
@@ -225,9 +225,9 @@ export interface components {
          * @description The id ``POST /cad`` hands back for a stored solid, plus its original name.
          *
          *     The bounding dimensions are measured once at upload, in the FEM env (reading a
-         *     STEP needs gmsh). They are ``None`` when that env is unavailable — the upload
-         *     still succeeds; only the shape preview is unavailable, and the client says so
-         *     rather than drawing a flat disk and letting it pass for the real solid.
+         *     STEP needs gmsh). They are ``None`` when that env is absent. The upload still
+         *     succeeds; only the shape preview is missing, and the client says so rather than
+         *     drawing a flat disk and letting it pass for the real solid.
          */
         CadUploadResponse: {
             /** Bounding Height Um */
@@ -255,7 +255,7 @@ export interface components {
          * CompareResponse
          * @description One configuration scored for the Compare screen: the field and its scene
          *     overlays always, the scorecard only when requested (it costs a threshold
-         *     search). This is the field-view data contract — grid + electrode outlines +
+         *     search). This is the field-view data contract: grid + electrode outlines +
          *     soma overlays (master plan §16).
          */
         CompareResponse: {
@@ -306,7 +306,8 @@ export interface components {
         };
         /**
          * FieldGridResponse
-         * @description Ve (mV) on a square grid at the cell plane — the analytical field preview.
+         * @description Ve (mV) on a square grid at the cell plane. Carries either the synchronous
+         *     analytical preview or the FEM field solved by ``POST /field/accurate``.
          */
         FieldGridResponse: {
             /** Ve Mv */
@@ -368,9 +369,10 @@ export interface components {
         /**
          * JobStatus
          * @description A background job's state, polled by the client. When ``status`` is ``"done"``,
-         *     the matching result is present — ``scorecard`` for a score job, ``field`` (+
-         *     ``max_divergence_pct`` vs the analytical preview) for an accurate-field job.
-         *     ``cached`` means it was served from a prior identical run (P7 S3).
+         *     the matching result is present: ``scorecard`` for a score job, ``field`` (+
+         *     ``max_divergence_pct`` vs the analytical preview) for an accurate-field job,
+         *     ``study`` for a geometry sweep, ``sweep`` for an amplitude sweep. ``cached`` means
+         *     it was served from a prior identical run (P7 S3).
          */
         JobStatus: {
             /**
@@ -403,7 +405,7 @@ export interface components {
          * @description The 3D shape an electrode marker carries, so the loupe can draw the true solid
          *     (not just its flat footprint). Dimensions are summarised to what the view needs:
          *     ``radius_um`` is the base/lateral radius, ``height_um`` the depth into the tissue
-         *     (0 for a hemisphere — its radius is the depth), ``top_radius_um`` the frustum's tip.
+         *     (0 for a hemisphere, whose radius is its depth), ``top_radius_um`` the frustum's tip.
          *     A CAD solid is drawn as its bounding cylinder.
          */
         MarkerBody: {
@@ -424,7 +426,7 @@ export interface components {
         };
         /**
          * NoBody
-         * @description A flat 2D face on the array plane — the default, analytical-friendly.
+         * @description A flat 2D face on the array plane: the default, analytical-friendly.
          */
         NoBody: {
             /**
@@ -435,7 +437,7 @@ export interface components {
         };
         /**
          * SceneControls
-         * @description The Compare screen's inputs — the same handful of controls the Dash app
+         * @description The Compare screen's inputs: the same handful of controls the Dash app
          *     exposes, translated to specs server-side via ``app.scene.build_scene``.
          */
         SceneControls: {
@@ -496,8 +498,9 @@ export interface components {
         };
         /**
          * ScorecardResponse
-         * @description The evaluator's operating-window verdict. ``activated=False`` means the
-         *     target never fired in the searched range and every other field is absent.
+         * @description The evaluator's operating-window verdict. ``activated=False`` means the target
+         *     never fired in the searched range; only ``offtarget_hash`` comes back with it, and
+         *     every other field is absent.
          */
         ScorecardResponse: {
             /** Activated */
@@ -710,7 +713,7 @@ export interface components {
         /**
          * ValidationReport
          * @description The trust panel: which reproductions currently pass (master plan §15). This is
-         *     the committed report CI regenerates — the app renders it, never recomputes it.
+         *     the committed report CI regenerates. The app renders it, never recomputes it.
          */
         ValidationReport: {
             /** N Pass */

@@ -1,11 +1,11 @@
-// The chart seam (P7 S7). A plot is a pure function from data to a `Scene` — a flat
+// The chart seam (P7 S7). A plot is a pure function from data to a `Scene`: a flat
 // list of resolved primitives in CSS-pixel space. Two renderers consume it: canvas
 // for the screen (fast, live) and SVG for export (vector, figure quality). Because
 // both eat the same description, the exported figure IS what was on screen; it
 // cannot drift. It also makes plots testable without a canvas.
 //
-// Colours are resolved to concrete strings when the scene is BUILT, never left as
-// CSS variables — a var() reference means nothing inside a standalone .svg file.
+// Colours are resolved to concrete strings when the scene is BUILT, never left as CSS
+// variables, because a var() reference means nothing inside a standalone .svg file.
 
 export type Rect = {
   kind: "rect";
@@ -57,7 +57,7 @@ export type Scene = {
   width: number;
   height: number;
   background?: string; // opaque paper for export; omit for transparent
-  title?: string; // becomes the SVG <title> — accessibility + figure provenance
+  title?: string; // becomes the SVG <title>: accessibility + figure provenance
   items: Item[];
 };
 
@@ -80,7 +80,7 @@ function cssVar(name: string, fallback: string): string {
   return v || fallback;
 }
 
-/** The palette the app is currently wearing — so the screen matches the UI theme. */
+/** The palette the app is currently wearing, so the screen matches the UI theme. */
 export function livePalette(): Palette {
   return {
     field: cssVar("--field", "#007aff"),

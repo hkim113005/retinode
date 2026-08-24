@@ -11,7 +11,7 @@ agreement.
 Units: rather than rescale the netgen mesh, this solves directly in microns with
 an effective conductivity ``sigma * 1e-6`` (the microns->metres fold of the weak
 form), so V comes out in volts for a 1 A injection, and ``A = 1e-3 * V`` gives
-mV/uA -- identical to the DOLFINx backend.
+mV/uA, identical to the DOLFINx backend.
 
 Requires ngsolve (a pip universal2 wheel that coexists with the conda DOLFINx in
 the FEM env); imported lazily so the module loads under uv without it.
@@ -35,7 +35,7 @@ _UM_TO_M_FOLD = 1.0e-6  # sigma * this folds the microns->metres unit change int
 
 
 class NGSolveBackend:
-    """FEM field backend (NGSolve) behind the transfer-matrix contract -- the
+    """FEM field backend (NGSolve) behind the transfer-matrix contract: the
     independent cross-check of :class:`~engine.field.fem_fenicsx.FenicsxBackend`.
     Same domain auto-sizing, same homogeneous/isotropic-layered support, same
     anisotropy deferral."""
@@ -54,7 +54,7 @@ class NGSolveBackend:
         self.margin_factor = margin_factor
         # Present for parity with FenicsxBackend: without it the two backends could
         # auto-size DIFFERENT domains for the same array, contradicting the claim that
-        # they read the same mesh — which is the whole basis of the cross-check.
+        # they read the same mesh, which is the whole basis of the cross-check.
         self.min_half_width_um = min_half_width_um
 
     def _resolve_domain(
@@ -74,7 +74,7 @@ class NGSolveBackend:
         ``name`` is the constant "fem_ngsolve" whatever the degree or mesh, and
         ``field_key``/``result_key`` only append ``solve_params`` when it is not None.
         A degree-2 re-solve was therefore served the persisted degree-1 numbers, under
-        a key claiming to identify the finer solve — the exact hazard keys.py:78
+        a key claiming to identify the finer solve: the exact hazard keys.py:78
         documents for the FEM tier.
         """
         _reject_anisotropy(conductivity)

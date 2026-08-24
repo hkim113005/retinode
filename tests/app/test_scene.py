@@ -57,8 +57,8 @@ def test_build_scene_assembles_all_four_specs():
 def test_cells_sit_in_the_positive_z_tissue():
     """The array plane is z=0 and +z runs into the tissue (D8, docs/phase-6-plan.md).
 
-    This is not cosmetic. Every Phase-6 3D predicate assumes it — `point_in_body`
-    tests ``0 <= dz <= height_um`` — so a cell at negative z can never be inside any
+    This is not cosmetic. Every Phase-6 3D predicate assumes it. `point_in_body`
+    tests ``0 <= dz <= height_um``, so a cell at negative z can never be inside any
     electrode body. If this flips back, the overlap check silently matches nothing
     instead of failing, which is the worst way for it to break.
     """

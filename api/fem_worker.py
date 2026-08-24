@@ -4,7 +4,8 @@ The API runs in the uv env, which has no DOLFINx; the FEM solve lives in the
 ``retinode-fem`` conda env. This module bridges the two: it runs ``api.fem_job`` in
 that interpreter as a subprocess (scene on stdin, result written to a temp file so
 gmsh/PETSc stdout noise can't corrupt it), then computes the field's divergence from
-the cheap analytical preview — the "how much did accuracy change?" note the UI shows.
+the cheap analytical preview. That divergence is the "how much did accuracy change?"
+note the UI shows.
 
 The interpreter is ``$RETINODE_FEM_PYTHON`` or the default miniforge path. If it is
 absent (e.g. a machine with no FEM env), the job fails with a clear message rather
@@ -53,7 +54,7 @@ def _run_fem_job(controls: SceneControls, timeout_s: float, runner=subprocess.ru
 
 def max_divergence_pct(fem: FieldGridResponse, controls: SceneControls) -> float:
     """Peak |FEM − analytical| / |analytical| (%) over the meaningful field (>5% of
-    peak) — how far the accurate solve moved from the analytical preview."""
+    peak): how far the accurate solve moved from the analytical preview."""
     scene = build_scene(
         layout=controls.layout,
         electrode_um=controls.electrode_um,
@@ -78,9 +79,10 @@ def solve_accurate_field(
 ) -> tuple[FieldGridResponse, float | None]:
     """Run the FEM solve and return its field plus its divergence from analytical.
 
-    A bodied (3D) electrode has no analytical baseline — the point source is blind to
-    the geometry — so the divergence is meaningless there and returned as ``None``
-    (the UI simply shows the FEM field without an "accuracy changed by X%" note)."""
+    A bodied (3D) electrode has no analytical baseline, because the point source is
+    blind to the geometry. The divergence is therefore meaningless there and returned
+    as ``None`` (the UI simply shows the FEM field without an "accuracy changed by X%"
+    note)."""
     grid = _run_fem_job(controls, timeout_s, runner=runner)
     field = FieldGridResponse(**grid)
     if controls.body.kind != "none":

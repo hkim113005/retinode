@@ -3,10 +3,10 @@
 This is the orchestration behind ``POST /study``, factored out of the route so it can
 run in TWO places from one implementation:
 
-- **in the uv API process** with an injected fake ``thresholds_provider`` (dev, tests)
-  — fast, NEURON-free, the field backend is cosmetic there;
+- **in the uv API process** with an injected fake ``thresholds_provider`` (dev,
+  tests): fast, NEURON-free, and the field backend is cosmetic there;
 - **in the conda ``retinode-fem`` env** via :mod:`api.study_job`, on the real FEM
-  tier with real NEURON — because comparing electrode geometry is FEM-only (the
+  tier with real NEURON, because comparing electrode geometry is FEM-only (the
   analytical point source is diameter-blind; ``docs/phase-8-findings.md``).
 
 It takes and returns **plain dicts**, no Pydantic, so it imports cleanly in the FEM
@@ -99,8 +99,8 @@ def run_study(
     Backend: an injected ``thresholds_provider`` short-circuits the field solve, so
     the backend is cosmetic and defaults to analytical (fast, for dev/tests). The real
     path (``thresholds_provider is None``) forces the **FEM** tier, because only a
-    surface-resolving field distinguishes one diameter from another — and guards that
-    a geometry-varying sweep never silently runs on the diameter-blind analytical tier.
+    surface-resolving field distinguishes one diameter from another, and guards that a
+    geometry-varying sweep never silently runs on the diameter-blind analytical tier.
     """
     report = on_progress or (lambda _f, _m: None)
 
@@ -118,7 +118,7 @@ def run_study(
         if thresholds_provider is not None:
             backend = AnalyticalBackend()  # cosmetic under a fake provider
         else:
-            # The FEM domain must contain every point the field is sampled at — the
+            # The FEM domain must contain every point the field is sampled at: the
             # cell compartments, whose axon of passage reaches hundreds of µm toward
             # the optic disc, far outside a domain sized for a small electrode. Floor
             # the domain at the query reach (+margin), or the solve raises on a point

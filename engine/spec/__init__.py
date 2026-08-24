@@ -3,7 +3,7 @@
 These are the single source of truth the whole system passes around. The
 geometry/configuration split is enforced *structurally*: geometry objects
 (ElectrodeArray) carry no current, and configuration objects (StimConfig) carry
-no position — so the two cannot blur even under a careless edit.
+no position, so the two cannot blur even under a careless edit.
 """
 
 from .body import CadBody, Cylinder, ElectrodeBody, Frustum, Hemisphere

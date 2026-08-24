@@ -2,7 +2,7 @@
 
 Two nearby electrodes each depolarise the target's spike-initiation zone. At a
 shared amplitude that is *subthreshold for either electrode alone*, the two
-currents summate and jointly cross threshold — the paired threshold falls well
+currents summate and jointly cross threshold: the paired threshold falls well
 below either single-electrode threshold. A model that treated the electrodes as
 independent (activation at the lower single-electrode threshold) would miss this;
 the full multi-compartment model captures it. This is the multi-site activation

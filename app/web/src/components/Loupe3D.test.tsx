@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import Loupe3D from "./Loupe3D";
 
 // @react-three/fiber's Canvas is stubbed globally in src/test/setup.ts (no WebGL in
-// jsdom), so this exercises the loupe's chrome — the corner ↔ expanded toggle.
+// jsdom), so this exercises the loupe's chrome: the corner ↔ expanded toggle.
 
 const ELECTRODES = [{ x_um: 0, y_um: 0, radius_um: 5 }];
 const CELLS = [{ x_um: 0, y_um: 0, is_target: true }];

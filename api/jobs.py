@@ -1,6 +1,6 @@
 """A small in-process job model for the API (P7 S3).
 
-Long work — a NEURON threshold search, later an FEM solve — must not block the
+Long work (a NEURON threshold search, later an FEM solve) must not block the
 request. A job is submitted, runs on a background thread, and is polled for
 progress; its result is **cached by key**, so re-submitting the same scene is served
 instantly. This is the seam the two-env FEM dispatch (D5) plugs into later; for now
@@ -10,7 +10,7 @@ Deliberately dependency-free (no Redis/Celery): a dict + a lock + a thread pool 
 enough for a single-user bench tool, and it keeps the API importable in the fast
 test job with no extra services.
 
-Scope note: the job and result maps grow for the process lifetime — nothing is
+Scope note: the job and result maps grow for the process lifetime; nothing is
 evicted. That is acceptable and intentional for the single-user assumption above
 (one researcher, a session's worth of jobs); a long-lived multi-user server would
 want an LRU/TTL bound, but adding eviction here would only risk dropping an in-flight

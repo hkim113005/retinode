@@ -1,7 +1,7 @@
-// The command palette (⌘K / Ctrl-K) — "every action is reachable by keyboard"
-// (docs/phase-7-design.md). Screens register their own actions rather than App
-// knowing about all of them, so a screen's commands live next to the code that
-// performs them and disappear when that screen unmounts.
+// The command palette (⌘K / Ctrl-K). It is what makes the design doc's "every action
+// is reachable by keyboard" true (docs/phase-7-design.md). Screens register their own
+// actions rather than App knowing about all of them, so a screen's commands live next
+// to the code that performs them and disappear when that screen unmounts.
 import {
   createContext,
   useCallback,
@@ -26,7 +26,7 @@ const Ctx = createContext<Registry | null>(null);
 
 /**
  * Register `cmds` under `owner` for as long as the caller is mounted. MEMOISE the
- * array (useMemo) — a fresh array each render would re-register forever.
+ * array (useMemo), because a fresh array each render would re-register forever.
  */
 export function useCommands(owner: string, cmds: Command[]): void {
   const reg = useContext(Ctx);

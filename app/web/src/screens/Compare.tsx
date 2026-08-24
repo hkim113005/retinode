@@ -24,8 +24,8 @@ import { Scorecard } from "../components/Scorecard";
 import { ThresholdPlot } from "../components/ThresholdPlot";
 import type { Screen } from "../nav";
 
-// three.js is heavy and only needed for the 3D loupe — lazy-load it so it stays off
-// the main chunk (and out of the synchronous test path).
+// three.js is heavy and only needed for the 3D loupe, so it is lazy-loaded: it stays
+// off the main chunk and out of the synchronous test path.
 const Loupe3D = lazy(() => import("../components/Loupe3D"));
 
 const DEFAULTS: Controls = {
@@ -40,7 +40,7 @@ const DEFAULTS: Controls = {
 };
 
 // Every failure used to render as "Couldn't reach the field engine (...). Is the API
-// running on :8000?" — including an OverlapConflict, which is a perfectly ordinary
+// running on :8000?", including an OverlapConflict, which is a perfectly ordinary
 // answer from a reachable engine that already tells you what to do about it. Asking
 // whether the server is up buries that advice under a wrong diagnosis.
 const isOffline = (msg: string): boolean =>
@@ -62,12 +62,12 @@ const asRequest = (c: Controls, includeScorecard: boolean): SceneControls => ({
 });
 
 // The amplitude grid the sweep button uses. 24 points is ~24 × the population in
-// NEURON runs — the same order as the scorecard this screen already runs, so it
+// NEURON runs, the same order as the scorecard this screen already runs, so it
 // stays a seconds-long job.
 //
 // LOG, not linear, and that is not a style choice. Thresholds here land around
 // 5–30 µA, so a linear 1–200 grid spends most of its points on the flat top and
-// resolves the interesting end at ~8 µA per step — coarser than the gap between the
+// resolves the interesting end at ~8 µA per step, coarser than the gap between the
 // target and its bystander. Measured: on a 10 µm disk, linear put BOTH cells at the
 // same grid point (12.7 µA), reporting a zero-wide window; log separated them at
 // 8.9 and 16.5. The linear grid did not merely look worse, it was wrong.
@@ -115,7 +115,7 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
     setSweepCached(false);
     // clear the progress of any in-flight job too, not just its result: the job's
     // ticket is now stale so its own `.finally` guard declines to clear it, which
-    // would otherwise orphan the progress bar and lock the action forever. Safe —
+    // would otherwise orphan the progress bar and lock the action forever. Safe:
     // the poll loops re-check their ticket before every setProgress, so a superseded
     // job cannot re-populate what we clear here.
     setScoreProgress(null);
@@ -160,12 +160,12 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
       const card = job.scorecard ?? { activated: false };
       setScorecard(card);
       setCached(job.cached);
-      // a scorecard costs a threshold search — keep it so two designs can be
+      // a scorecard costs a threshold search, so keep it: two designs can then be
       // compared without re-running one from memory
       setRuns((rs) => remember(rs, { id: runKey(controls), controls, scorecard: card }));
     })()
       .catch((e: unknown) => {
-        // don't surface a superseded job's failure — the scene has moved on
+        // don't surface a superseded job's failure: the scene has moved on
         if (ticket === scoreTicket.current) {
           setError(e instanceof Error ? e.message : "scoring failed");
         }
@@ -232,7 +232,7 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
 
   const layoutName = controls.layout === "bipolar" ? "Bipolar · local return" : "Monopolar";
   // A 3D body is FEM-only: the analytical preview is a point source blind to geometry,
-  // so we don't show it as "the field" — we prompt for the FEM solve instead.
+  // so we don't show it as "the field". We prompt for the FEM solve instead.
   const bodied = controls.body.kind !== "none";
   const shapeName = bodied
     ? `${BODY_LABEL[controls.body.kind]} electrode`
@@ -340,7 +340,7 @@ export function Compare({ onNavigate }: { onNavigate?: (s: Screen) => void }) {
             {showFemPrompt ? (
               <div className="card panel field-3d-notice" role="note">
                 <p className="empty">
-                  {BODY_LABEL[controls.body.kind]} electrode — the analytical preview is a
+                  {BODY_LABEL[controls.body.kind]} electrode. The analytical preview is a
                   point source and can’t represent electrode geometry. Run the FEM field
                   (button above) for the real potential; it also drives the scorecard.
                 </p>

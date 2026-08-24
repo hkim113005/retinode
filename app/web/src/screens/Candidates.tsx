@@ -1,7 +1,8 @@
 // The Candidates screen: the payoff. A ranked, safety-filtered shortlist of the
-// designs worth testing in tissue — each with its threshold, selective window, charge
-// verdict, accuracy tier, and a one-line rationale — exportable for the lab. It reads
-// the study's points, so the flow is: sweep on Study → hand this list to someone.
+// designs worth testing in tissue. Each row carries its threshold, selective window,
+// charge verdict, accuracy tier, and a one-line rationale, and the whole list exports
+// for the lab. It reads the study's points, so the flow is: sweep on Study, then hand
+// this list to someone.
 import { useMemo, useState } from "react";
 import type { StudyPoint, StudyTier } from "../api/client";
 import { downloadText as download } from "../chart/export";
@@ -11,7 +12,7 @@ import type { Screen } from "../nav";
 const TOP_N = 8;
 
 // How to rank. "Robustness" is only offered when the study actually measured a
-// trajectory spread — sorting by an unmeasured column would be inventing an order.
+// trajectory spread, because sorting by an unmeasured column would invent an order.
 type Sort = "selectivity" | "threshold" | "robustness";
 
 const SORTS: Record<Sort, (p: StudyPoint) => number> = {
@@ -38,12 +39,12 @@ function rationale(p: StudyPoint, all: StudyPoint[], scope = "this study"): stri
   const maxSel = Math.max(...all.map((q) => q.selectivity_uA));
   const minCost = Math.min(...all.map((q) => q.cost_uA));
   if (p.selectivity_uA === maxSel && p.cost_uA === minCost)
-    return `Widest selective window and the lowest current — it dominates ${scope}.`;
+    return `Widest selective window and the lowest current: it dominates ${scope}.`;
   if (p.selectivity_uA === maxSel) return `The widest selective window in ${scope}.`;
   if (p.cost_uA === minCost) return `The lowest current in ${scope}.`;
   if (p.on_frontier)
     return "On the selectivity–cost frontier: no safe design beats it on both axes.";
-  return "Beaten on both axes by a frontier design — listed for reference.";
+  return "Beaten on both axes by a frontier design, listed for reference.";
 }
 
 export function Candidates({
@@ -55,7 +56,7 @@ export function Candidates({
 }: {
   points: StudyPoint[];
   // The tier the sweep ACTUALLY ran on, carried from Study. This screen used to
-  // hardcode "analytical" in the badge, the rail, the footer and — worst — the
+  // hardcode "analytical" in the badge, the rail, the footer and, worst of all, the
   // exported JSON/CSV, while a production sweep has run in the conda FEM env since
   // P8 S4b. A collaborator reading candidates.json would conclude the shortlist came
   // from the diameter-blind point source and redo work that was already done.
@@ -115,7 +116,7 @@ export function Candidates({
       <Rail
         active="Candidates"
         tier={isFem ? "FEM" : "Analytical"}
-        safe={ranked.length ? "filtered" : "—"}
+        safe={ranked.length ? "filtered" : "n/a"}
         onNavigate={onNavigate}
       />
       <main className="stage">
@@ -125,7 +126,7 @@ export function Candidates({
             <div className="crumb">
               {ranked.length
                 ? `${ranked.length} charge-safe designs · ranked by ${RANK_LABEL[active]}`
-                : "the payoff — a ranked shortlist to hand to the lab"}
+                : "the payoff: a ranked shortlist to hand to the lab"}
             </div>
           </div>
           <div className="sorts" role="group" aria-label="Rank by">
@@ -160,7 +161,7 @@ export function Candidates({
         {!ranked.length ? (
           <div className="card panel">
             <p className="empty">
-              No candidates yet. Run a sweep on the Study screen — its charge-safe designs
+              No candidates yet. Run a sweep on the Study screen. Its charge-safe designs
               are ranked here, ready to export.
             </p>
             <button className="btn" onClick={() => onNavigate?.("Study")}>
@@ -181,21 +182,21 @@ export function Candidates({
                       <>
                         The lowest target threshold (<b>{best.cost_uA.toFixed(1)} µA</b>) among the
                         charge-safe designs in {scope}, with a{" "}
-                        <b>{best.selectivity_uA.toFixed(1)} µA</b> selective window — the one to
-                        take to tissue first.
+                        <b>{best.selectivity_uA.toFixed(1)} µA</b> selective window. Take this
+                        one to tissue first.
                       </>
                     ) : active === "robustness" && best.spread_uA != null ? (
                       <>
                         The tightest trajectory spread (<b>±{best.spread_uA.toFixed(1)} µA</b>)
                         among the charge-safe designs in {scope}, at{" "}
-                        <b>{best.cost_uA.toFixed(1)} µA</b> on the target — the one to take to
+                        <b>{best.cost_uA.toFixed(1)} µA</b> on the target. Take this one to
                         tissue first.
                       </>
                     ) : (
                       <>
                         The widest selective window (<b>{best.selectivity_uA.toFixed(1)} µA</b>)
                         among the charge-safe designs in {scope}, at{" "}
-                        <b>{best.cost_uA.toFixed(1)} µA</b> on the target — the one to take to
+                        <b>{best.cost_uA.toFixed(1)} µA</b> on the target. Take this one to
                         tissue first.
                       </>
                     )}
@@ -223,7 +224,7 @@ export function Candidates({
                       <span className="v">
                         {p.cost_uA.toFixed(1)} µA
                         {/* the axon path is unknown, so the threshold has an honest
-                            band. Absent when unmeasured — never a fake ±0. */}
+                            band. Absent when unmeasured, never a fake ±0. */}
                         {p.spread_uA != null && (
                           <span className="pm" title="spread across sampled axon trajectories">
                             {" ±"}
@@ -263,21 +264,21 @@ export function Candidates({
         <div className="card panel">
           <h2>How to read this</h2>
           <p className="empty">
-            Every row is charge-safe by construction — unsafe designs never reach this
-            list. Ranked by the <b>{RANK_LABEL[active]}</b> — the column you picked
+            Every row is charge-safe by construction: unsafe designs never reach this
+            list. Ranked by the <b>{RANK_LABEL[active]}</b>, the column you picked
             above. The selective window is how much current headroom you have above the
             target’s threshold before a bystander fires.
           </p>
           <div className="foot">
             {isFem ? (
               <>
-                Tier is <b>FEM</b> — the sweep resolved each electrode’s surface, which
+                Tier is <b>FEM</b>: the sweep resolved each electrode’s surface, which
                 is what makes one diameter distinguishable from another. These numbers
                 are the accurate ones; no Compare re-run is needed before fabrication.
               </>
             ) : (
               <>
-                Tier is <b>analytical</b> — a point source, blind to electrode diameter.
+                Tier is <b>analytical</b>: a point source, blind to electrode diameter.
                 Confirm a shortlisted design with “Run accurately (FEM)” on Compare
                 before committing to fabrication.
               </>

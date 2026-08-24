@@ -1,4 +1,4 @@
-"""P7 S3: the async job model — the scorecard runs as a job, cached by scene."""
+"""P7 S3: the async job model. The scorecard runs as a job, cached by scene."""
 
 import time
 
@@ -55,7 +55,7 @@ def test_registry_runs_a_task_and_caches_by_key():
     done = reg.get(job.id)
     assert done.status == "done" and done.result == {"value": 42}
 
-    # a second submit with the same key is served from cache — the task doesn't re-run
+    # a second submit with the same key is served from cache, so the task doesn't re-run
     again = reg.submit("k", task)
     assert again.status == "done" and again.cached and again.result == {"value": 42}
     assert calls["n"] == 1

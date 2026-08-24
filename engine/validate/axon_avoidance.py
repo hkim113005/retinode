@@ -1,16 +1,16 @@
 """Vilkhu 2021: a confined return pattern avoids an axon of passage (P3 S2).
 
 An axon crossing offset under the array is activated at a low threshold by a
-monopolar electrode — a smeared, non-focal percept. Returning the current locally
+monopolar electrode, which is a smeared, non-focal percept. Returning the current locally
 on a ring of surrounding electrodes confines the field, so the activating function
 (∂²Ve/∂s²) along the offset axon collapses and its threshold rises sharply: the
 axon is avoided. This is the field-confinement mechanism behind Vilkhu et al.
-(2021)'s bi-electrode axon avoidance, and the engine's home turf — axons are
+(2021)'s bi-electrode axon avoidance, and the engine's home turf: axons are
 modelled explicitly and the activating function is a first-class diagnostic.
 
 Two checks: the AF flattening (fast, analytical) and the axon-of-passage threshold
-rise (NEURON). Both reproduce cleanly — no AIS/dendrite confound, because an axon
-of passage is far from its own soma.
+rise (NEURON). Both reproduce cleanly, with no AIS/dendrite confound, because an
+axon of passage is far from its own soma.
 """
 
 from __future__ import annotations

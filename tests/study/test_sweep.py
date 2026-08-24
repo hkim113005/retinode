@@ -1,4 +1,4 @@
-"""P2 S4: configuration sweeps — generators, caching, provenance, and ranking."""
+"""P2 S4: configuration sweeps (generators, caching, provenance, and ranking)."""
 
 import pytest
 
@@ -87,7 +87,7 @@ def test_sweep_serves_cached_results_and_skips_re_evaluation(tmp_path):
     calls.clear()
     second = sweep(ARR, PATCH, COND, configs, store=store, thresholds_provider=counting)
     assert second.n_cached == 2 and second.n_evaluated == 0
-    assert calls == []  # nothing re-evaluated — all served from the store
+    assert calls == []  # nothing re-evaluated, all served from the store
     assert {r.result_key for r in second.results} == {r.result_key for r in first.results}
 
 
@@ -159,11 +159,11 @@ def test_sweep_reuses_fields_across_configs_and_caches(neuron_h, tmp_path):
     first = sweep(ARR, patch, COND, configs, store=store, backend=spy)
     assert first.n_evaluated == 2 and first.n_cached == 0
     assert all(res.activated for res in first.results)
-    # target + one in-radius off-target, each field solved once — reused across both configs
+    # target + one in-radius off-target, each field solved once, then reused across both configs
     assert spy.calls == 2
 
     spy2 = _CountingBackend()
     second = sweep(ARR, patch, COND, configs, store=store, backend=spy2)
     assert second.n_cached == 2 and second.n_evaluated == 0
-    assert spy2.calls == 0  # all served from the store — no field solves at all
+    assert spy2.calls == 0  # all served from the store, so no field solves at all
     assert {r.result_key for r in second.results} == {r.result_key for r in first.results}

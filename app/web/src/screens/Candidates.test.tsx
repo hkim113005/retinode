@@ -24,7 +24,7 @@ const P = (
 const POINTS = [
   P(16, 40, 7.0, 6.0), // lowest current
   P(12, 40, 9.0, 11.0), // widest window -> should rank #1
-  P(8, 55, 12.0, 4.0, false), // UNSAFE — must never appear
+  P(8, 55, 12.0, 4.0, false), // UNSAFE: must never appear
   P(20, 70, 8.0, 5.0, true, false), // dominated
 ];
 
@@ -39,7 +39,7 @@ describe("Candidates", () => {
 
   // The shortlist is what leaves the tool and reaches a collaborator, so the tier it
   // stamps has to be the tier that actually ran. It was hardcoded "analytical" while
-  // production sweeps have run on FEM since P8 S4b — including in the exported JSON.
+  // production sweeps have run on FEM since P8 S4b, including in the exported JSON.
   it("reports the FEM tier it was given, in the badge and the footer", () => {
     render(<Candidates tier="fem" points={POINTS} onNavigate={vi.fn()} />);
     expect(screen.getAllByText("FEM").length).toBeGreaterThan(0);
@@ -55,7 +55,7 @@ describe("Candidates", () => {
   });
 
   // The recommendation is the single most load-bearing sentence on the screen, and it
-  // used to claim the selective-window superlative under every sort — so switching to
+  // used to claim the selective-window superlative under every sort, so switching to
   // "threshold" announced the NARROWEST window as "the widest".
   it("states the claim for the sort that is actually active", () => {
     // the blurb is broken up by <b> tags, so assert on the rendered text as a whole
@@ -64,7 +64,7 @@ describe("Candidates", () => {
     );
     const text = () => container.textContent ?? "";
 
-    // "among the charge-safe designs" is unique to the Recommended card — the plain
+    // "among the charge-safe designs" is unique to the Recommended card. The plain
     // "The widest selective window in this study." is a per-ROW rationale, which is
     // correct on whichever row genuinely has the widest window whatever the sort.
     expect(text()).toMatch(/The widest selective window \([\d.]+ µA\) among/);
@@ -80,13 +80,13 @@ describe("Candidates", () => {
     render(<Candidates tier="fem" points={POINTS} onNavigate={vi.fn()} />);
     // the unsafe 8 µm design must not be listed at all
     expect(screen.queryByText(/d8 · pitch 55/)).not.toBeInTheDocument();
-    // 3 safe designs, the widest window first — and it headlines the recommendation
+    // 3 safe designs, the widest window first, and it headlines the recommendation
     expect(screen.getAllByText(/d12 · pitch 40/).length).toBeGreaterThan(0);
     expect(screen.getByText(/▲ Recommended/)).toBeInTheDocument();
     expect(screen.getByText("The widest selective window in this study.")).toBeInTheDocument();
     expect(screen.getByText("The lowest current in this study.")).toBeInTheDocument();
     expect(
-      screen.getByText("Beaten on both axes by a frontier design — listed for reference."),
+      screen.getByText("Beaten on both axes by a frontier design, listed for reference."),
     ).toBeInTheDocument();
   });
 
@@ -123,7 +123,7 @@ describe("Candidates · the trajectory whisker", () => {
   // the true axon path is unknown, so a threshold has an honest band
   const MEASURED = [
     P(12, 40, 9.0, 11.0, true, true, 2.4), // widest window, but a loose error bar
-    P(16, 40, 7.0, 6.0, true, true, 0.3), // tightest — the robust choice
+    P(16, 40, 7.0, 6.0, true, true, 0.3), // tightest band: the robust choice
   ];
 
   it("shows the error bar beside the threshold it qualifies", () => {

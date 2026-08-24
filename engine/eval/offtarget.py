@@ -1,8 +1,8 @@
 """The off-target set: which non-target cells a selectivity score is measured against.
 
-This is an explicit, recorded modeling choice — it shapes the SOW more than
-almost anything — so it is a first-class, editable object, not a buried
-constant. A cell is off-target if its soma is within ``soma_radius_um`` of the
+This is an explicit, recorded modeling choice. It shapes the SOW more than
+almost anything else, so it is a first-class, editable object rather than a
+buried constant. A cell is off-target if its soma is within ``soma_radius_um`` of the
 target soma, or (when ``axon_proximity_um`` is set) its axon passes within that
 distance of any electrode. ``max_soma_count`` optionally keeps only the nearest N.
 """

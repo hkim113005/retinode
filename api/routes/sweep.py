@@ -1,7 +1,7 @@
 """The amplitude sweep as a background job (P8 S1).
 
-Costs the same order as the scorecard — the field is solved once per cell and every
-amplitude is then a matvec — but unlike a threshold search it is not adaptive, so it
+Costs the same order as the scorecard (the field is solved once per cell, and every
+amplitude is then a matvec), but unlike a threshold search it is not adaptive, so it
 reports honest per-amplitude progress instead of two guesses.
 """
 
@@ -23,13 +23,13 @@ router = APIRouter()
 
 
 def _cache_key(c: SweepControls) -> str:
-    """Keyed over the scene AND the grid — a different grid is a different answer,
-    unlike the field-only preview options (extent/n), which are excluded.
+    """Keyed over the scene AND the grid, because a different grid is a different
+    answer, unlike the field-only preview options (extent/n), which are excluded.
 
     ``body`` and ``overlap_policy`` belong here for the same reason they do in
     ``score._cache_key``: they change the answer, so two shapes must not collide on
     one key. They were missing, which meant a bodied sweep was served the flat-disk
-    curves out of cache — instantly, and flagged ``cached: true``.
+    curves out of cache, served instantly and flagged ``cached: true``.
     """
     return "sweep:" + json.dumps(
         {
@@ -54,7 +54,7 @@ def _cache_key(c: SweepControls) -> str:
 def submit_sweep(controls: SweepControls, request: Request) -> JobStatus:
     # The sweep runs on AnalyticalBackend, which is blind to electrode geometry. Given
     # a 3D body it used to return the FLAT-DISK activation curves as though they were
-    # the body's — the exact silent-wrong-answer that ``require_geometry_distinguishable``
+    # the body's: the exact silent-wrong-answer that ``require_geometry_distinguishable``
     # exists to prevent in the study path. Refuse instead of lying.
     if controls.body.kind != "none":
         raise HTTPException(

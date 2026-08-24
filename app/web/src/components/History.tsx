@@ -2,9 +2,9 @@
 // is worth keeping: the strip remembers the last few, shows their windows side by
 // side, and restores the whole configuration on click.
 //
-// This is what makes the screen a *Compare* rather than a viewer — the design doc's
-// "Compare is a difference, not two charts". Without it, deciding between two
-// geometries means re-running one from memory.
+// This is what makes the screen a *Compare* rather than a viewer, and it is what the
+// design doc means by "Compare is a difference, not two charts". Without it, deciding
+// between two geometries means re-running one from memory.
 import type { Scorecard as ScorecardData } from "../api/client";
 import type { Controls } from "./ControlRail";
 
@@ -40,7 +40,7 @@ export function remember(runs: Run[], run: Run): Run[] {
 const win = (s: ScorecardData): string => {
   if (!s.activated) return "no window";
   const m = s.usable_margin_uA;
-  if (m == null) return "—";
+  if (m == null) return "n/a";
   return Number.isFinite(m) ? `${m.toFixed(1)} µA` : "∞";
 };
 
@@ -54,7 +54,7 @@ const ratio = (s: ScorecardData): string => {
  * engine refuses such a comparison outright (`require_same_offtarget`): a selective
  * window only means something against a fixed set of bystanders.
  *
- * Today this is always empty — the off-target policy (soma radius, axon proximity)
+ * Today this is always empty: the off-target policy (soma radius, axon proximity)
  * has no control in the UI, so every run shares one. It is enforced anyway, because
  * the day that policy becomes editable the strip is already honest instead of
  * quietly showing an apples-to-oranges difference.
@@ -86,7 +86,7 @@ export function History({
         {odd.size > 0 && (
           <span className="warn" role="alert">
             ⚠ {odd.size} run{odd.size > 1 ? "s were" : " was"} scored against a different
-            off-target set — not comparable with the latest
+            off-target set. Not comparable with the latest
           </span>
         )}
       </div>
