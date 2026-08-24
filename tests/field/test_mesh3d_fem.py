@@ -17,6 +17,7 @@ pytest.importorskip("dolfinx")
 pytest.importorskip("gmsh")
 
 from engine.field import mesh as M  # noqa: E402
+from engine.field import mesh3d as M3  # noqa: E402
 from engine.field.convergence import mesh_convergence  # noqa: E402
 from engine.field.fem_fenicsx import (  # noqa: E402
     FenicsxBackend,
@@ -179,13 +180,25 @@ def test_tilted_cylinder_orients_its_tip_in_the_mesh():
     assert a[0, 0] > a[1, 0], "the tilted tip should dominate the field along +x, not +z"
 
 
+_MM_PER_UM = 1.0e-3
+
+
 def _write_step_cylinder(path: str, radius_um: float, height_um: float) -> None:
+    """Write a STEP cylinder of the given MICRON size.
+
+    gmsh/OCC stamps ``SI_UNIT(.MILLI.,.METRE.)`` into the STEP header, so the numbers
+    written here are millimetres and must be scaled. This fixture previously wrote the
+    micron values raw, which made the file claim a 5 mm electrode — harmless only
+    because the loader also ignored the declared unit. Both halves are fixed now.
+    """
     import gmsh
 
     gmsh.initialize()
     try:
         gmsh.model.add("cyl")
-        gmsh.model.occ.addCylinder(0.0, 0.0, 0.0, 0.0, 0.0, height_um, radius_um)
+        gmsh.model.occ.addCylinder(
+            0.0, 0.0, 0.0, 0.0, 0.0, height_um * _MM_PER_UM, radius_um * _MM_PER_UM
+        )
         gmsh.model.occ.synchronize()
         gmsh.write(path)
     finally:
@@ -224,8 +237,11 @@ def test_imported_cad_cylinder_reproduces_the_primitive_field(tmp_path):
 
 
 def _write_step_slab(path: str, hx: float, hy: float, height: float) -> None:
+    """Write a STEP slab of the given MICRON half-extents — scaled to millimetres,
+    the unit gmsh/OCC stamps into the STEP header (see _write_step_cylinder)."""
     import gmsh
 
+    hx, hy, height = hx * _MM_PER_UM, hy * _MM_PER_UM, height * _MM_PER_UM
     gmsh.initialize()
     try:
         gmsh.model.add("slab")
@@ -340,3 +356,47 @@ def test_fem_3d_field_drives_a_real_neuron_population(neuron_h):
     assert res.activated  # the FEM 3D field drove the target to threshold
     assert res.thresholds.target_threshold_uA is not None
     assert res.thresholds.target_threshold_uA > 0.0
+
+
+# --- CAD units: a STEP declares its own, and it is almost never microns ------------
+
+
+def _step_cylinder_mm(path, radius, height):
+    """Write a STEP cylinder whose numbers are MILLIMETRES — gmsh/OCC stamps
+    ``SI_UNIT(.MILLI.,.METRE.)`` into the header, as every CAD package does by
+    default. That is the whole point of these two tests."""
+    import gmsh
+
+    gmsh.initialize()
+    try:
+        gmsh.option.setNumber("General.Terminal", 0)
+        gmsh.model.add("c")
+        gmsh.model.occ.addCylinder(0, 0, 0, 0, 0, height, radius)
+        gmsh.model.occ.synchronize()
+        gmsh.write(str(path))
+    finally:
+        gmsh.finalize()
+
+
+def test_a_millimetre_step_is_converted_to_microns(tmp_path):
+    """A solid drawn as 0.005 x 0.030 in a millimetre file IS a 5 x 30 um electrode.
+
+    The raw coordinates used to be taken as microns, so this real design loaded as
+    0.005 um — 1000x too small, silently, and it still produced a plausible-looking
+    score. The declared unit is now honoured on import.
+    """
+    step = tmp_path / "real.step"
+    _step_cylinder_mm(step, radius=0.005, height=0.030)
+    body = M3.load_cad_body(str(step))
+    assert body.bounding_radius_um == pytest.approx(5.0, rel=1e-3)
+    assert body.bounding_height_um == pytest.approx(30.0, rel=1e-3)
+
+
+def test_a_wrong_scale_cad_is_refused_rather_than_solved(tmp_path):
+    """The other half: numbers that only make sense as microns, in a millimetre file,
+    are a unit error. 5 x 30 mm is 10000 x 30000 um — not a retinal electrode. It used
+    to load as 5 x 30 um and score as though nothing were wrong."""
+    step = tmp_path / "wrong.step"
+    _step_cylinder_mm(step, radius=5.0, height=30.0)  # 5 mm x 30 mm
+    with pytest.raises(ValueError, match="declared length unit"):
+        M3.load_cad_body(str(step))
