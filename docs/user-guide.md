@@ -16,9 +16,15 @@ extracellular field, finds each cell's activation threshold, and scores a
 
 It **screens and generates hypotheses**, meaning configurations worth taking to an ex
 vivo or in vivo experiment. From simulation alone it is not a ground-truth oracle.
-Every number carries its **accuracy tier** (analytical, FEM, or cross-checked) and its
-sensitivity. Treat the *comparison* between two designs as the signal, not either
-absolute number.
+Every number carries its **accuracy tier**, the field solver that produced it
+(analytical or FEM), and its sensitivity. Treat the *comparison* between two designs as
+the signal, not either absolute number.
+
+For the physics itself, meaning the governing equation and boundary conditions each
+tier solves, the channel model and morphology behind a threshold, the exact definition
+of the operating window, and the unit and coordinate conventions, read
+[What is actually being solved](../README.md#what-is-actually-being-solved) in the
+README first. This guide assumes it.
 
 Two words to keep straight ([README](../README.md) has the full glossary):
 
@@ -286,23 +292,32 @@ recorded numbers:
 /opt/homebrew/Caskroom/miniforge/base/envs/retinode-fem/bin/python examples/reproduce_headline.py
 ```
 
-It scores a 10 µm and a 30 µm flat disk. They are identical on the analytical tier
-(8.31 µA both, because the point source is diameter-blind) and distinct on FEM (9.49 vs
-10.20 µA), and the FEM numbers are checked against the values recorded in
+It scores a 10 µm and a 30 µm flat disk on the shipped default scene. The tabulated
+numbers are the **target cell's activation threshold**: identical on the analytical tier
+(8.31 µA for both, because the point source is diameter-blind) and distinct on FEM (9.49
+against 10.20 µA), checked against the values recorded in
 [phase-8-findings.md](phase-8-findings.md) to within ±0.30 µA. It prints
 `HEADLINE REPRODUCED ✓` and exits 0 on success, non-zero on drift. Needs the conda
-`retinode-fem` env and takes 1 to 2 minutes. See the README for the full output and
-what "reproducible" guarantees here.
+`retinode-fem` env and takes 1 to 2 minutes.
+
+Read [the README's version](../README.md#reproduce-the-headline-result) before quoting
+it. It shows the full output, carries the difference through to the operating window,
+and lists three things this does *not* guarantee: the ±0.30 µA band is a drift tripwire
+rather than an error bar, the effect is only about three steps of the threshold search,
+and CI does not run the script.
 
 ## Reading the numbers honestly
 
 - **Operating window**: the usable headroom above the target's threshold before a
   **bystander** fires (`limiting = "off_target"`) or the **charge-density ceiling**
   binds (`limiting = "safety"`). Bigger is more selective.
-- **Accuracy tier** travels with every number. Analytical is a fast point-source
-  approximation and is geometry-blind; FEM is the real tissue-minus-electrode solve;
-  cross-checked means two independent solvers agree. Don't compare an analytical number
-  against a FEM one and read the difference as physics.
+- **Accuracy tier** travels with every number, and there are two: analytical, a fast
+  point-source approximation that is geometry-blind, and FEM, the real
+  tissue-minus-electrode solve. Don't compare an analytical number against a FEM one and
+  read the difference as physics. (A third, independently cross-checked tier is designed
+  but not built; see [fem-independent-checks.md](fem-independent-checks.md). The
+  DOLFINx-versus-NGSolve agreement that does exist is a test the FEM tier passes, not a
+  badge a result carries.)
 - **Axons of passage are first-class off-targets.** Threshold detection fires on a
   spike at *any* compartment, so an axon crossing under the electrode counts as
   activation. That is the whole point of an epiretinal selectivity tool.
@@ -327,11 +342,16 @@ what "reproducible" guarantees here.
 
 ## Where to go next
 
+- [SETUP.md](SETUP.md): the tiered install, with verified output, timings, and
+  troubleshooting
 - [custom-electrode.md](custom-electrode.md): the 3D and CAD electrode how-to (UI and code)
 - [electrode-geometry.md](electrode-geometry.md): the full geometry reference (shapes, bodies, arrays, overlap)
 - [testing-a-3d-design.md](testing-a-3d-design.md): a pass/fail runbook for putting a new 3D design through the whole stack
-- [validation.md](validation.md): what the engine reproduces and how closely
-- [fem-independent-checks.md](fem-independent-checks.md): how the FEM tier is trusted
-- [../README.md](../README.md): architecture, terminology, development and test workflow
+- [validation.md](validation.md): what the engine reproduces and how closely, plus
+  how the FEM tier is trusted and what is still missing from that argument
+- [fem-independent-checks.md](fem-independent-checks.md): the third-party field
+  cross-check (Sim4Life, COMSOL) that is designed and deliberately not built
+- [../README.md](../README.md): the governing equations and units, terminology,
+  architecture, and the development and test workflow
 - [../CONTRIBUTING.md](../CONTRIBUTING.md): the contributor workflow and repo conventions
 - `docs/phase-1-plan.md` through `phase-9-plan.md`: the per-phase build logs, with decisions and findings
