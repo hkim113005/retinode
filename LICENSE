@@ -1,5 +1,11 @@
 MIT License
 
+This license covers the code written for this project. It does NOT cover the
+third-party components listed in the NOTICE file at the repository root (the
+ModelDB Fohlmeister-Miller channel mechanisms and the NeuroMorpho.org morphology),
+which are redistributed under their own terms and carry citation requirements.
+
+
 Copyright (c) 2026 hkim113005
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

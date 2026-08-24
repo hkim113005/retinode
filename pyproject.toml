@@ -44,9 +44,9 @@ Issues = "https://github.com/hkim113005/retinode/issues"
 # from a notebook or the test suite. Everything heavy is an opt-in extra,
 # grouped by the phase/subsystem that needs it.
 #
-# NOTE: FEniCSx/DOLFINx is intentionally absent — it has no pip wheel, so the
+# NOTE: FEniCSx/DOLFINx is intentionally absent: it has no pip wheel, so the
 # DOLFINx backend lives in a separate conda-forge env (env/fem-environment.yml),
-# which runs *locally* on Apple Silicon (osx-arm64 build verified, 0.11.0) — see
+# which runs *locally* on Apple Silicon (osx-arm64 build verified, 0.11.0). See
 # docs/phase-4-plan.md. NGSolve + gmsh below ship pip wheels, so the FEM
 # cross-check backend and the mesh front-end can also run under uv.
 cable = [
@@ -77,7 +77,7 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["engine", "api", "app"]
 
-# The sdist is an explicit allowlist — never a "everything not gitignored" sweep. That
+# The sdist is an explicit allowlist, never an "everything not gitignored" sweep. That
 # would ship the copyrighted PDFs in papers/ and dev cruft (.hypothesis, .github,
 # .claude). Only the source needed to build, run, and understand the package ships.
 [tool.hatch.build.targets.sdist]
@@ -90,7 +90,10 @@ include = [
     "env/",
     "tests/",
     "README.md",
-    "CONTRIBUTING.md",  # README links to it; shipping one without the other dangles
+    # README links to CONTRIBUTING; shipping one without the other dangles the link.
+    "CONTRIBUTING.md",
+    # NOTICE carries the third-party terms that LICENSE explicitly does not cover.
+    "NOTICE",
     "LICENSE",
     "pyproject.toml",
 ]

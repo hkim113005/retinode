@@ -1,0 +1,63 @@
+# Third-party components
+
+The MIT license in `LICENSE` covers the code written for this project. It does not,
+and cannot, cover the third-party components listed below: they are the work of other
+authors, redistributed here under their own terms.
+
+If you redistribute Retinode, or use it in published work, these obligations travel
+with the files.
+
+---
+
+## 1. Fohlmeister-Miller channel mechanisms (NEURON `.mod`)
+
+**Files:** `engine/cable/mechanisms/spike.mod`, `engine/cable/mechanisms/capump.mod`
+
+**Origin:** ModelDB accession #3673 (<https://modeldb.science/3673>). Implemented for
+NEURON by T. J. Velte (1995), after Fohlmeister et al. (1990); see Fohlmeister and
+Miller (1997).
+
+**Terms:** No explicit license accompanies the ModelDB entry. ModelDB publishes code
+for research reuse, but with no stated terms the redistribution rights are undefined.
+These files are therefore **excluded from this project's MIT grant**. They are included
+here for research use, with attribution, on the same unstated terms as the original.
+
+**Modification:** `capump.mod` is verbatim. `spike.mod` carries one documented change,
+q10 temperature scaling for mammalian (37 degrees C) behaviour, which makes it a
+derivative work. The change is recorded in full in
+`engine/cable/mechanisms/PROVENANCE.md`, including the verification that the model
+reduces exactly to the original at the reference temperature.
+
+**Please cite:** Fohlmeister JF and Miller RF (1997), and ModelDB #3673.
+
+---
+
+## 2. Mouse retinal ganglion cell morphology (SWC)
+
+**File:** `engine/cable/morphologies/20160506-P21-control38-1.CNG.swc`
+
+**Origin:** NeuroMorpho.org, neuron `20160506-P21-control38-1` (id 105516),
+standardized CNG version. Archive: Wang.
+
+**Terms:** NeuroMorpho.org data is made available for research with an attribution
+requirement. That requirement is not expressible through the MIT license, so this file
+is **excluded from this project's MIT grant** and carries its own citation obligation.
+
+**Please cite:** NeuroMorpho.org, and Wang et al., *Neuroscience Letters* (2018),
+doi:10.1016/j.neulet.2018.04.012 (PMID 29627341).
+
+---
+
+## Scope
+
+Everything else in this repository is original work under the MIT license in `LICENSE`.
+
+Full per-file provenance, including retrieval dates, the exact modification made to
+`spike.mod`, and the reasoning behind the morphology choice, is recorded in:
+
+- `engine/cable/mechanisms/PROVENANCE.md`
+- `engine/cable/morphologies/PROVENANCE.md`
+
+If you intend to redistribute this project commercially, confirm the ModelDB terms
+directly with the model authors or ModelDB. The absence of a stated license is not the
+same as a grant of rights.
