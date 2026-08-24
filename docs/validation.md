@@ -12,16 +12,43 @@ faithful layered field and a primate morphology. Phase 4 delivered the first (th
 FEM tier, with layered conductivity); the primate morphology does not exist here,
 so absolute magnitudes stay out of reach.
 
-Every reproduction in the tables below runs on the **analytical** field tier, so
-none of these numbers is an FEM number.
+Concretely, that bar means: **the criterion column below is the claim, and the
+measured column is only evidence for it.** A row passes when the sign of an effect,
+the ordering of two conditions, or a ratio survives, not when a threshold matches a
+published microamp value. Two things set the floor on how fine a difference is worth
+reading. The threshold search bisects to within 4% of its bracketing rung (about a
+quarter of a microamp at these amplitudes), and the modelling choices behind an
+absolute number, meaning the mouse morphology, the nominal channel densities, and a
+homogeneous rather than layered field, move it by far more than that. Differences of
+a few percent between two of these numbers are not results.
 
-Regenerate the machine report with:
+Every reproduction in the tables below runs on the **analytical** field tier, so
+none of these numbers is an FEM number. How the FEM tier earns its own trust is a
+separate question, answered in [its own section below](#how-the-fem-tier-is-trusted).
+
+## Run it yourself
+
+The tables are generated, not typed. Regenerate the machine report the app reads:
 
 ```bash
-uv run --extra cable python -m engine.validate.report
+uv run --extra cable python -m engine.validate.report   # writes app/validation_report.json
 ```
 
-It writes `app/validation_report.json`, which the Validation screen reads.
+The reproductions are deterministic (fixed search parameters), so a correct engine
+rewrites that file byte for byte. Assert them as tests instead:
+
+```bash
+uv sync --extra cable --extra dev --extra store --extra api
+(cd engine/cable/mechanisms && uv run nrnivmodl .)      # once, to build the FM mechanisms
+uv run python -m pytest tests/validate -q               # 18 tests, ~3.5 min: the whole scorecard
+```
+
+Both are exactly what CI runs. The rows that need no cable solve, meaning the field
+physics and the Fan 2019 field-sharpening ratio, are in the fast suite on every push;
+everything with a threshold in it is `neuron`-marked and runs in the `neuron` job, the
+robustness sweeps included. Note what the tests assert: the **criterion** in the
+right-hand column, not the measured number. A reproduction fails when a trend inverts,
+not when a threshold moves by a microamp.
 
 ## Field physics (exact, fast)
 
@@ -58,6 +85,44 @@ mirror symmetry, near-field regularization, superposition.
 Robustness sweeps re-assert the axon-avoidance and summation reproductions across
 a range of geometry (offsets 30/50 µm; spacings 14/24 µm), so none rests on one
 lucky scene.
+
+## How the FEM tier is trusted
+
+The tables above are analytical-tier numbers, but the headline result and every
+geometry study are FEM. The FEM tier has no literature reproductions of its own; it is
+trusted by construction checks instead, all `fem`-marked and all run by CI:
+
+```bash
+conda activate retinode-fem
+pytest tests/field -m fem      # 37 tests, ~4 min
+```
+
+| Check | What it rules out | Where |
+|---|---|---|
+| Method of manufactured solutions, on the real tissue mesh | a wrong discretization or assembly | `tests/field/test_fem_backend.py` |
+| Agreement with the analytical half-space, on a domain large enough that truncation is small | a unit, sign, or magnitude error in the FEM chain | `tests/field/test_fem_backend.py` |
+| Current conservation: a unit-current solve drives exactly 1 A out through the grounded boundary | a wrong flux boundary condition | `tests/field/test_fem_backend.py` |
+| Two-layer closed form, plus a layered MMS across the sigma jump | mishandling of the conductivity interface | `tests/field/test_fem_layered.py` |
+| Mesh convergence at fixed extent: `A` stops moving as the mesh sharpens | reporting a mesh-dependent number as a physical one | `tests/field/test_convergence_fem.py` |
+| A second solver: DOLFINx and NGSolve on the *same* gmsh mesh agree to sub-percent | a bug in either library's assembly or unit chain | `tests/field/test_fem_agreement.py` |
+
+`engine/field/regime.py` answers the adjacent question, how wrong the cheap tier is if
+you pretend a layered retina is homogeneous, by sweeping the layer contrast and
+recording the relative error against the FEM solve.
+
+**What is still missing, and it is the honest gap.** Every check above is internal:
+the code agreeing with closed forms, with itself under refinement, and with a second
+open-source library on the same mesh. There is no third *independent implementation*
+(Sim4Life or COMSOL, with a different mesher and vendor), and no comparison of an FEM
+threshold against a measured ex vivo one. The first is designed and deliberately not
+built, for the reason recorded in
+[fem-independent-checks.md](fem-independent-checks.md); the second needs a lab.
+
+One FEM number *is* pinned end to end: the headline
+(`examples/reproduce_headline.py`, described in the
+[README](../README.md#reproduce-the-headline-result)), which fails if the engine drifts
+from the recorded thresholds. It is not part of CI, because it needs DOLFINx and NEURON
+in one environment, so it is a check a reader runs rather than one a push enforces.
 
 ## Two honest scope notes
 

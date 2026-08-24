@@ -7,8 +7,9 @@ and the tests are the contract that keeps it that way.
 ## Setup
 
 Retinode uses [uv](https://docs.astral.sh/uv/) and Python 3.12. There are two
-environments, because DOLFINx ships no pip wheel and lives on conda-forge alone. See
-[docs/user-guide.md](docs/user-guide.md) for the longer version.
+environments, because DOLFINx ships no pip wheel and lives on conda-forge alone.
+[docs/SETUP.md](docs/SETUP.md) is the full version, with verified output, timings, and
+the macOS `nrnivmodl` workaround; this is the contributor short form.
 
 ```bash
 # the uv env: analytical field, NEURON, the API

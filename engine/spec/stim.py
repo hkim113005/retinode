@@ -24,8 +24,11 @@ class Waveform:
 class StimConfig:
     """Which electrodes source and return current, with what relative weights.
 
-    ``weights`` are signed relative currents per electrode id: sources > 0,
-    returns < 0. The actual current is ``weight * waveform.amplitude_scale_uA``.
+    ``weights`` are signed relative currents per electrode id, in the sign
+    convention of ``conventions.py``: **cathodic (the excitatory phase) is
+    negative**, so the driven stimulating electrode carries a negative weight and
+    an on-array return carries a positive one. The actual current is
+    ``weight * waveform.amplitude_scale_uA``.
 
     ``distant_return`` distinguishes the two return regimes:
       * False (default): a fully on-array config (e.g. Fan 2019 local return);
