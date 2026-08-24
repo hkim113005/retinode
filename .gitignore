@@ -17,7 +17,7 @@ dist/
 venv/
 env/*
 !env/*.yml
-# NOTE: .python-version is intentionally NOT ignored — uv uses it to pin the
+# NOTE: .python-version is intentionally NOT ignored, because uv uses it to pin the
 # project interpreter (3.12), and committing it keeps the env reproducible.
 
 # Testing / coverage
@@ -34,7 +34,7 @@ htmlcov/
 .ipynb_checkpoints/
 
 # Retinode project data (generated; not source)
-# Project stores hold caches, results, and provenance — regenerable artifacts.
+# Project stores hold caches, results, and provenance: regenerable artifacts.
 *.retinode/cache/
 *.retinode/results/
 project.retinode/cache/
@@ -75,5 +75,8 @@ Thumbs.db
 node_modules/
 app/web/dist/
 
-# Copyrighted reference PDFs — read locally, never committed or distributed.
+# Copyrighted reference PDFs: read locally, never committed or distributed.
 papers/
+
+# Local test solids and launch helper (machine-specific paths)
+testdata/
